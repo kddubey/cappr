@@ -73,9 +73,9 @@ def log_probs_conditional(prompts: Sequence[str],
                           batch_size: int=20,
                           end_of_prompt: str=END_OF_PROMPT):
     '''
-    Returns a list `log_probs_completions` where `log_probs_completions[i]` is a
-    list of the `model`'s estimates of log-probablities of each token in
-    `completions[i]` conditional on previous tokens in the completion and
+    Returns a list `log_probs_completions` where `log_probs_completions[i][j]`
+    is a list of the `model`'s estimates of log-probablities of each token in
+    `completions[j]`, conditional on previous tokens in the completion and
     `prompts[i]`.
     '''
     ## str / non-Sequence[str] inputs silently, wastefully, and irreparably fail
@@ -147,7 +147,7 @@ def log_probs_conditional_examples(examples: Sequence[Example],
     '''
     Returns a list `log_probs_completions` where `log_probs_completions[i][j]`
     is a list of the `model`'s estimates of log-probablities of each token in
-    `examples[i].completions[j]`, conditional on previous tokens in that
+    `examples[i].completions[j]`, conditional on previous tokens in the
     completion and `examples[i].prompt`.
     '''
     ## Flat list of prompts and their completions. Will post-process
@@ -222,6 +222,9 @@ def predict_proba_examples(examples: Sequence[Example],
     '''
     Returns a list, `pred_probs`, where `pred_probs[i][j]` is a `model`'s
     estimate of Pr(`examples[i].completions[j]` | `examples[i].prompt`).
+
+    If the number of completions per example is constant, an array with shape
+    `(len(examples), len(examples[0].completions))` is returned instead.
     '''
     log_probs_all = log_probs_conditional_examples(examples, model=model,
                                                    batch_size=batch_size)
