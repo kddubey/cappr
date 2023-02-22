@@ -107,6 +107,9 @@ asked: classify.
 Code:
 - [ ] add unit tests
 - [ ] add sampling for benchmarking purposes
+- [ ] loosen requirements
+- [ ] add setup instructions and file for conda
+- [ ] install requirements as part of setup.py
 
 Research: understand how robust this method is, and its relative advantages
 (and disadvantages) compared to other popular methods
