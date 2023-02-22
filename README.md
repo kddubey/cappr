@@ -1,4 +1,4 @@
-# `lm-classification`
+# lm-classification
 
 Perform zero-shot text classification: for a given prompt and completion,
 what's the probability that the completion follows the prompt? The motivation
@@ -6,7 +6,8 @@ for this method was
 [discussed here in the OpenAI community forum](https://community.openai.com/t/compute-the-probability-of-input-text-for-classification/29840)
 (I'm chicxulub on there). The method is fleshed out
 [here in CrossValidated](https://stats.stackexchange.com/q/601159/337906)
-(still chicxulub). And finally, a demo is here, in `demo.ipynb`.
+(still chicxulub). And finally, a demo is here, in
+[`demo.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demo.ipynb).
 
 
 # Disclaimer
@@ -75,7 +76,8 @@ print(pred_probs.round(2))
 # [[0.95 0.   0.05]]
 ```
 
-Also see `demo.ipynb` for a harder classification task.
+See [`demo.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demo.ipynb)
+for a harder classification task.
 
 
 # Related work
