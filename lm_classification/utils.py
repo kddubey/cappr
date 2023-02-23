@@ -67,6 +67,8 @@ def batch_variable(lst: list, sizes: Sequence[int]):
     if len(sizes.shape) != 1:
         raise ValueError('sizes must be 1-D.')
     cumulative_sizes = np.cumsum(sizes)
+    if cumulative_sizes[-1] != len(lst):
+        raise ValueError('sizes must sum to len(lst).')
     ## We want start and stop idxs. The first start idx must ofc be 0.
     cumulative_sizes = np.insert(cumulative_sizes, 0, 0)
     lst = list(lst) ## 0-index and/or fully evaluate generator
