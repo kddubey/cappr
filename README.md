@@ -1,7 +1,8 @@
 # Zero-shot text classification
 
-Perform zero-shot text classification: for a given prompt and completion,
-what's the probability that the completion follows the prompt?
+Perform zero-shot text classification based on the following idea: for a given
+prompt and completion, what's the probability that the completion follows the
+prompt?
 
 The method is fleshed out
 [here in CrossValidated](https://stats.stackexchange.com/q/601159/337906)
