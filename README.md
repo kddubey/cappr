@@ -1,4 +1,4 @@
-# lm-classification
+# Zero-shot text classification
 
 Perform zero-shot text classification: for a given prompt and completion,
 what's the probability that the completion follows the prompt? The motivation
@@ -31,6 +31,10 @@ pred_probs = classify.predict_proba(prompts=[prompt],
 
 print(pred_probs.round(2))
 # [[0.95 0.   0.05]]
+
+pred_class_idxs = pred_probs.argmax(axis=1)
+print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
+# ['positive']
 ```
 
 See [`demo.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demo.ipynb)
@@ -38,8 +42,6 @@ for a harder classification task.
 
 
 # Setup
-
-Python 3.8+
 
 You can create a new virtual environment, or pray that things don't break in
 an existing one. I may loosen the requirements later.
@@ -80,15 +82,17 @@ This package only supports LMs in
 [OpenAI's text completion API](https://platform.openai.com/docs/models/gpt-3),
 which you gotta pay for.
 
-If you're an ML engineer, there are likely far better alternatives to this
-classification method. Alternatives such as
+If you're something of an ML engineer, and you've got some labeled and
+unlabeled text, there are likely far better alternatives to this classification 
+method. Alternatives such as
 [PET training](http://timoschick.com/explanatory%20notes/2020/10/23/pattern-exploiting-training.html),
 [textual entailment](https://huggingface.co/tasks/zero-shot-classification), or
 [plain old BERT embeddings](https://huggingface.co/docs/transformers/tasks/sequence_classification)
 are gonna be way less expensive, and are less bad for the environment. This 
 method is just trying to beat
 [classification via sampling](https://platform.openai.com/docs/guides/completion/classification),
-which targets software developers.
+which targets software developers working on zero-shot or few-shot text 
+classification tasks.
 
 
 # Motivation
