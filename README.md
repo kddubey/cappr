@@ -10,14 +10,16 @@ The method is fleshed out
 [`demo.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demo.ipynb).
 
 
-## Disclaimer
+## Disclaimers
 
 This package only supports [language models (LMs) in OpenAI's text completion API](https://platform.openai.com/docs/models/gpt-3),
 which you gotta pay for. Prices are [here](https://openai.com/api/pricing/).
 
+Moreover, this code may not be ready for production use. And I still need to
+evaluate the method on more classification datasets and tasks.
+
 If you're something of an ML engineer, and you have labeled and unlabeled text, 
-there are likely far better alternatives to this classification method.
-Alternatives such as
+there are likely far better alternatives to this method.
 [PET training](http://timoschick.com/explanatory%20notes/2020/10/23/pattern-exploiting-training.html),
 [textual entailment](https://huggingface.co/tasks/zero-shot-classification), or
 [plain old BERT embeddings](https://huggingface.co/docs/transformers/tasks/sequence_classification)
