@@ -1,24 +1,22 @@
 # Zero-shot text classification
 
 Perform zero-shot text classification: for a given prompt and completion,
-what's the probability that the completion follows the prompt? The motivation
-for this method was
-[discussed here in the OpenAI community forum](https://community.openai.com/t/compute-the-probability-of-input-text-for-classification/29840)
-(I'm chicxulub on there). The method is fleshed out
+what's the probability that the completion follows the prompt?
+
+The method is fleshed out
 [here in CrossValidated](https://stats.stackexchange.com/q/601159/337906)
-(still chicxulub). And finally, a demo is here, in
+(I'm chicxulub). A demo is here, in
 [`demo.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demo.ipynb).
 
 
 ## Disclaimer
 
-This package only supports LMs in
-[OpenAI's text completion API](https://platform.openai.com/docs/models/gpt-3),
-which you gotta pay for.
+This package only supports [language models (LMs) in OpenAI's text completion API](https://platform.openai.com/docs/models/gpt-3),
+which you gotta pay for. Prices are [here](https://openai.com/api/pricing/).
 
-If you're something of an ML engineer, and you've got some labeled and
-unlabeled text, there are likely far better alternatives to this classification 
-method. Alternatives such as
+If you're something of an ML engineer, and you have labeled and unlabeled text, 
+there are likely far better alternatives to this classification method.
+Alternatives such as
 [PET training](http://timoschick.com/explanatory%20notes/2020/10/23/pattern-exploiting-training.html),
 [textual entailment](https://huggingface.co/tasks/zero-shot-classification), or
 [plain old BERT embeddings](https://huggingface.co/docs/transformers/tasks/sequence_classification)
@@ -64,18 +62,19 @@ for a harder classification task.
 
 Create a more usable zero-shot text classification interface than
 [classification via sampling](https://platform.openai.com/docs/guides/completion/classification).
+([Cookbook here](https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit).)
 I don't want to be forced to transform multi-token labels to single tokens.
 I don't want to study completion strings which aren't in my label set. And I
-don't want to have to figure out how to map them back to the label set. We
-should just do what's asked: classify.
+don't want to have to figure out how to map them back to the label set. I want
+to do what I need to do: classify.
 
 
 ## Setup
 
 You can create a new virtual environment, or pray that things don't break in
-an existing one. I may loosen the requirements later.
+an existing one. I'll loosen the requirements later.
 
-This package isn't published, so might as well install it in editable mode.
+(This package isn't published, so might as well install it in editable mode.)
 
 ```bash
 cd your/venvs
@@ -91,7 +90,7 @@ python -m pip install -r requirements.txt
 python -m pip install -e .
 ```
 
-I may make this nicer later.
+I may make these steps shorter later.
 
 
 ## Related work
@@ -107,11 +106,17 @@ the paper after writing out this algorithm.)
 
 ## Test code
 
+In your virtual environment, install `pytest-mock`:
+
+```
+python -m pip install pytest-mock
+```
+
+Then run
+
 ```
 pytest
 ```
-
-Tests are in-progress.
 
 
 ## Todo
