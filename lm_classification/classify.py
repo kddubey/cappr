@@ -223,15 +223,15 @@ def predict_proba_examples(examples: Sequence[Example],
     Returns a list, `pred_probs`, where `pred_probs[i][j]` is a `model`'s
     estimate of Pr(`examples[i].completions[j]` | `examples[i].prompt`).
 
-    If the number of completions per example is constant, an array with shape
-    `(len(examples), len(examples[0].completions))` is returned instead.
+    If the number of completions per example is a constant `k`, then an array
+    with shape `(len(examples), k)` is returned instead.
     '''
     log_probs_all = log_probs_conditional_examples(examples, model=model,
                                                    batch_size=batch_size)
     likelihoods_all = agg_log_probs(log_probs_all)
     pred_probs = [posterior_prob(likelihoods, axis=0, prior=example.prior)
                   for likelihoods, example in zip(likelihoods_all, examples)]
-    ## For convenence sake, convert to array if possible
+    ## For convenience sake, convert to array if possible
     completions_sizes_set = {len(example.completions) for example in examples}
     if len(completions_sizes_set) == 1:
         return np.array(pred_probs)

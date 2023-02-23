@@ -136,19 +136,19 @@ Code:
 Research: evaluate on more tasks, and understand its relative advantages and
 disadvantages
 
-- [ ] Compare against sampling
-- [ ] Add "priming", i.e., few-shot
+- [ ] Compare against zero-shot sampling
+- [ ] Evaluate "priming" + this method
 - [ ] Compare against few-shot embeddings
 - [ ] More SuperGLUE tasks
 - [ ] Understand how sampling works, make a computational comparison
   - [ ] Assume I have full freedom to decide how inference works
+- [ ] Calibration
+  - [ ] (easy) Is the prior actually effective? Downsample and see
 - [ ] More real world or harder tasks
   - [ ] Multi-token labels w/ non-uniform prior
 - [ ] Finetune smaller, cheaper model and compare against zero-shot w/ davinci
   - [ ] e.g., GPT-2 from huggingface, `text-ada-001`
   - [ ] Again, compare against sampling
-- [ ] Calibration
-  - [ ] (easy) Is the prior actually effective? Downsample and see
 - [ ] Evaluate different aggregation functions. Currently taking mean, but
 there was no good motivation for that
 - [ ] Give this method a name
