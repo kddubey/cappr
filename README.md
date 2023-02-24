@@ -39,7 +39,7 @@ from the OpenAI text completion docs.
 from lm_classification.classify import predict_proba
 
 text = 'I loved the new Batman movie!'
-prompt = f'Tweet: {text}' + '\n' + 'Sentiment: ' 
+prompt = f'Tweet: {text}' + '\n' + 'Sentiment:' 
 
 class_names = ('positive', 'neutral', 'negative')
 prior = (1/8, 1/8, 3/4) # Twitter amirite
