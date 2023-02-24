@@ -15,27 +15,31 @@ from tqdm.auto import tqdm
 from lm_classification import utils
 
 
-END_OF_PROMPT = ' <|endoftext|>\n\n'
+_DUMMY_FLOATS: list[float] = list(np.linspace(0, 1, 3))
+## for checking inputs which are supposed to be functions of this type of data
+
+
+end_of_text = ' <|endoftext|>\n\n'
 ## IIUC these tokens were used to separate prompts from completions during
 ## training. The second \n is iffy, but seems to be common enough based on my
-## experience with the completion endpoint.
+## experience with the completion endpoint. May be useful if the prompt is a
+## question.
 
 
-def gpt3_log_probs(texts: Sequence[str], model: str='text-ada-001',
-                   batch_size: int=20) -> list[list[float]]:
+def gpt3_log_probs(texts: Sequence[str],
+                   model: str='text-ada-001') -> list[list[float]]:
     '''
     Returns a list `log_probs` where `log_probs[i]` is the value of
     `'log_probs' -> 'token_logprobs'` (from the OpenAI Completion endpoint) for
     `texts[i]` using `model`.
     '''
-    if batch_size > 20:
-        raise ValueError('batch_size must be <= 20.')
+    _batch_size = 20 ## max that the API can currently handle
     if isinstance(texts, str):
         ## Passing in a string will silently but majorly fail. Handle it
         texts = [texts]
     log_probs = []
     with tqdm(total=len(texts), desc='Computing probs') as progress_bar:
-        for texts_batch in utils.batch(texts, batch_size):
+        for texts_batch in utils.batch(texts, _batch_size):
             response = utils.openai_method_retry(openai.Completion.create,
                                                  model=model,
                                                  prompt=texts_batch,
@@ -67,11 +71,8 @@ def log_probs_completions(completions: Sequence[str],
     return log_probs_completions
 
 
-def log_probs_conditional(prompts: Sequence[str],
-                          completions: Sequence[str],
-                          model: str='text-ada-001',
-                          batch_size: int=20,
-                          end_of_prompt: str=END_OF_PROMPT):
+def log_probs_conditional(prompts: Sequence[str], completions: Sequence[str],
+                          model: str='text-ada-001', end_of_prompt: str=' '):
     '''
     Returns a list `log_probs_completions` where `log_probs_completions[i][j]`
     is a list of the `model`'s estimates of log-probablities of each token in
@@ -87,7 +88,7 @@ def log_probs_conditional(prompts: Sequence[str],
     texts = [prompt + end_of_prompt + completion
              for prompt in prompts
              for completion in completions]
-    log_probs = gpt3_log_probs(texts, model=model, batch_size=batch_size)
+    log_probs = gpt3_log_probs(texts, model=model)
     ## Since log_probs is a flat list, we'll need to batch them by the size and
     ## order of completions to fulfill the spec.
     return [log_probs_completions(completions, log_probs_batch)
@@ -110,6 +111,22 @@ def _check_prior(prior: Optional[Sequence[float]]=None):
         raise ValueError('prior must sum to 1 (tol 1e-6).')
 
 
+def _check_func(func: Callable[[Sequence[float]], float]):
+    '''
+    Raises an error is `func` is not a function of `Sequence[float]` or it
+    returns `None`.
+    '''
+    try:
+        out = func(_DUMMY_FLOATS)
+    except Exception as e:
+        raise ValueError( 'func is not a function of Sequence[float]. Got this '
+                         f'error on input {_DUMMY_FLOATS}: {e}.')
+    else:
+        if out is None:
+            raise ValueError( 'func must return a float. It returned None for '
+                             f'this input: {_DUMMY_FLOATS}.')
+
+
 @dataclass(frozen=True)
 class Example:
     '''
@@ -121,10 +138,12 @@ class Example:
     `prompt`: cointains the text to classify, perhaps with instructions
     `completions`: possible completions/answers to the `prompt`
     `prior`: (optional) a probability distribution over `completions`.
+    `end_of_prompt`: the string used to join the `prompt` and each completion.
     '''
     prompt: str
     completions: Sequence[str]
     prior: Optional[Sequence[float]]=None
+    end_of_prompt: str=' '
 
     def __post_init__(self):
         ## Check inputs here so that fxns of Example don't need to check
@@ -141,8 +160,6 @@ class Example:
 
 def log_probs_conditional_examples(examples: Sequence[Example],
                                    model: str='text-ada-001',
-                                   batch_size: int=20,
-                                   end_of_prompt: str=END_OF_PROMPT
                                   ) -> list[list[list[float]]]:
     '''
     Returns a list `log_probs_completions` where `log_probs_completions[i][j]`
@@ -151,10 +168,10 @@ def log_probs_conditional_examples(examples: Sequence[Example],
     completion and `examples[i].prompt`.
     '''
     ## Flat list of prompts and their completions. Will post-process
-    texts = [example.prompt + end_of_prompt + completion
+    texts = [example.prompt + example.end_of_prompt + completion
              for example in examples
              for completion in example.completions]
-    log_probs_all = gpt3_log_probs(texts, model=model, batch_size=batch_size)
+    log_probs_all = gpt3_log_probs(texts, model=model)
     ## Flatten completions in same order as examples were flattened
     completions_all = [completion for example in examples
                        for completion in example.completions]
@@ -200,35 +217,42 @@ def posterior_prob(likelihoods: np.ndarray, axis: int,
 
 
 def predict_proba(prompts: Sequence[str], completions: Sequence[str],
-                  prior: Optional[Sequence[float]]=None,
-                  model: str='text-ada-001', batch_size: int=20):
+                  prior: Optional[Sequence[float]]=None, end_of_prompt: str=' ',
+                  model: str='text-ada-001',
+                  func: Callable[[Sequence[float]], float]=np.mean):
     '''
     Returns an array with shape `(len(prompts), len(completions))` called
-    `pred_probs`, where `pred_probs[i, j]` is a `model`'s estimate of
-    Pr(`completions[j]` | `prompts[i]`).
+    `pred_probs`, where `pred_probs[i, j]` is a `model`'s estimate of the
+    probability of `completions[j]` given `prompts[i] + end_of_prompt`.
     '''
     if prior is not None and len(completions) != len(prior):
         raise ValueError( 'completions and prior are different lengths: '
                          f'{len(completions)}, {len(prior)}.')
-    log_probs_all = log_probs_conditional(prompts, completions, model=model,
-                                          batch_size=batch_size)
-    likelihoods = agg_log_probs(log_probs_all)
+    ## Check prior and func here so that we don't hit the API for nothing
+    _check_prior(prior)
+    _check_func(func)
+    log_probs_all = log_probs_conditional(prompts, completions,
+                                          end_of_prompt=end_of_prompt,
+                                          model=model)
+    likelihoods = agg_log_probs(log_probs_all, func=func)
     return posterior_prob(likelihoods, axis=1, prior=prior)
 
 
 def predict_proba_examples(examples: Sequence[Example],
                            model: str='text-ada-001',
-                           batch_size: int=20):
+                           func: Callable[[Sequence[float]], float]=np.mean):
     '''
     Returns a list, `pred_probs`, where `pred_probs[i][j]` is a `model`'s
-    estimate of Pr(`examples[i].completions[j]` | `examples[i].prompt`).
+    estimate of the probability of `examples[i].completions[j]` given
+    `examples[i].prompt + examples[i].end_of_prompt`.
 
     If the number of completions per example is a constant `k`, then an array
     with shape `(len(examples), k)` is returned instead.
     '''
-    log_probs_all = log_probs_conditional_examples(examples, model=model,
-                                                   batch_size=batch_size)
-    likelihoods_all = agg_log_probs(log_probs_all)
+    ## Check func here so that we don't hit the API for nothing
+    _check_func(func)
+    log_probs_all = log_probs_conditional_examples(examples, model=model)
+    likelihoods_all = agg_log_probs(log_probs_all, func=func)
     pred_probs = [posterior_prob(likelihoods, axis=0, prior=example.prior)
                   for likelihoods, example in zip(likelihoods_all, examples)]
     ## For convenience sake, convert to array if possible

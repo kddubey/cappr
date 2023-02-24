@@ -42,7 +42,7 @@ text = 'I loved the new Batman movie!'
 prompt = f'Tweet: {text}' + '\n' + 'Sentiment: ' 
 
 class_names = ('positive', 'neutral', 'negative')
-prior = (1/6, 1/6, 2/3) # Twitter amirite
+prior = (1/8, 1/8, 3/4) # Twitter amirite
 
 pred_probs = predict_proba(prompts=[prompt],
                            completions=class_names,
@@ -50,7 +50,7 @@ pred_probs = predict_proba(prompts=[prompt],
                            model='text-ada-001')
 
 print(pred_probs.round(2))
-# [[0.95 0.   0.05]]
+# [[0.98 0.   0.02]]
 
 pred_class_idxs = pred_probs.argmax(axis=1)
 print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])

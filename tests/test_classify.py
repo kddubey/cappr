@@ -61,7 +61,7 @@ def test_log_probs_completions(completions, log_probs):
 
 @pytest.fixture(scope='module')
 def prompts():
-    return ["since day one I've been ", 'i before e except after ']
+    return ["since day one I've been", 'i before e except after']
 
 
 def mock_gpt3_log_probs(texts, **kwargs):
