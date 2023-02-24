@@ -198,22 +198,28 @@ def agg_log_probs(log_probs: Sequence[Sequence[Sequence[float]]],
 
 
 def posterior_prob(likelihoods: np.ndarray, axis: int,
-                   prior: Optional[Sequence[float]]=None) -> np.ndarray:
+                   prior: Optional[Sequence[float]]=None,
+                   normalize: bool=True) -> np.ndarray:
     '''
-    Returns an array, `posteriors`, where `posteriors[i]` is the normalized
+    Returns an array, `posteriors`, where `posteriors[i]` is the (normalized)
     probability distribution of `likelihoods[i] * prior`. If `prior is None`,
     then a uniform prior is applied, i.e., `posteriors[i]` is simply a
-    normalized copy of `likelihoods[i]`.
+    (normalized) copy of `likelihoods[i]`.
 
     Set `axis` to the axis over which the distribution is defined, e.g., `0` if
     likelihoods is 1-D. 
     '''
     likelihoods = np.array(likelihoods)
     if prior is None:
-        return likelihoods / likelihoods.sum(axis=axis, keepdims=True)
+        if normalize:
+            return likelihoods/likelihoods.sum(axis=axis, keepdims=True)
+        return likelihoods
     _check_prior(prior)
     posteriors_unnorm: np.ndarray = likelihoods * prior
-    return posteriors_unnorm / posteriors_unnorm.sum(axis=axis, keepdims=True)
+    if normalize:
+        return posteriors_unnorm/posteriors_unnorm.sum(axis=axis, keepdims=True)
+    else:
+        return posteriors_unnorm
 
 
 def predict_proba(prompts: Sequence[str], completions: Sequence[str],
@@ -235,7 +241,11 @@ def predict_proba(prompts: Sequence[str], completions: Sequence[str],
                                           end_of_prompt=end_of_prompt,
                                           model=model)
     likelihoods = agg_log_probs(log_probs_all, func=func)
-    return posterior_prob(likelihoods, axis=1, prior=prior)
+    ## If there's only 1 completion, normalizing will cause the prob to
+    ## trivially be 1! So let's not normalize in that case, and hope the user
+    ## knows what they're doing
+    return posterior_prob(likelihoods, axis=1, prior=prior,
+                          normalize=len(completions) > 1)
 
 
 def predict_proba_examples(examples: Sequence[Example],
@@ -253,11 +263,17 @@ def predict_proba_examples(examples: Sequence[Example],
     _check_func(func)
     log_probs_all = log_probs_conditional_examples(examples, model=model)
     likelihoods_all = agg_log_probs(log_probs_all, func=func)
-    pred_probs = [posterior_prob(likelihoods, axis=0, prior=example.prior)
-                  for likelihoods, example in zip(likelihoods_all, examples)]
+    ## If an example has just 1 completion, normalizing will cause the prob to
+    ## trivially be 1! So let's not normalize in that case, and hope the user
+    ## knows what they're doing
+    completions_sizes = [len(example.completions) for example in examples]
+    should_normalize = [size > 1 for size in completions_sizes]
+    pred_probs = [posterior_prob(likelihoods, axis=0, prior=example.prior,
+                                 normalize=normalize)
+                  for likelihoods, example, normalize
+                  in zip(likelihoods_all, examples, should_normalize)]
     ## For convenience sake, convert to array if possible
-    completions_sizes_set = {len(example.completions) for example in examples}
-    if len(completions_sizes_set) == 1:
+    if len(set(completions_sizes)) == 1:
         return np.array(pred_probs)
     else:
         return pred_probs
