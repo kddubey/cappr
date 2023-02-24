@@ -6,8 +6,8 @@ prompt?
 
 The method is fleshed out
 [here in CrossValidated](https://stats.stackexchange.com/q/601159/337906)
-(I'm chicxulub). A demo is here, in
-[`demo.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demos/copa.ipynb).
+(I'm chicxulub). The first demo of this method is
+[here, in `demos/copa.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demos/copa.ipynb).
 
 
 ## Disclaimers
@@ -57,8 +57,8 @@ print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
 # ['positive']
 ```
 
-See [`demo.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demos/copa.ipynb)
-for a harder classification task.
+See [`demos/copa.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demos/copa.ipynb)
+for a slightly harder classification task.
 
 
 ## Motivation
