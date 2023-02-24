@@ -98,13 +98,18 @@ I may make these steps shorter later.
 
 ## Related work
 
-This classification strategy is a zero-shot and autoregressive variant of (a
-small part of) the strategy in [this paper](https://arxiv.org/abs/2009.07118):
+While benchmarking this method on the
+[Winograd Schema Challenge (WSC)](https://cs.nyu.edu/~davise/papers/WinogradSchemas/WS.html),
+I found that [this paper](https://arxiv.org/abs/1806.02847) does somthing
+super similar:
+
+> Trinh, Trieu H., and Quoc V. Le. "A simple method for commonsense reasoning." arXiv preprint arXiv:1806.02847 (2018).
+
+One could also argue that this classification strategy is a zero-shot and
+autoregressive variant of (a small part of) the strategy in
+[this paper](https://arxiv.org/abs/2009.07118):
 
 > Schick, Timo, and Hinrich Schütze. "It's not just size that matters: Small language models are also few-shot learners." arXiv preprint arXiv:2009.07118 (2020).
-
-([I saw](https://stats.stackexchange.com/questions/601159/should-a-language-model-like-gpt-3-be-directly-used-to-perform-classification#comment1122996_601159)
-the paper after writing out this algorithm.)
 
 
 ## Test code
@@ -151,4 +156,4 @@ disadvantages
   - [ ] Again, compare against sampling
 - [ ] Evaluate different aggregation functions. Currently taking mean, but
 there was no good motivation for that
-- [ ] Give this method a name
+- [ ] Give this method a name. `cloze-it`?
