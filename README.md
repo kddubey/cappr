@@ -70,7 +70,7 @@ With this package's `predict_proba` interface, you no longer have to:
   1. study sampled completion strings which aren't in your label set
   2. figure out how to map them back to the label set
   3. figure out how to transform or point multi-token labels to single tokens,
-     thus ignoring their semantic richness
+     ignoring their semantics if they were transformed
   4. ignore your prior over multi-token labels.
 
 This package just does one thing well: classification. It should be at least as
@@ -104,14 +104,19 @@ I may make these steps shorter later.
 
 ## User guide
 
+**Use these LMs for what they are; stay close to the way GPT-3 was pretrained as
+much as possible**
+
 Models like `text-davinci-003` were trained with human feedback, so you 
 *could* simply ask it to classify the text you've given, e.g.,
 `What's the sentiment of the tweet?`, and expect good results. But IME, 
 thinking for a few minutes about how to frame your task as a prompt-completion 
-problem usually takes you far. Use these LMs for what they are; stay close to 
-the way GPT-3 was pretrained as much as possible!
+problem usually takes you far. For example, the
+[`demos/copa.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demos/copa.ipynb)
+notebook demonstrates that a question approach to the task causes accuracy to
+dip from 0.92 to 0.87.
 
-I'll expand on this section as I run more experiments and learn more.
+I'll expand on this guide as I run more experiments and learn more.
 
 
 ## Related work
@@ -157,10 +162,10 @@ Code:
 - [ ] Install requirements as part of setup.py
 
 Research: evaluate on more tasks, and understand its relative advantages and
-disadvantages
+disadvantages vs other classification methods
 
 - [ ] Compare against zero-shot sampling
-- [ ] Evaluate "priming" + this method
+- [ ] Expand user guide
 - [ ] Compare against few-shot embeddings
 - [ ] More SuperGLUE tasks
 - [ ] Understand how sampling works, make a computational comparison
