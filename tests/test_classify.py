@@ -114,24 +114,50 @@ def test_agg_log_probs(mocker, log_probs):
 
 @pytest.mark.parametrize('likelihoods', ([[4,1], [1,4]],))
 @pytest.mark.parametrize('prior', (None, [1/2, 1/2], [1/3, 2/3]))
-def test_posterior_prob_2d(likelihoods: np.ndarray, prior):
-    posteriors = classify.posterior_prob(likelihoods, axis=1, prior=prior)
-    if prior is None or len(set(prior)) == 1:
-        assert np.all(np.isclose(posteriors, [[4/5, 1/5], [1/5, 4/5]]))
-    elif prior == [1/3, 2/3]: ## hard-coded, idk how to engineer tests
-        assert np.all(np.isclose(posteriors, [[2/3, 1/3], [1/9, 8/9]]))
+@pytest.mark.parametrize('normalize', (True, False))
+def test_posterior_prob_2d(likelihoods, prior, normalize):
+    posteriors = classify.posterior_prob(likelihoods, axis=1, prior=prior,
+                                         normalize=normalize)
+    if prior == [1/2, 1/2]: ## hard-coded b/c idk how to engineer tests
+        if normalize:
+            assert np.all(np.isclose(posteriors, [[4/5, 1/5], [1/5, 4/5]]))
+        else:
+            assert np.all(posteriors == np.array(likelihoods)/2)
+    elif prior is None:
+        if normalize:
+            assert np.all(np.isclose(posteriors, [[4/5, 1/5], [1/5, 4/5]]))
+        else:
+            assert np.all(posteriors == likelihoods)
+    elif prior == [1/3, 2/3]:
+        if normalize:
+            assert np.all(np.isclose(posteriors, [[2/3, 1/3], [1/9, 8/9]]))
+        else:
+            assert np.all(np.isclose(posteriors, [[4/3, 2/3], [1/3, 8/3]]))
     else:
         raise ValueError('nooo')
 
 
 @pytest.mark.parametrize('likelihoods', ([4,1],))
 @pytest.mark.parametrize('prior', (None, [1/2, 1/2], [1/3, 2/3]))
-def test_posterior_prob_1d(likelihoods: np.ndarray, prior):
-    posteriors = classify.posterior_prob(likelihoods, axis=0, prior=prior)
-    if prior is None or len(set(prior)) == 1:
-        assert np.all(np.isclose(posteriors, [4/5, 1/5]))
-    elif prior == [1/3, 2/3]: ## hard-coded, idk how to engineer tests
-        assert np.all(np.isclose(posteriors, [2/3, 1/3]))
+@pytest.mark.parametrize('normalize', (True, False))
+def test_posterior_prob_1d(likelihoods: np.ndarray, prior, normalize):
+    posteriors = classify.posterior_prob(likelihoods, axis=0, prior=prior,
+                                         normalize=normalize)
+    if prior == [1/2, 1/2]: ## hard-coded b/c idk how to engineer tests
+        if normalize:
+            assert np.all(np.isclose(posteriors, [4/5, 1/5]))
+        else:
+            assert np.all(posteriors == np.array(likelihoods)/2)
+    elif prior is None:
+        if normalize:
+            assert np.all(np.isclose(posteriors, [4/5, 1/5]))
+        else:
+            assert np.all(posteriors == likelihoods)
+    elif prior == [1/3, 2/3]:
+        if normalize:
+            assert np.all(np.isclose(posteriors, [2/3, 1/3]))
+        else:
+            assert np.all(np.isclose(posteriors, [4/3, 2/3]))
     else:
         raise ValueError('nooo')
 
