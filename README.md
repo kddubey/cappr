@@ -100,13 +100,12 @@ I may make these steps shorter later.
 
 While benchmarking this method on the
 [Winograd Schema Challenge (WSC)](https://cs.nyu.edu/~davise/papers/WinogradSchemas/WS.html),
-I found that [this paper](https://arxiv.org/abs/1806.02847) does somthing
-super similar:
+I found that [this paper](https://arxiv.org/abs/1806.02847) has an
+identical motivation:
 
 > Trinh, Trieu H., and Quoc V. Le. "A simple method for commonsense reasoning." arXiv preprint arXiv:1806.02847 (2018).
 
-One could also argue that this classification strategy is a zero-shot and
-autoregressive variant of (a small part of) the strategy in
+I saw the same motivation again in
 [this paper](https://arxiv.org/abs/2009.07118):
 
 > Schick, Timo, and Hinrich Schütze. "It's not just size that matters: Small language models are also few-shot learners." arXiv preprint arXiv:2009.07118 (2020).
