@@ -69,9 +69,9 @@ Create a more usable zero-shot text classification interface than
 With this package's `predict_proba` interface, you no longer have to:
   1. study sampled completion strings which aren't in your label set
   2. figure out how to map them back to the label set
-  3. figure out how to transform or point multi-token labels to single tokens
-  4. ignore your prior over multi-token labels
-  5. ignore the semantic richness of multi-token labels.
+  3. figure out how to transform or point multi-token labels to single tokens,
+     thus ignoring their semantic richness
+  4. ignore your prior over multi-token labels.
 
 This package just does one thing well: classification. It should be at least as
 good as CVS on single token label sets. It should be significantly better than
@@ -100,6 +100,18 @@ python -m pip install -e .
 ```
 
 I may make these steps shorter later.
+
+
+## User guide
+
+Models like `text-davinci-003` were trained with human feedback, so you 
+*could* simply ask it to classify the text you've given, e.g.,
+`What's the sentiment of the tweet?`, and expect good results. But IME, 
+thinking for a few minutes about how to frame your task as a prompt-completion 
+problem usually takes you far. Use these LMs for what they are; stay close to 
+the way GPT-3 was pretrained as much as possible!
+
+I'll expand on this section as I run more experiments and learn more.
 
 
 ## Related work
