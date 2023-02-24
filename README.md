@@ -32,14 +32,14 @@ classification tasks.
 
 ## Usage
 
-Take [this sentiment example](https://platform.openai.com/docs/guides/completion/classification)
-from the OpenAI text completion docs.
+Let's classify [this sentiment example](https://platform.openai.com/docs/guides/completion/classification)
+from the OpenAI text completion docs:
 
 ```python
 from lm_classification.classify import predict_proba
 
 text = 'I loved the new Batman movie!'
-prompt = f'Tweet: {text}' + '\n' + 'Sentiment:' 
+prompt = f'Tweet: {text}\nSentiment:'
 
 class_names = ('positive', 'neutral', 'negative')
 prior = (1/8, 1/8, 3/4) # Twitter amirite
@@ -64,12 +64,18 @@ for a slightly harder classification task.
 ## Motivation
 
 Create a more usable zero-shot text classification interface than
-[classification via sampling](https://platform.openai.com/docs/guides/completion/classification).
+[classification via sampling](https://platform.openai.com/docs/guides/completion/classification) (CVS).
 ([Cookbook here](https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit).)
-I don't want to be forced to transform multi-token labels to single tokens.
-I don't want to study completion strings which aren't in my label set. And I
-don't want to have to figure out how to map them back to the label set. I want
-to do what I need to do: classify.
+With this package's `predict_proba` interface, you no longer have to:
+  1. study sampled completion strings which aren't in your label set
+  2. figure out how to map them back to the label set
+  3. figure out how to transform or point multi-token labels to single tokens
+  4. ignore your prior over multi-token labels
+  5. ignore the semantic richness of multi-token labels.
+
+This package just does one thing well: classification. It should be at least as
+good as CVS on single token label sets. It should be significantly better than
+CVS on multi-token label sets.
 
 
 ## Setup
@@ -133,6 +139,7 @@ Code:
 - [ ] Add integration tests
   - [x] `utils` + `classify`
   - [ ] `classify`
+- [ ] Docs (not just docstrings)
 - [ ] Loosen requirements
 - [ ] Add setup instructions and file for conda
 - [ ] Install requirements as part of setup.py
@@ -155,4 +162,4 @@ disadvantages
   - [ ] Again, compare against sampling
 - [ ] Evaluate different aggregation functions. Currently taking mean, but
 there was no good motivation for that
-- [ ] Give this method a name. `cloze-it`?
+- [ ] Give this method and package a more specific name.
