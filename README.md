@@ -80,18 +80,18 @@ evaluate it on more datasets and tasks. But the goals are that:
 
 Requires Python 3.8+
 
-1. Clone this repo somewhere
+1. Activate your Python environment
+
+2. Clone this repo somewhere
 
    ```
    git clone https://github.com/kddubey/lm-classification.git
    ```
 
-2. Activate your Python environment
-
-3. `cd` to `lm-classification` and install
+3. Install it
 
    ```
-   python -m pip install .
+   python -m pip install lm-classification
    ```
 
 (Optional) For testing and demo-ing:
