@@ -88,7 +88,7 @@ Requires Python 3.8+
 
 2. Activate your Python environment
 
-3. Install this package
+3. `cd` to `lm-classification` and install
 
    ```
    python -m pip install .
