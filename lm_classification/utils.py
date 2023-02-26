@@ -29,14 +29,14 @@ model_to_cost_per_1k = {'text-ada-001': 0.0004,
 ## TODO: figure out how to get this automatically from openai, if possible
 
 
-class OpenAIAPICallInterrupt(Exception):
+class UserCanceled(Exception):
     pass
 
 
 def openai_api_call_is_ok(model: str, texts: list[str]):
     '''
     Prompts the user to input `y` or `n`, given info about cost. Raises
-    `APICallInterrupt` if the user inputs `n` to the prompt.
+    `UserCanceled` if the user inputs `n` to the prompt.
     '''
     texts = list(texts)
     num_tokens = sum(len(tokens) for tokens in
@@ -51,7 +51,7 @@ def openai_api_call_is_ok(model: str, texts: list[str]):
         output = input(f'This API call will cost you about ${cost} '
                        f'({num_tokens:_} tokens). Proceed? [y/n]: ')
     if output == 'n':
-        raise OpenAIAPICallInterrupt
+        raise UserCanceled
 
 
 def openai_method_retry(openai_method: Callable, max_num_tries: int=5,
