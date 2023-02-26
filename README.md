@@ -78,7 +78,7 @@ evaluate it on more datasets and tasks. But the goals are that:
 
 ## Setup
 
-Requires Python3.8+
+Requires Python 3.8+
 
 1. Clone this repo somewhere
 
