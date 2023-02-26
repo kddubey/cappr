@@ -5,6 +5,7 @@ what's the probability that the completion follows the prompt?
 Only supports LMs which you gotta pay for in
 [OpenAI's text completion API](https://platform.openai.com/docs/models/gpt-3).
 '''
+from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Optional, Sequence
 
@@ -26,17 +27,22 @@ end_of_text = ' <|endoftext|>\n\n'
 ## question.
 
 
-def gpt3_log_probs(texts: Sequence[str],
-                   model: str='text-ada-001') -> list[list[float]]:
+def gpt3_log_probs(texts: Sequence[str], model: str='text-ada-001',
+                   ask_if_ok: bool=False) -> list[list[float]]:
     '''
     Returns a list `log_probs` where `log_probs[i]` is the value of
     `'log_probs' -> 'token_logprobs'` (from the OpenAI Completion endpoint) for
     `texts[i]` using `model`.
+
+    If `ask_if_ok`, then you'll be notified of the cost of this call, and then
+    prompted to give the go-ahead.
     '''
     _batch_size = 20 ## max that the API can currently handle
     if isinstance(texts, str):
         ## Passing in a string will silently but majorly fail. Handle it
         texts = [texts]
+    if ask_if_ok:
+        utils.openai_api_call_is_ok(model, texts)
     log_probs = []
     with tqdm(total=len(texts), desc='Computing probs') as progress_bar:
         for texts_batch in utils.batch(texts, _batch_size):
@@ -72,12 +78,16 @@ def log_probs_completions(completions: Sequence[str],
 
 
 def log_probs_conditional(prompts: Sequence[str], completions: Sequence[str],
-                          model: str='text-ada-001', end_of_prompt: str=' '):
+                          model: str='text-ada-001', end_of_prompt: str=' ',
+                          ask_if_ok: bool=False):
     '''
     Returns a list `log_probs_completions` where `log_probs_completions[i][j]`
     is a list of the `model`'s estimates of log-probablities of each token in
     `completions[j]`, conditional on previous tokens in the completion and
     `prompts[i]`.
+
+    If `ask_if_ok`, then you'll be notified of the cost of this call, and then
+    prompted to give the go-ahead.
     '''
     ## str / non-Sequence[str] inputs silently, wastefully, and irreparably fail
     if isinstance(prompts, str) or not isinstance(prompts, Sequence):
@@ -88,7 +98,7 @@ def log_probs_conditional(prompts: Sequence[str], completions: Sequence[str],
     texts = [prompt + end_of_prompt + completion
              for prompt in prompts
              for completion in completions]
-    log_probs = gpt3_log_probs(texts, model=model)
+    log_probs = gpt3_log_probs(texts, model=model, ask_if_ok=ask_if_ok)
     ## Since log_probs is a flat list, we'll need to batch them by the size and
     ## order of completions to fulfill the spec.
     return [log_probs_completions(completions, log_probs_batch)
@@ -138,7 +148,8 @@ class Example:
     `prompt`: cointains the text to classify, perhaps with instructions
     `completions`: possible completions/answers to the `prompt`
     `prior`: (optional) a probability distribution over `completions`.
-    `end_of_prompt`: the string used to join the `prompt` and each completion.
+    `end_of_prompt`: (optional) the string used to join the `prompt` and each
+    completion.
     '''
     prompt: str
     completions: Sequence[str]
@@ -160,18 +171,22 @@ class Example:
 
 def log_probs_conditional_examples(examples: Sequence[Example],
                                    model: str='text-ada-001',
+                                   ask_if_ok: bool=False,
                                   ) -> list[list[list[float]]]:
     '''
     Returns a list `log_probs_completions` where `log_probs_completions[i][j]`
     is a list of the `model`'s estimates of log-probablities of each token in
     `examples[i].completions[j]`, conditional on previous tokens in the
     completion and `examples[i].prompt`.
+
+    If `ask_if_ok`, then you'll be notified of the cost of this call, and then
+    prompted to give the go-ahead.
     '''
     ## Flat list of prompts and their completions. Will post-process
     texts = [example.prompt + example.end_of_prompt + completion
              for example in examples
              for completion in example.completions]
-    log_probs_all = gpt3_log_probs(texts, model=model)
+    log_probs_all = gpt3_log_probs(texts, model=model, ask_if_ok=ask_if_ok)
     ## Flatten completions in same order as examples were flattened
     completions_all = [completion for example in examples
                        for completion in example.completions]
@@ -225,11 +240,15 @@ def posterior_prob(likelihoods: np.ndarray, axis: int,
 def predict_proba(prompts: Sequence[str], completions: Sequence[str],
                   prior: Optional[Sequence[float]]=None, end_of_prompt: str=' ',
                   model: str='text-ada-001',
-                  func: Callable[[Sequence[float]], float]=np.mean):
+                  func: Callable[[Sequence[float]], float]=np.mean,
+                  ask_if_ok: bool=False):
     '''
     Returns an array with shape `(len(prompts), len(completions))` called
     `pred_probs`, where `pred_probs[i, j]` is a `model`'s estimate of the
     probability of `completions[j]` given `prompts[i] + end_of_prompt`.
+
+    If `ask_if_ok`, then you'll be notified of the cost of this call, and then
+    prompted to give the go-ahead.
     '''
     if prior is not None and len(completions) != len(prior):
         raise ValueError( 'completions and prior are different lengths: '
@@ -239,7 +258,7 @@ def predict_proba(prompts: Sequence[str], completions: Sequence[str],
     _check_func(func)
     log_probs_all = log_probs_conditional(prompts, completions,
                                           end_of_prompt=end_of_prompt,
-                                          model=model)
+                                          model=model, ask_if_ok=ask_if_ok)
     likelihoods = agg_log_probs(log_probs_all, func=func)
     ## If there's only 1 completion, normalizing will cause the prob to
     ## trivially be 1! So let's not normalize in that case, and hope the user
@@ -250,7 +269,8 @@ def predict_proba(prompts: Sequence[str], completions: Sequence[str],
 
 def predict_proba_examples(examples: Sequence[Example],
                            model: str='text-ada-001',
-                           func: Callable[[Sequence[float]], float]=np.mean):
+                           func: Callable[[Sequence[float]], float]=np.mean,
+                           ask_if_ok: bool=False):
     '''
     Returns a list, `pred_probs`, where `pred_probs[i][j]` is a `model`'s
     estimate of the probability of `examples[i].completions[j]` given
@@ -258,10 +278,14 @@ def predict_proba_examples(examples: Sequence[Example],
 
     If the number of completions per example is a constant `k`, then an array
     with shape `(len(examples), k)` is returned instead.
+
+    If `ask_if_ok`, then you'll be notified of the cost of this call, and then
+    prompted to give the go-ahead.
     '''
     ## Check func here so that we don't hit the API for nothing
     _check_func(func)
-    log_probs_all = log_probs_conditional_examples(examples, model=model)
+    log_probs_all = log_probs_conditional_examples(examples, model=model,
+                                                   ask_if_ok=ask_if_ok)
     likelihoods_all = agg_log_probs(log_probs_all, func=func)
     ## If an example has just 1 completion, normalizing will cause the prob to
     ## trivially be 1! So let's not normalize in that case, and hope the user

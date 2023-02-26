@@ -10,39 +10,19 @@ The method is fleshed out
 [here, in `demos/copa.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demos/copa.ipynb).
 
 
-## Disclaimers
-
-This package only supports [language models (LMs) in OpenAI's text completion API](https://platform.openai.com/docs/models/gpt-3),
-which you gotta pay for. Prices are [here](https://openai.com/api/pricing/).
-
-Moreover, this code may not be ready for production use. And I still need to
-evaluate the method on more classification datasets and tasks.
-
-If you're something of an ML engineer, and you have labeled and unlabeled text, 
-there are likely far better alternatives to this method.
-[PET training](http://timoschick.com/explanatory%20notes/2020/10/23/pattern-exploiting-training.html),
-[textual entailment](https://huggingface.co/tasks/zero-shot-classification), or
-[plain old BERT embeddings](https://huggingface.co/docs/transformers/tasks/sequence_classification)
-are gonna be way less expensive, and are less bad for the environment. This 
-method is just trying to beat
-[classification via sampling](https://platform.openai.com/docs/guides/completion/classification),
-which targets software developers working on zero-shot or few-shot text 
-classification tasks.
-
-
 ## Usage
 
 Let's classify [this sentiment example](https://platform.openai.com/docs/guides/completion/classification)
-from the OpenAI text completion docs:
+from the OpenAI text completion docs.
 
 ```python
 from lm_classification.classify import predict_proba
 
-text = 'I loved the new Batman movie!'
-prompt = f'Tweet: {text}\nSentiment:'
+tweet = 'I loved the new Batman movie!'
+prompt = f'Tweet: {tweet}\nSentiment:'
 
 class_names = ('positive', 'neutral', 'negative')
-prior = (1/8, 1/8, 3/4) # Twitter amirite
+prior       = (   1/8,        1/8,        3/4   )
 
 pred_probs = predict_proba(prompts=[prompt],
                            completions=class_names,
@@ -61,6 +41,23 @@ See [`demos/copa.ipynb`](https://github.com/kddubey/lm-classification/blob/main/
 for a slightly harder classification task.
 
 
+## Disclaimers
+
+This package only supports [language models (LMs) in OpenAI's text completion API](https://platform.openai.com/docs/models/gpt-3),
+which you gotta pay for. Prices are [here](https://openai.com/api/pricing/).
+
+If you're something of an ML engineer, and you have labeled and unlabeled text, 
+there are likely far better alternatives to this method.
+[PET training](http://timoschick.com/explanatory%20notes/2020/10/23/pattern-exploiting-training.html),
+[textual entailment](https://huggingface.co/tasks/zero-shot-classification), or
+[plain old BERT embeddings](https://huggingface.co/docs/transformers/tasks/sequence_classification)
+are gonna be way less expensive, and are less bad for the environment. This 
+method is just trying to beat
+[classification via sampling](https://platform.openai.com/docs/guides/completion/classification),
+which targets software developers working on zero-shot or few-shot text 
+classification tasks.
+
+
 ## Motivation
 
 Create a more usable zero-shot text classification interface than
@@ -73,33 +70,39 @@ With this package's `predict_proba` interface, you no longer have to:
      ignoring their semantics if they were transformed
   4. ignore your prior over multi-token labels.
 
-This package just does one thing well: classification. It should be at least as
-good as CVS on single token label sets. It should be significantly better than
-CVS on multi-token label sets.
+This package tries to do one thing well: classification. I still need to
+evaluate it on more datasets and tasks. But the goals are that:
+  1. It's at least as good as CVS on single token label sets
+  2. It's significantly better than CVS on multi-token label sets.
 
 
 ## Setup
 
-You can create a new virtual environment, or pray that things don't break in
-an existing one. I'll loosen the requirements later.
+Requires Python3.8+
 
-(This package isn't published, so might as well install it in editable mode.)
+1. Clone this repo somewhere
 
-```bash
-cd your/venvs
+   ```
+   git clone https://github.com/kddubey/lm-classification.git
+   ```
 
-python -m venv lm-research
+2. Activate your Python environment
 
-source lm-research/bin/activate
+3. Install this package
 
-python -m pip install wheel setuptools --upgrade pip
+   ```
+   python -m pip install .
+   ```
 
-python -m pip install -r requirements.txt
+(Optional) For testing and demo-ing:
 
-python -m pip install -e .
-```
+1. Create a new Python 3.8+ environment
 
-I may make these steps shorter later.
+2. Install the requirements
+
+   ```
+   python -m pip install -r requirements.txt
+   ```
 
 
 ## User guide
@@ -114,7 +117,7 @@ thinking for a few minutes about how to frame your task as a prompt-completion
 problem usually takes you far. For example, the
 [`demos/copa.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demos/copa.ipynb)
 notebook demonstrates that a question approach to the task causes accuracy to
-dip from 0.92 to 0.87.
+dip from 0.91 to 0.87.
 
 I'll expand on this guide as I run more experiments and learn more.
 
@@ -136,13 +139,14 @@ I saw the same motivation again in
 
 ## Test code
 
-In your virtual environment, install `pytest-mock`:
+If you'd like to develop this package, then in your environment, install 
+`pytest-mock`:
 
 ```
 python -m pip install pytest-mock
 ```
 
-Then run
+And run
 
 ```
 pytest
@@ -156,10 +160,10 @@ Code:
 - [ ] Add integration tests
   - [x] `utils` + `classify`
   - [ ] `classify`
+- [x] Loosen dependencies
+- [x] Install dependencies as part of setup.py
 - [ ] Docs (not just docstrings)
-- [ ] Loosen requirements
-- [ ] Add setup instructions and file for conda
-- [ ] Install requirements as part of setup.py
+- [ ] Publish to PyPI?
 
 Research: evaluate on more tasks, and understand its relative advantages and
 disadvantages vs other classification methods
