@@ -52,10 +52,8 @@ there are likely far better alternatives to this method.
 [textual entailment](https://huggingface.co/tasks/zero-shot-classification), or
 [plain old BERT embeddings](https://huggingface.co/docs/transformers/tasks/sequence_classification)
 are gonna be way less expensive, and are less bad for the environment. This 
-method is just trying to beat
-[classification via sampling](https://platform.openai.com/docs/guides/completion/classification),
-which targets software developers working on zero-shot or few-shot text 
-classification tasks.
+project is mostly to assess my own understanding of how language models work.
+And to practice Python.
 
 
 ## Motivation
@@ -72,8 +70,8 @@ With this package's `predict_proba` interface, you no longer have to:
 
 This package tries to do one thing well: classification. I still need to
 evaluate it on more datasets and tasks. But the goals are that:
-  1. It's at least as good as CVS on single token label sets
-  2. It's significantly better than CVS on multi-token label sets.
+  1. It's as good as CVS on single token label sets
+  2. It's more usable than CVS on multi-token label sets.
 
 
 ## Setup
@@ -94,6 +92,8 @@ Requires Python 3.8+
    python -m pip install lm-classification
    ```
 
+4. Set the environment variable `OPENAI_API_KEY`.
+
 (Optional) For testing and demo-ing:
 
 1. Create a new Python 3.8+ environment
@@ -103,23 +103,6 @@ Requires Python 3.8+
    ```
    python -m pip install -r requirements.txt
    ```
-
-
-## User guide
-
-**Use these LMs for what they are; stay close to the way GPT-3 was pretrained as
-much as possible**
-
-Models like `text-davinci-003` were trained with human feedback, so you 
-*could* simply ask it to classify the text you've given, e.g.,
-`What's the sentiment of the tweet?`, and expect good results. But IME, 
-thinking for a few minutes about how to frame your task as a prompt-completion 
-problem usually takes you far. For example, the
-[`demos/copa.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demos/copa.ipynb)
-notebook demonstrates that a question approach to the task causes accuracy to
-dip from 0.91 to 0.87.
-
-I'll expand on this guide as I run more experiments and learn more.
 
 
 ## Related work
@@ -156,11 +139,14 @@ pytest
 ## Todo
 
 Code:
-- [x] Add unit tests
+- [ ] Add unit tests
+  - [x] `classify`
+  - [x] `utils.batch`
+  - [ ] `utils.api`
 - [ ] Add integration tests
   - [x] `utils` + `classify`
   - [ ] `classify`
-- [x] Loosen dependencies
+- [x] Loosen dependencies, separate from requirements
 - [x] Install dependencies as part of setup.py
 - [ ] Docs (not just docstrings)
 - [ ] Publish to PyPI?
@@ -169,7 +155,8 @@ Research: evaluate on more tasks, and understand its relative advantages and
 disadvantages vs other classification methods
 
 - [ ] Compare against zero-shot sampling
-- [ ] Expand user guide
+- [ ] Create a user guide, build a table of results comparing competing
+  approaches on statistical performance, cost, and computation
 - [ ] Compare against few-shot embeddings
 - [ ] More SuperGLUE tasks
 - [ ] Understand how sampling works, make a computational comparison

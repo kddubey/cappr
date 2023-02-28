@@ -10,13 +10,11 @@ from dataclasses import dataclass
 from typing import Callable, Optional, Sequence
 
 import numpy as np
-import openai
-from tqdm.auto import tqdm
 
-from lm_classification import utils
+from lm_classification.utils import api, batch
 
 
-_DUMMY_FLOATS: list[float] = list(np.linspace(0, 1, 3))
+_DUMMY_FLOATS = [0, -0.5, -1]
 ## for checking inputs which are supposed to be functions of this type of data
 
 
@@ -27,7 +25,7 @@ end_of_text = ' <|endoftext|>\n\n'
 ## question.
 
 
-def gpt3_log_probs(texts: Sequence[str], model: str='text-ada-001',
+def gpt3_log_probs(texts: Sequence[str], model: api.Model,
                    ask_if_ok: bool=False) -> list[list[float]]:
     '''
     Returns a list `log_probs` where `log_probs[i]` is the value of
@@ -37,26 +35,10 @@ def gpt3_log_probs(texts: Sequence[str], model: str='text-ada-001',
     If `ask_if_ok`, then you'll be notified of the cost of this call, and then
     prompted to give the go-ahead.
     '''
-    _batch_size = 20 ## max that the API can currently handle
-    if isinstance(texts, str):
-        ## Passing in a string will silently but majorly fail. Handle it
-        texts = [texts]
-    if ask_if_ok:
-        utils.openai_api_call_is_ok(model, texts)
-    log_probs = []
-    with tqdm(total=len(texts), desc='Computing probs') as progress_bar:
-        for texts_batch in utils.batch(texts, _batch_size):
-            response = utils.openai_method_retry(openai.Completion.create,
-                                                 model=model,
-                                                 prompt=texts_batch,
-                                                 ## rest should be hard-coded
-                                                 max_tokens=0,
-                                                 logprobs=1,
-                                                 echo=True)
-            log_probs.extend([choice['logprobs']['token_logprobs']
-                              for choice in response['choices']])
-            progress_bar.update(len(texts_batch))
-    return log_probs
+    choices = api.gpt3_complete(texts, ask_if_ok=ask_if_ok, model=model,
+                                ## rest must be hard-coded
+                                max_tokens=0, logprobs=1, echo=True)
+    return [choice['logprobs']['token_logprobs'] for choice in choices]
 
 
 def log_probs_completions(completions: Sequence[str],
@@ -71,14 +53,14 @@ def log_probs_completions(completions: Sequence[str],
                          f'{len(completions)}, {len(log_probs)}.')
     log_probs_completions: list[list[float]] = []
     for completion, log_probs in zip(completions, log_probs):
-        num_completion_tokens = len(utils.gpt2_tokenizer(completion)
+        num_completion_tokens = len(api.gpt2_tokenizer(completion)
                                     ['input_ids'])
         log_probs_completions.append(log_probs[-num_completion_tokens:])
     return log_probs_completions
 
 
 def log_probs_conditional(prompts: Sequence[str], completions: Sequence[str],
-                          model: str='text-ada-001', end_of_prompt: str=' ',
+                          model: api.Model, end_of_prompt: str=' ',
                           ask_if_ok: bool=False):
     '''
     Returns a list `log_probs_completions` where `log_probs_completions[i][j]`
@@ -103,12 +85,13 @@ def log_probs_conditional(prompts: Sequence[str], completions: Sequence[str],
     ## order of completions to fulfill the spec.
     return [log_probs_completions(completions, log_probs_batch)
             for log_probs_batch
-            in utils.batch(log_probs, size=len(completions))]
+            in batch.constant(log_probs, size=len(completions))]
 
 
 def _check_prior(prior: Optional[Sequence[float]]=None):
     '''
-    Raises an error if `prior` is not a 1-D `Sequence` which sums to 1.
+    Raises an error if `prior` is not `None` or a 1-D `Sequence` which sums to
+    1.
     '''
     if prior is None: ## it's a uniform prior, no need to check anything
         return None
@@ -146,10 +129,13 @@ class Example:
     This applies to, e.g., [COPA](https://people.ict.usc.edu/~gordon/copa.html).
 
     `prompt`: cointains the text to classify, perhaps with instructions
+
     `completions`: possible completions/answers to the `prompt`
+
     `prior`: (optional) a probability distribution over `completions`.
-    `end_of_prompt`: (optional) the string used to join the `prompt` and each
-    completion.
+
+    `end_of_prompt`: (default: `' '`) the string used to join the `prompt` and
+    each completion.
     '''
     prompt: str
     completions: Sequence[str]
@@ -170,7 +156,7 @@ class Example:
 
 
 def log_probs_conditional_examples(examples: Sequence[Example],
-                                   model: str='text-ada-001',
+                                   model: api.Model,
                                    ask_if_ok: bool=False,
                                   ) -> list[list[list[float]]]:
     '''
@@ -194,8 +180,8 @@ def log_probs_conditional_examples(examples: Sequence[Example],
                                                       log_probs_all)
     ## Batch by completions to fulfill the spec
     completions_sizes = [len(example.completions) for example in examples]
-    return list(utils.batch_variable(log_probs_completions_all,
-                                     sizes=completions_sizes))
+    return list(batch.variable(log_probs_completions_all,
+                               sizes=completions_sizes))
 
 
 def agg_log_probs(log_probs: Sequence[Sequence[Sequence[float]]],
@@ -238,8 +224,8 @@ def posterior_prob(likelihoods: np.ndarray, axis: int,
 
 
 def predict_proba(prompts: Sequence[str], completions: Sequence[str],
-                  prior: Optional[Sequence[float]]=None, end_of_prompt: str=' ',
-                  model: str='text-ada-001',
+                  model: api.Model, prior: Optional[Sequence[float]]=None,
+                  end_of_prompt: str=' ',
                   func: Callable[[Sequence[float]], float]=np.mean,
                   ask_if_ok: bool=False):
     '''
@@ -268,7 +254,7 @@ def predict_proba(prompts: Sequence[str], completions: Sequence[str],
 
 
 def predict_proba_examples(examples: Sequence[Example],
-                           model: str='text-ada-001',
+                           model: api.Model,
                            func: Callable[[Sequence[float]], float]=np.mean,
                            ask_if_ok: bool=False):
     '''

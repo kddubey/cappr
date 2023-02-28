@@ -1,5 +1,5 @@
 '''
-Unit tests `lm_classification.utils`.
+Unit tests `lm_classification.utils.batch`.
 '''
 from __future__ import annotations
 import pytest
@@ -22,8 +22,8 @@ def lst():
 
 
 @pytest.mark.parametrize('size', (2, 3))
-def test_batch(lst: list, size: int):
-    batches = list(utils.batch(lst, size))
+def test_constant(lst: list, size: int):
+    batches = list(utils.batch.constant(lst, size))
 
     _test_partition_and_order(batches, lst)
 
@@ -37,7 +37,7 @@ def test_batch(lst: list, size: int):
 
 @pytest.mark.parametrize('sizes', ([2,4,3,1], [10]))
 def test_batch_variable(lst: list, sizes):
-    batches = list(utils.batch_variable(lst, sizes))
+    batches = list(utils.batch.variable(lst, sizes))
 
     _test_partition_and_order(batches, lst)
 
