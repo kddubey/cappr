@@ -167,7 +167,8 @@ disadvantages vs other classification methods
 - [ ] Compare against few-shot embeddings
 - [ ] More SuperGLUE tasks
 - [ ] Understand how sampling works, make a computational comparison
-  - [ ] Assume I have full freedom to decide how inference works
+  - [ ] Assume I have full freedom to decide how inference works. Sketch out 
+  parallelization, demo w/ GPT-2
 - [ ] Calibration
   - [ ] (easy) Is the prior actually effective? Downsample and see
 - [ ] More real world or harder tasks
