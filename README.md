@@ -47,7 +47,7 @@ This package only supports [language models (LMs) in OpenAI's text completion AP
 which you gotta pay for. Prices are [here](https://openai.com/api/pricing/).
 
 If you're something of an ML engineer, and you have labeled and unlabeled text, 
-there are likely far better alternatives to this method.
+there are likely far better alternatives to this slightly hacky method.
 [PET training](http://timoschick.com/explanatory%20notes/2020/10/23/pattern-exploiting-training.html),
 [textual entailment](https://huggingface.co/tasks/zero-shot-classification), or
 [plain old BERT embeddings](https://huggingface.co/docs/transformers/tasks/sequence_classification)
@@ -56,8 +56,7 @@ are gonna be way less expensive, and are less bad for the environment.
 
 ## Motivation
 
-In all honesty, I'm working on this project mostly to improve my understanding
-of how LMs work.
+Improve my understanding of how LMs work. Big and small. With and without RLHF.
 
 Product-y motivation: create a more usable zero-shot text classification
 interface than
