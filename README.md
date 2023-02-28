@@ -56,8 +56,8 @@ are gonna be way less expensive, and are less bad for the environment.
 
 ## Motivation
 
-In all honesty, I'm working on this project mostly to assess my understanding of
-how LMs work. And to practice Python.
+In all honesty, I'm working on this project mostly to improve my understanding
+of how LMs work.
 
 Product-y motivation: create a more usable zero-shot text classification
 interface than
