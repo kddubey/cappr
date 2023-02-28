@@ -51,14 +51,16 @@ there are likely far better alternatives to this method.
 [PET training](http://timoschick.com/explanatory%20notes/2020/10/23/pattern-exploiting-training.html),
 [textual entailment](https://huggingface.co/tasks/zero-shot-classification), or
 [plain old BERT embeddings](https://huggingface.co/docs/transformers/tasks/sequence_classification)
-are gonna be way less expensive, and are less bad for the environment. This 
-project is mostly to assess my own understanding of how language models work.
-And to practice Python.
+are gonna be way less expensive, and are less bad for the environment.
 
 
 ## Motivation
 
-Create a more usable zero-shot text classification interface than
+In all honesty, I'm working on this project mostly to assess my understanding of
+how LMs work. And to practice Python.
+
+Product-y motivation: create a more usable zero-shot text classification
+interface than
 [classification via sampling](https://platform.openai.com/docs/guides/completion/classification) (CVS).
 ([Cookbook here](https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit).)
 With this package's `predict_proba` interface, you no longer have to:
@@ -68,10 +70,15 @@ With this package's `predict_proba` interface, you no longer have to:
      ignoring their semantics if they were transformed
   4. ignore your prior over multi-token labels.
 
+I'm not sure how cumbersome users find these issues. In my last job, I worked
+on a challenging multi-class multi-token problem. Our team took at least a few
+days to address them.
+
 This package tries to do one thing well: classification. I still need to
 evaluate it on more datasets and tasks. But the goals are that:
-  1. It's as good as CVS on single token label sets
-  2. It's more usable than CVS on multi-token label sets.
+  1. It performs as well as CVS on single token label sets
+  2. It's significantly more usable than CVS on multi-token label sets
+  3. It's not much more computation than CVS.
 
 
 ## Setup
@@ -148,6 +155,7 @@ Code:
   - [ ] `classify`
 - [x] Loosen dependencies, separate from requirements
 - [x] Install dependencies as part of setup.py
+- [ ] Create a notebook template
 - [ ] Docs (not just docstrings)
 - [ ] Publish to PyPI?
 
