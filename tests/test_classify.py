@@ -5,9 +5,12 @@ from __future__ import annotations
 import pytest
 
 import numpy as np
+import tiktoken
 
 from lm_classification import classify
-from lm_classification.utils.api import gpt2_tokenizer
+
+
+tokenizer = tiktoken.get_encoding('gpt2')
 
 
 @pytest.fixture(scope='module')
@@ -38,7 +41,7 @@ def _log_probs(texts: list[str]) -> list[list[float]]:
     Returns a list `log_probs` where `log_probs[i]` is a list of random
     log-probabilities whose length is the number of tokens in `texts[i]`.
     '''
-    sizes = [len(tokens) for tokens in gpt2_tokenizer(texts)['input_ids']]
+    sizes = [len(tokenizer.encode(text)) for text in texts]
     return [list(np.log(np.random.uniform(size=size)))
             for size in sizes]
 
@@ -67,10 +70,16 @@ def test_gpt3_log_probs(mocker, texts, model):
             assert isinstance(log_prob, float)
 
 
+def mock_tiktoken_encoding_for_model(model):
+    return tokenizer
+
+
 @pytest.mark.parametrize('log_probs', ([list(range(10)), list(range(10))],))
-def test_log_probs_completions(completions, log_probs):
+def test_log_probs_completions(mocker, completions, log_probs, model):
+    mocker.patch('tiktoken.encoding_for_model',
+                 mock_tiktoken_encoding_for_model)
     log_probs_completions = classify.log_probs_completions(completions,
-                                                           log_probs)
+                                                           log_probs, model)
     assert log_probs_completions == [[8,9], [9]]
 
 
@@ -78,7 +87,7 @@ def mock_gpt3_log_probs(texts, model, **kwargs):
     return _log_probs(texts)
 
 
-def mock_log_probs_completions(completions, log_probs):
+def mock_log_probs_completions(completions, log_probs, model):
     return _log_probs(completions)
 
 

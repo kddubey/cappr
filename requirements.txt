@@ -8,6 +8,6 @@ pandas==1.5.3             ## notebooks
 pytest==7.2.1       ## tests
 pytest-mock==3.10.0 ## tests
 tqdm==4.64.1
-transformers==4.26.1
+tiktoken==0.2.0
 widgetsnbextension==3.6.1 ## notebooks (VS Code has trouble w/ later versions)
 -e .

@@ -55,7 +55,8 @@ are gonna be way less expensive, and are less bad for the environment.
 
 ## Motivation
 
-Improve my understanding of how LMs work. Big and small. With and without RLHF.
+Improve my understanding of how to use autoregressive LMs for classification.
+Big and small. With and without RLHF.
 
 Product-y motivation: create a more usable zero-shot text classification
 interface than
@@ -147,7 +148,6 @@ Code:
   - [ ] `classify`
 - [x] Loosen dependencies, separate from requirements
 - [x] Install dependencies as part of setup.py
-- [ ] `tiktoken` instead of `transformers`
 - [ ] Create a notebook template
 - [ ] Docs (not just docstrings)
 - [ ] Publish to PyPI?
@@ -155,7 +155,6 @@ Code:
 Research: evaluate on more tasks, and understand its relative advantages and
 disadvantages vs other classification methods
 
-- [ ] Compare against zero-shot sampling
 - [ ] Create a user guide, build a table of results comparing competing
   approaches on statistical performance, cost, and computation
 - [ ] Compare against few-shot embeddings

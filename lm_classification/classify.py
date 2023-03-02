@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional, Sequence
 
 import numpy as np
+import tiktoken
 
 from lm_classification.utils import api, batch
 
@@ -42,7 +43,8 @@ def gpt3_log_probs(texts: Sequence[str], model: api.Model,
 
 
 def log_probs_completions(completions: Sequence[str],
-                          log_probs: Sequence[Sequence[float]]):
+                          log_probs: Sequence[Sequence[float]],
+                          model: api.Model):
     '''
     Returns a list `log_probs_completions` where `log_probs_completions[i]` is a
     list of conditional log-probablities for each token in `completions[i]`,
@@ -52,9 +54,9 @@ def log_probs_completions(completions: Sequence[str],
         raise ValueError( 'Different number of completions and log_probs: '
                          f'{len(completions)}, {len(log_probs)}.')
     log_probs_completions: list[list[float]] = []
+    tokenizer = tiktoken.encoding_for_model(model)
     for completion, log_probs in zip(completions, log_probs):
-        num_completion_tokens = len(api.gpt2_tokenizer(completion)
-                                    ['input_ids'])
+        num_completion_tokens = len(tokenizer.encode(completion))
         log_probs_completions.append(log_probs[-num_completion_tokens:])
     return log_probs_completions
 
@@ -83,7 +85,7 @@ def log_probs_conditional(prompts: Sequence[str], completions: Sequence[str],
     log_probs = gpt3_log_probs(texts, model=model, ask_if_ok=ask_if_ok)
     ## Since log_probs is a flat list, we'll need to batch them by the size and
     ## order of completions to fulfill the spec.
-    return [log_probs_completions(completions, log_probs_batch)
+    return [log_probs_completions(completions, log_probs_batch, model)
             for log_probs_batch
             in batch.constant(log_probs, size=len(completions))]
 
@@ -177,7 +179,7 @@ def log_probs_conditional_examples(examples: Sequence[Example],
     completions_all = [completion for example in examples
                        for completion in example.completions]
     log_probs_completions_all = log_probs_completions(completions_all,
-                                                      log_probs_all)
+                                                      log_probs_all, model)
     ## Batch by completions to fulfill the spec
     completions_sizes = [len(example.completions) for example in examples]
     return list(batch.variable(log_probs_completions_all,

@@ -10,8 +10,8 @@ import time
 from typing import Any, Callable, Literal, Mapping, Optional, Sequence, get_args
 
 import openai
+import tiktoken
 from tqdm.auto import tqdm
-from transformers import GPT2Tokenizer
 
 from lm_classification.utils import batch
 
@@ -20,11 +20,6 @@ logger = logging.getLogger(__name__)
 
 
 openai.api_key = os.getenv('OPENAI_API_KEY')
-
-
-gpt2_tokenizer: GPT2Tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
-## TODO: I'm not sure whether GPT2Tokenizer or GPT2TokenizerFast is used for the
-## text models in the OpenAI API
 
 
 Model = Literal['text-ada-001',
@@ -71,8 +66,11 @@ def _openai_api_call_is_ok(model: Model, texts: list[str], max_tokens: int=0,
     `UserCanceled` if the user inputs `n` to the prompt.
     '''
     texts = list(texts)
-    _num_tokens_prompts = sum(len(tokens) for tokens in
-                              gpt2_tokenizer(texts)['input_ids'])
+    try:
+        tokenizer = tiktoken.encoding_for_model(model)
+    except KeyError: ## that's fine, we just need an approximation
+        tokenizer = tiktoken.get_encoding('gpt2')
+    _num_tokens_prompts = sum(len(tokenizer.encode(text)) for text in texts)
     _num_tokens_completions = len(texts) * max_tokens ## upper bound ofc
     num_tokens = _num_tokens_prompts + _num_tokens_completions
     cost_per_1k_tokens = cost_per_1k_tokens or model_to_cost_per_1k.get(model)
