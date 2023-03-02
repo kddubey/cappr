@@ -1,13 +1,10 @@
-datasets==2.10.0          ## notebooks
-ipywidgets==7.7.2         ## notebooks (VS Code has trouble w/ later versions)
-jupyter==1.0.0            ## notebooks
-jupyterlab_widgets==1.1.1 ## notebooks (VS Code has trouble w/ later versions)
+datasets==2.10.0 ## notebooks
+jupyter==1.0.0   ## notebooks
 numpy==1.24.2
 openai==0.27.0
-pandas==1.5.3             ## notebooks
+pandas==1.5.3    ## notebooks
 pytest==7.2.1       ## tests
 pytest-mock==3.10.0 ## tests
 tqdm==4.64.1
 tiktoken==0.2.0
-widgetsnbextension==3.6.1 ## notebooks (VS Code has trouble w/ later versions)
 -e .
