@@ -6,8 +6,7 @@ prompt?
 
 The method is fleshed out
 [here in CrossValidated](https://stats.stackexchange.com/q/601159/337906)
-(I'm chicxulub). The first demo of this method is
-[here, in `demos/copa.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demos/copa.ipynb).
+(I'm chicxulub).
 
 
 ## Usage
@@ -38,7 +37,7 @@ print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
 ```
 
 See [`demos/copa.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demos/copa.ipynb)
-for a slightly harder classification task.
+for a harder classification task.
 
 
 ## Disclaimers
@@ -69,15 +68,9 @@ With this package's `predict_proba` interface, you no longer have to:
      ignoring their semantics if they were transformed
   4. ignore your prior over multi-token labels.
 
-I'm not sure how cumbersome users find these issues. In my last job, I worked
-on a challenging multi-class multi-token problem. Our team took at least a few
-days to address them.
-
-This package tries to do one thing well: classification. I still need to
-evaluate it on more datasets and tasks. But the goals are that:
-  1. It performs as well as CVS on single token label sets
-  2. It's significantly more usable than CVS on multi-token label sets
-  3. It's not much more computation than CVS.
+This package tries to do one thing well: classification. I'll assess it across
+these dimensions: statistical performance, computational performance, and
+usability.
 
 
 ## Setup
@@ -154,6 +147,7 @@ Code:
   - [ ] `classify`
 - [x] Loosen dependencies, separate from requirements
 - [x] Install dependencies as part of setup.py
+- [ ] `tiktoken` instead of `transformers`
 - [ ] Create a notebook template
 - [ ] Docs (not just docstrings)
 - [ ] Publish to PyPI?

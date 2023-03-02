@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 import os
 import time
-from typing import Any, Callable, Literal, Mapping, Sequence, get_args
+from typing import Any, Callable, Literal, Mapping, Optional, Sequence, get_args
 
 import openai
 from tqdm.auto import tqdm
@@ -64,7 +64,8 @@ class UserCanceled(Exception):
     pass
 
 
-def _openai_api_call_is_ok(model: Model, texts: list[str], max_tokens: int=0):
+def _openai_api_call_is_ok(model: Model, texts: list[str], max_tokens: int=0,
+                           cost_per_1k_tokens: Optional[float]=None):
     '''
     Prompts the user to input `y` or `n`, given info about cost. Raises
     `UserCanceled` if the user inputs `n` to the prompt.
@@ -74,7 +75,7 @@ def _openai_api_call_is_ok(model: Model, texts: list[str], max_tokens: int=0):
                               gpt2_tokenizer(texts)['input_ids'])
     _num_tokens_completions = len(texts) * max_tokens ## upper bound ofc
     num_tokens = _num_tokens_prompts + _num_tokens_completions
-    cost_per_1k_tokens = model_to_cost_per_1k.get(model)
+    cost_per_1k_tokens = cost_per_1k_tokens or model_to_cost_per_1k.get(model)
     if cost_per_1k_tokens is None:
         cost = 'unknown'
     else:
@@ -116,4 +117,39 @@ def gpt3_complete(texts: Sequence[str], model: Model, ask_if_ok: bool=False,
                                            **openai_completion_kwargs)
             choices.extend(response['choices'])
             progress_bar.update(len(texts_batch))
+    return choices
+
+
+def gpt_chat_complete(texts: Sequence[str], ask_if_ok: bool=False,
+                      max_tokens: int=5,
+                      system_msg: str=('You are an assistant which '
+                                       'classifies text.'),
+                      **openai_chat_kwargs) -> list[Mapping[str, Any]]:
+    '''
+    Returns a list `choices` where `choices[i]` is the value of
+    `'choices'` (from the OpenAI Chat endpoint) for `texts[i]` using model
+    `gpt-3.5-turbo`.
+
+    #### Note that, by default, `max_tokens` to generate is 5.
+
+    If `ask_if_ok`, then you'll be notified of the cost of this call, and then
+    prompted to give the go-ahead.
+    '''
+    if isinstance(texts, str):
+        texts = [texts]
+    model = 'gpt-3.5-turbo'
+    if ask_if_ok:
+        _openai_api_call_is_ok(model=model, texts=texts, max_tokens=max_tokens,
+                               cost_per_1k_tokens=0.002)
+    choices = []
+    for text in tqdm(texts, total=len(texts), desc='Completing chats'):
+        messages = [{'role': 'system', 'content': system_msg},
+                    {'role': 'user', 'content': text}]
+        response = openai_method_retry(openai.ChatCompletion.create,
+                                       model=model,
+                                       messages=messages,
+                                       max_tokens=max_tokens,
+                                       temperature=0,
+                                       **openai_chat_kwargs)
+        choices.extend(response['choices'])
     return choices

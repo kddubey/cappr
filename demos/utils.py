@@ -20,3 +20,15 @@ def display_df(df: pd.DataFrame, columns: list[str], num_rows: int=3):
             ## `Styler.apply` and `.applymap` are not compatible with non-unique
             ## index or columns
             display(df_head_styled)
+
+
+def remove_suffix(string: str, suffix: str):
+    if string.endswith(suffix):
+        return string[:-len(suffix)]
+    return string
+
+
+def remove_prefix(string: str, prefix: str) -> str:
+    if string.startswith(prefix):
+        return string[len(prefix):]
+    return string
