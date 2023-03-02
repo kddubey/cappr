@@ -55,11 +55,11 @@ def mock_openai_method_retry(openai_method, prompt, **kwargs):
 
 
 @pytest.mark.parametrize('texts', (['a b', 'c'],))
-def test_gpt3_log_probs(mocker, texts, model):
+def test_gpt_log_probs(mocker, texts, model):
     ## We ofc shouldn't actually hit any endpoints during testing
     mocker.patch('lm_classification.utils.api.openai_method_retry',
                  mock_openai_method_retry)
-    log_probs = classify.gpt3_log_probs(texts, model)
+    log_probs = classify.gpt_log_probs(texts, model)
     ## Since the endpoint is mocked out, the only thing left to test is the
     ## the list-extend loop. Namely, check the overall size, and types
     assert len(log_probs) == len(texts)
@@ -83,7 +83,7 @@ def test_log_probs_completions(mocker, completions, log_probs, model):
     assert log_probs_completions == [[8,9], [9]]
 
 
-def mock_gpt3_log_probs(texts, model, **kwargs):
+def mock_gpt_log_probs(texts, model, **kwargs):
     return _log_probs(texts)
 
 
@@ -92,8 +92,8 @@ def mock_log_probs_completions(completions, log_probs, model):
 
 
 def test_log_probs_conditional(mocker, prompts, completions, model):
-    mocker.patch('lm_classification.classify.gpt3_log_probs',
-                 mock_gpt3_log_probs)
+    mocker.patch('lm_classification.classify.gpt_log_probs',
+                 mock_gpt_log_probs)
     mocker.patch('lm_classification.classify.log_probs_completions',
                  mock_log_probs_completions)
     log_probs_conditional = classify.log_probs_conditional(prompts, completions,
@@ -113,8 +113,8 @@ def examples(prompts, completions):
 def test_log_probs_conditional_examples(mocker,
                                         examples: list[classify.Example],
                                         model):
-    mocker.patch('lm_classification.classify.gpt3_log_probs',
-                 mock_gpt3_log_probs)
+    mocker.patch('lm_classification.classify.gpt_log_probs',
+                 mock_gpt_log_probs)
     mocker.patch('lm_classification.classify.log_probs_completions',
                  mock_log_probs_completions)
     log_probs_conditional = classify.log_probs_conditional_examples(examples,

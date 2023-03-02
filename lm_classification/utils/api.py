@@ -83,12 +83,12 @@ def _openai_api_call_is_ok(model: Model, texts: list[str], max_tokens: int=0,
         output = input(f'This API call will cost you about ${cost} '
                        f'({num_tokens:_} tokens). Proceed? (y/n): ')
     if output == 'n':
-        raise UserCanceled
+        raise UserCanceled('smell ya later')
 
 
-def gpt3_complete(texts: Sequence[str], model: Model, ask_if_ok: bool=False,
-                  max_tokens: int=0,
-                  **openai_completion_kwargs) -> list[Mapping[str, Any]]:
+def gpt_complete(texts: Sequence[str], model: Model, ask_if_ok: bool=False,
+                 max_tokens: int=0,
+                 **openai_completion_kwargs) -> list[Mapping[str, Any]]:
     '''
     Returns a list `choices` where `choices[i]` is the value of
     `'choices'` (from the OpenAI Completion endpoint) for `texts[i]` using
@@ -133,6 +133,7 @@ def gpt_chat_complete(texts: Sequence[str], ask_if_ok: bool=False,
     If `ask_if_ok`, then you'll be notified of the cost of this call, and then
     prompted to give the go-ahead.
     '''
+    ## TODO: batch, if possible
     if isinstance(texts, str):
         texts = [texts]
     model = 'gpt-3.5-turbo'

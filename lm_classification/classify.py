@@ -19,15 +19,12 @@ _DUMMY_FLOATS = [0, -0.5, -1]
 ## for checking inputs which are supposed to be functions of this type of data
 
 
-end_of_text = ' <|endoftext|>\n\n'
-## IIUC these tokens were used to separate prompts from completions during
-## training. The second \n is iffy, but seems to be common enough based on my
-## experience with the completion endpoint. May be useful if the prompt is a
-## question.
+end_of_prompt = '\n\n###\n\n'
+## https://platform.openai.com/docs/guides/fine-tuning/data-formatting
 
 
-def gpt3_log_probs(texts: Sequence[str], model: api.Model,
-                   ask_if_ok: bool=False) -> list[list[float]]:
+def gpt_log_probs(texts: Sequence[str], model: api.Model,
+                  ask_if_ok: bool=False) -> list[list[float]]:
     '''
     Returns a list `log_probs` where `log_probs[i]` is the value of
     `'log_probs' -> 'token_logprobs'` (from the OpenAI Completion endpoint) for
@@ -36,9 +33,9 @@ def gpt3_log_probs(texts: Sequence[str], model: api.Model,
     If `ask_if_ok`, then you'll be notified of the cost of this call, and then
     prompted to give the go-ahead.
     '''
-    choices = api.gpt3_complete(texts, ask_if_ok=ask_if_ok, model=model,
-                                ## rest must be hard-coded
-                                max_tokens=0, logprobs=1, echo=True)
+    choices = api.gpt_complete(texts, ask_if_ok=ask_if_ok, model=model,
+                               ## rest must be hard-coded
+                               max_tokens=0, logprobs=1, echo=True)
     return [choice['logprobs']['token_logprobs'] for choice in choices]
 
 
@@ -82,7 +79,7 @@ def log_probs_conditional(prompts: Sequence[str], completions: Sequence[str],
     texts = [prompt + end_of_prompt + completion
              for prompt in prompts
              for completion in completions]
-    log_probs = gpt3_log_probs(texts, model=model, ask_if_ok=ask_if_ok)
+    log_probs = gpt_log_probs(texts, model=model, ask_if_ok=ask_if_ok)
     ## Since log_probs is a flat list, we'll need to batch them by the size and
     ## order of completions to fulfill the spec.
     return [log_probs_completions(completions, log_probs_batch, model)
@@ -174,7 +171,7 @@ def log_probs_conditional_examples(examples: Sequence[Example],
     texts = [example.prompt + example.end_of_prompt + completion
              for example in examples
              for completion in example.completions]
-    log_probs_all = gpt3_log_probs(texts, model=model, ask_if_ok=ask_if_ok)
+    log_probs_all = gpt_log_probs(texts, model=model, ask_if_ok=ask_if_ok)
     ## Flatten completions in same order as examples were flattened
     completions_all = [completion for example in examples
                        for completion in example.completions]
