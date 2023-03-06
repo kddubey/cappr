@@ -70,7 +70,8 @@ def _openai_api_call_is_ok(model: Model, texts: list[str], max_tokens: int=0,
         tokenizer = tiktoken.encoding_for_model(model)
     except KeyError: ## that's fine, we just need an approximation
         tokenizer = tiktoken.get_encoding('gpt2')
-    _num_tokens_prompts = sum(len(tokenizer.encode(text)) for text in texts)
+    _num_tokens_prompts = sum(len(tokens)
+                              for tokens in tokenizer.encode_batch(texts))
     _num_tokens_completions = len(texts) * max_tokens ## upper bound ofc
     num_tokens = _num_tokens_prompts + _num_tokens_completions
     cost_per_1k_tokens = cost_per_1k_tokens or model_to_cost_per_1k.get(model)

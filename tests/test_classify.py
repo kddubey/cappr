@@ -58,7 +58,7 @@ def _log_probs(texts: list[str]) -> list[list[float]]:
     Returns a list `log_probs` where `log_probs[i]` is a list of random
     log-probabilities whose length is the number of tokens in `texts[i]`.
     '''
-    sizes = [len(tokenizer.encode(text)) for text in texts]
+    sizes = [len(tokens) for tokens in tokenizer.encode_batch(texts)]
     return [list(np.log(np.random.uniform(size=size)))
             for size in sizes]
 

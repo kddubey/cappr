@@ -41,7 +41,7 @@ def gpt_log_probs(texts: Sequence[str], model: api.Model,
 
 def log_probs_completions(completions: Sequence[str],
                           log_probs: Sequence[Sequence[float]],
-                          model: api.Model):
+                          model: api.Model) -> list[list[float]]:
     '''
     Returns a list `log_probs_completions` where `log_probs_completions[i]` is a
     list of conditional log-probablities for each token in `completions[i]`,
@@ -50,12 +50,12 @@ def log_probs_completions(completions: Sequence[str],
     if len(completions) != len(log_probs):
         raise ValueError( 'Different number of completions and log_probs: '
                          f'{len(completions)}, {len(log_probs)}.')
-    log_probs_completions: list[list[float]] = []
     tokenizer = tiktoken.encoding_for_model(model)
-    for completion, log_probs in zip(completions, log_probs):
-        num_completion_tokens = len(tokenizer.encode(completion))
-        log_probs_completions.append(log_probs[-num_completion_tokens:])
-    return log_probs_completions
+    completion_lengths = [len(tokens)
+                          for tokens in tokenizer.encode_batch(completions)]
+    return [log_probs_text[-num_completion_tokens:]
+            for num_completion_tokens, log_probs_text
+            in zip(completion_lengths, log_probs)]
 
 
 def log_probs_conditional(prompts: Sequence[str], completions: Sequence[str],
