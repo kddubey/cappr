@@ -115,15 +115,6 @@ I saw the same motivation again in
 
 ## Test code
 
-If you'd like to develop this package, then in your environment, install 
-`pytest-mock`:
-
-```
-python -m pip install pytest-mock
-```
-
-And run
-
 ```
 pytest
 ```
@@ -133,7 +124,7 @@ pytest
 
 Code:
 - [ ] Add unit tests
-  - [x] `classify` (could still use some improvement)
+  - [x] `classify` (could be improved though)
   - [x] `utils.batch`
   - [ ] `utils.api`
 - [ ] Add integration tests

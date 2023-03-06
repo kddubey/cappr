@@ -3,8 +3,7 @@ jupyter==1.0.0   ## notebooks
 numpy==1.24.2
 openai==0.27.0
 pandas==1.5.3    ## notebooks
-pytest==7.2.1       ## tests
-pytest-mock==3.10.0 ## tests
+pytest==7.2.1    ## tests
 tqdm==4.64.1
 tiktoken==0.2.0
 -e .

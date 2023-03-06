@@ -98,7 +98,7 @@ def _check_prior(prior: Optional[Sequence[float]]=None):
         raise TypeError('prior must be a Sequence.')
     if len(np.shape(prior)) != 1:
         raise ValueError('prior must be 1-D.')
-    prior_arr: np.ndarray = np.array(prior, dtype=float) ## try casting to float
+    prior_arr = np.array(prior, dtype=float) ## try casting to float
     if not np.isclose(prior_arr.sum(), 1, rtol=0, atol=1e-6):
         raise ValueError('prior must sum to 1 (tol 1e-6).')
 
@@ -199,7 +199,7 @@ def agg_log_probs(log_probs: Sequence[Sequence[Sequence[float]]],
 
 def posterior_prob(likelihoods: np.ndarray, axis: int,
                    prior: Optional[Sequence[float]]=None,
-                   normalize: bool=True) -> np.ndarray:
+                   normalize: bool=True):
     '''
     Returns an array, `posteriors`, where `posteriors[i]` is the (normalized)
     probability distribution of `likelihoods[i] * prior`. If `prior is None`,
@@ -215,11 +215,10 @@ def posterior_prob(likelihoods: np.ndarray, axis: int,
             return likelihoods/likelihoods.sum(axis=axis, keepdims=True)
         return likelihoods
     _check_prior(prior)
-    posteriors_unnorm: np.ndarray = likelihoods * prior
+    posteriors_unnorm = likelihoods * prior
     if normalize:
         return posteriors_unnorm/posteriors_unnorm.sum(axis=axis, keepdims=True)
-    else:
-        return posteriors_unnorm
+    return posteriors_unnorm
 
 
 def predict_proba(prompts: Sequence[str], completions: Sequence[str],
