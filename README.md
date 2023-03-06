@@ -21,7 +21,7 @@ tweet = 'I loved the new Batman movie!'
 prompt = f'Tweet: {tweet}\nSentiment:'
 
 class_names = ('positive', 'neutral', 'negative')
-prior       = (   1/8,        1/8,        3/4   )
+prior       = (   1/8    ,    1/8   ,     3/4   )
 
 pred_probs = predict_proba(prompts=[prompt],
                            completions=class_names,
@@ -55,8 +55,7 @@ are gonna be way less expensive, and are less bad for the environment.
 
 ## Motivation
 
-Improve my understanding of how to use autoregressive LMs for classification.
-Big and small. With and without RLHF.
+Improve my understanding of LMs.
 
 Product-y motivation: create a more usable zero-shot text classification
 interface than
@@ -80,19 +79,13 @@ Requires Python 3.8+
 
 1. Activate your Python environment
 
-2. Clone this repo somewhere
+2. Install from git
 
    ```
-   git clone https://github.com/kddubey/lm-classification.git
+   python -m pip install git+https://github.com/kddubey/lm-classification.git
    ```
 
-3. Install it
-
-   ```
-   python -m pip install lm-classification
-   ```
-
-4. Set the environment variable `OPENAI_API_KEY`.
+3. Set the environment variable `OPENAI_API_KEY`.
 
 (Optional) For testing and demo-ing:
 
@@ -140,7 +133,7 @@ pytest
 
 Code:
 - [ ] Add unit tests
-  - [x] `classify`
+  - [x] `classify` (could still use some improvement)
   - [x] `utils.batch`
   - [ ] `utils.api`
 - [ ] Add integration tests

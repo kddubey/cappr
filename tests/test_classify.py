@@ -17,23 +17,40 @@ tokenizer = tiktoken.get_encoding('gpt2')
 def model():
     '''
     This name is intentionally *not* an OpenAI API model. That's to prevent
-    un-mocked API calls from going through. All API calls should be mocked.
+    un-mocked API calls from going through. API calls must be mocked.
     '''
-    return 'im-wired-in 🤓'
+    return '🦖 ☄️ 💥'
 
 
 @pytest.fixture(scope='module')
 def prompts():
-    return ['fill in the blank. have an __ day!', 'i before e except after']
+    return ['Fill in the blank. Have an __ day!',
+            'i before e except after',
+            'Popular steak sauce:',
+            'The English alphabet: a, b,']
 
 
 @pytest.fixture(scope='module')
 def completions():
-    '''
-    For convenience, these strings have the property that their lengths are the
-    same as the number of GPT-2 tokens.
-    '''
     return ['A1', 'c']
+
+
+@pytest.fixture(scope='module')
+def examples():
+    ## Let's make these ragged (different # completions for each prompt), since
+    ## that's the use case for a classify.Example
+    return [classify.Example(prompt='I am currently',
+                             completions=('(っ◔◡◔)っ ♥ unemployed ♥',
+                                          'boooooo'),
+                             prior=(1/2, 1/2)),
+            classify.Example(prompt='🎶The best time to wear a striped sweater',
+                             completions=('is all the time🎶',)),
+            classify.Example(prompt='machine',
+                             completions=('-washed',
+                                          ' learnt',
+                                          ' 🤖'),
+                             prior=(1/6, 2/3, 1/6),
+                             end_of_prompt='')]
 
 
 def _log_probs(texts: list[str]) -> list[list[float]]:
@@ -102,12 +119,7 @@ def test_log_probs_conditional(mocker, prompts, completions, model):
     for log_probs_prompt in log_probs_conditional:
         assert len(log_probs_prompt) == len(completions)
         for log_probs_flat, completion in zip(log_probs_prompt, completions):
-            assert len(log_probs_flat) == len(completion) ## see completions()
-
-
-@pytest.fixture(scope='module')
-def examples(prompts, completions):
-    return [classify.Example(prompt, completions) for prompt in prompts]
+            assert len(log_probs_flat) == len(tokenizer.encode(completion))
 
 
 def test_log_probs_conditional_examples(mocker,
@@ -124,7 +136,7 @@ def test_log_probs_conditional_examples(mocker,
         completions = example.completions
         assert len(log_probs_prompt) == len(completions)
         for log_probs_flat, completion in zip(log_probs_prompt, completions):
-            assert len(log_probs_flat) == len(completion) ## see completions()
+            assert len(log_probs_flat) == len(tokenizer.encode(completion))
 
 
 @pytest.mark.parametrize('log_probs', ([[[2,2], [1]], [[1/2, 1/2], [4]]],))
