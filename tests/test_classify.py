@@ -116,10 +116,9 @@ def test_log_probs_conditional_examples(examples, model):
 
 
 @pytest.mark.parametrize('log_probs', ([[[2,2], [1]], [[1/2, 1/2], [4]]],))
-def test_agg_log_probs(monkeypatch, log_probs):
-    monkeypatch.setattr('numpy.exp', lambda x: x)
+def test_agg_log_probs(log_probs):
     log_probs_agg = classify.agg_log_probs(log_probs, func=sum)
-    assert log_probs_agg == [[4,1], [1,4]]
+    assert np.allclose(log_probs_agg, np.exp([[4,1], [1,4]]))
 
 
 @pytest.mark.parametrize('likelihoods', ([[4,1], [1,4]],))
