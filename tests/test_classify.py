@@ -83,14 +83,14 @@ def examples():
                              end_of_prompt='')]
 
 
-@pytest.mark.parametrize('texts', (['a b c', 'd e'],))
-def test_gpt_log_probs(texts, model):
+def test_gpt_log_probs(model):
+    texts = ['a b c', 'd e']
     log_probs = classify.gpt_log_probs(texts, model)
     assert log_probs == [[0, 1, 2], [0, 1]]
 
 
-@pytest.mark.parametrize('log_probs', ([[0, 1, 2], [0, 1]],))
-def test_log_probs_completions(completions, log_probs, model):
+def test_log_probs_completions(completions, model):
+    log_probs = [[0, 1, 2], [0, 1]]
     log_probs_completions = classify.log_probs_completions(completions,
                                                            log_probs, model)
     assert log_probs_completions == [[1, 2], [1]]
@@ -115,8 +115,9 @@ def test_log_probs_conditional_examples(examples, model):
     assert log_probs_conditional == expected
 
 
-@pytest.mark.parametrize('log_probs', ([[[2,2], [1]], [[1/2, 1/2], [4]]],))
-def test_agg_log_probs(log_probs):
+def test_agg_log_probs():
+    log_probs = [[[2,   2],   [1]],
+                 [[1/2, 1/2], [4]]]
     log_probs_agg = classify.agg_log_probs(log_probs, func=sum)
     assert np.allclose(log_probs_agg, np.exp([[4,1], [1,4]]))
 
