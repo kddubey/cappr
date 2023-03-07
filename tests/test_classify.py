@@ -10,20 +10,18 @@ import tiktoken
 from lm_classification import classify
 
 
-tokenizer = tiktoken.get_encoding('gpt2')
-
-
 def _log_probs(texts: list[str]) -> list[list[float]]:
     '''
     Returns a list `log_probs` where `log_probs[i]` is `list(range(size))`
     where `size` is the number of tokens in `texts[i]`.
     '''
+    tokenizer = tiktoken.get_encoding('gpt2')
     return [list(range(len(tokens)))
             for tokens in tokenizer.encode_batch(texts)]
 
 
 @pytest.fixture(autouse=True)
-def mock_openai_method_retry(monkeypatch):
+def patch_openai_method_retry(monkeypatch):
     ## During testing, there's never going to be a case where we want to
     ## actually hit an OpenAI endpoint
     def mocked(openai_method, prompt: list[str], **kwargs):
@@ -38,15 +36,16 @@ def mock_openai_method_retry(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def mock_tokenizer(monkeypatch):
-    monkeypatch.setattr('tiktoken.encoding_for_model', lambda _: tokenizer)
+def patch_tokenizer(monkeypatch):
+    monkeypatch.setattr('tiktoken.encoding_for_model',
+                        lambda _: tiktoken.get_encoding('gpt2'))
 
 
 @pytest.fixture(scope='module')
 def model():
     '''
     This name is intentionally *not* an OpenAI API model. That's to prevent
-    un-mocked API calls from going through. API calls must be mocked.
+    un-mocked API calls from going through.
     '''
     return '🦖 ☄️ 💥'
 
@@ -178,7 +177,6 @@ def test_predict_proba(monkeypatch, prompts, completions, model):
     monkeypatch.setattr('lm_classification.classify.log_probs_conditional',
                         mock_log_probs_conditional)
     pred_probs = classify.predict_proba(prompts, completions, model)
-    ## As a unit test, only the shape needs to be tested
     assert pred_probs.shape == (len(prompts), len(completions))
 
 
@@ -190,7 +188,6 @@ def test_predict_proba_examples(monkeypatch, examples, model):
                         '.classify.log_probs_conditional_examples',
                         mock_log_probs_conditional_examples)
     pred_probs = classify.predict_proba_examples(examples, model)
-    ## As a unit test, only the shape needs to be tested
     assert len(pred_probs) == len(examples)
     for pred_prob_example, example in zip(pred_probs, examples):
         assert len(pred_prob_example) == len(example.completions)
