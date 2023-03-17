@@ -12,5 +12,5 @@ pytest analysis
 
 ## Todo
 
-[ ] Just make this a `huggingface` module
-[ ] Actually do the analysis
+- [ ] Just make this a `huggingface` module, and reorganize
+- [ ] Actually do the analysis
