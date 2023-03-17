@@ -2,9 +2,9 @@
 Unit tests `lm_classification.classify`.
 '''
 from __future__ import annotations
-import pytest
 
 import numpy as np
+import pytest
 import tiktoken
 
 from lm_classification import classify

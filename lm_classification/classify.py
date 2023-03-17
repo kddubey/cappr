@@ -89,8 +89,8 @@ def log_probs_conditional(prompts: Sequence[str], completions: Sequence[str],
 
 def _check_prior(prior: Optional[Sequence[float]]=None):
     '''
-    Raises an error if `prior` is not `None` or a 1-D `Sequence` which sums to
-    1.
+    Raises an error if `prior` is not `None`, or if it's not a 1-D `Sequence`
+    which sums to 1.
     '''
     if prior is None: ## it's a uniform prior, no need to check anything
         return None
@@ -99,7 +99,7 @@ def _check_prior(prior: Optional[Sequence[float]]=None):
     if len(np.shape(prior)) != 1:
         raise ValueError('prior must be 1-D.')
     prior_arr = np.array(prior, dtype=float) ## try casting to float
-    if not np.isclose(prior_arr.sum(), 1, rtol=0, atol=1e-6):
+    if not np.isclose(prior_arr.sum(), 1):
         raise ValueError('prior must sum to 1 (tol 1e-6).')
 
 
@@ -178,9 +178,10 @@ def log_probs_conditional_examples(examples: Sequence[Example],
     log_probs_completions_all = log_probs_completions(completions_all,
                                                       log_probs_all, model)
     ## Batch by completions to fulfill the spec
-    completions_sizes = [len(example.completions) for example in examples]
+    num_completions_per_prompt = [len(example.completions)
+                                  for example in examples]
     return list(batch.variable(log_probs_completions_all,
-                               sizes=completions_sizes))
+                               sizes=num_completions_per_prompt))
 
 
 def agg_log_probs(log_probs: Sequence[Sequence[Sequence[float]]],
@@ -274,14 +275,15 @@ def predict_proba_examples(examples: Sequence[Example],
     ## If an example has just 1 completion, normalizing will cause the prob to
     ## trivially be 1! So let's not normalize in that case, and hope the user
     ## knows what they're doing
-    completions_sizes = [len(example.completions) for example in examples]
-    should_normalize = [size > 1 for size in completions_sizes]
+    num_completions_per_prompt = [len(example.completions)
+                                  for example in examples]
+    should_normalize = [num > 1 for num in num_completions_per_prompt]
     pred_probs = [posterior_prob(likelihoods, axis=0, prior=example.prior,
                                  normalize=normalize)
                   for likelihoods, example, normalize
                   in zip(likelihoods_all, examples, should_normalize)]
     ## For convenience sake, convert to array if possible
-    if len(set(completions_sizes)) == 1:
+    if len(set(num_completions_per_prompt)) == 1:
         return np.array(pred_probs)
     else:
         return pred_probs

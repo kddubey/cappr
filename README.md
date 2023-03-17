@@ -42,15 +42,15 @@ for a harder classification task.
 
 ## Disclaimers
 
-This package only supports [language models (LMs) in OpenAI's text completion API](https://platform.openai.com/docs/models/gpt-3),
+This package only supports
+[language models (LMs) in OpenAI's text completion API](https://platform.openai.com/docs/models/gpt-3),
 which you gotta pay for. Prices are [here](https://openai.com/api/pricing/).
 
-If you're something of an ML engineer, and you have labeled and unlabeled text, 
-there are likely far better alternatives to this slightly hacky method.
-[PET training](http://timoschick.com/explanatory%20notes/2020/10/23/pattern-exploiting-training.html),
-[textual entailment](https://huggingface.co/tasks/zero-shot-classification), or
+If you're something of an ML engineer, and you have labeled text, there are
+likely far better alternatives to this slightly hacky method.
+[SetFit](https://github.com/huggingface/setfit) or
 [plain old BERT embeddings](https://huggingface.co/docs/transformers/tasks/sequence_classification)
-are gonna be way less expensive, and are less bad for the environment.
+are way less expensive, fully open source, and are less bad for the environment.
 
 
 ## Motivation
@@ -122,6 +122,8 @@ pytest
 
 ## Todo
 
+(**) = I'm currently working on this
+
 Code:
 - [ ] Add unit tests
   - [x] `classify` (could be improved though)
@@ -130,11 +132,12 @@ Code:
 - [ ] Add integration tests
   - [x] `utils` + `classify`
   - [ ] `classify`
-- [x] Loosen dependencies, separate from requirements
-- [x] Install dependencies as part of setup.py
+- [ ] Add support for HuggingFace `transformers.AutoModelForCausalLM` (**)
+  - [ ] Optional/targeted install, whatever they call it
+- [ ] Put dev requirements in setup extras
+- [ ] Auto-enforced code formatting b/c it's getting time-consuming
 - [ ] Create a notebook template
-- [ ] Docs (not just docstrings)
-- [ ] Publish to PyPI?
+- [ ] Docs and user guides (not just docstrings)
 
 Research: evaluate on more tasks, and understand its relative advantages and
 disadvantages vs other classification methods
@@ -144,8 +147,8 @@ disadvantages vs other classification methods
 - [ ] Compare against few-shot embeddings
 - [ ] More SuperGLUE tasks
 - [ ] Understand how sampling works, make a computational comparison
-  - [ ] Assume I have full freedom to decide how inference works. Sketch out 
-  parallelization, demo w/ GPT-2
+  - [ ] Assume I have full freedom to decide how inference works. Demo w/
+  GPT-2 (**)
 - [ ] Calibration
   - [ ] (easy) Is the prior actually effective? Downsample and see
 - [ ] More real world or harder tasks

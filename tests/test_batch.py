@@ -2,6 +2,7 @@
 Unit tests `lm_classification.utils.batch`.
 '''
 from __future__ import annotations
+
 import pytest
 
 from lm_classification import utils
