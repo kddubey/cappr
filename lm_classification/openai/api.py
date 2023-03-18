@@ -22,6 +22,10 @@ logger = logging.getLogger(__name__)
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
 
+end_of_prompt = '\n\n###\n\n'
+## https://platform.openai.com/docs/guides/fine-tuning/data-formatting
+
+
 Model = Literal['text-ada-001',
                 'text-babbage-001',
                 'text-curie-001',

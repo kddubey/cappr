@@ -14,8 +14,13 @@ The method is fleshed out
 Let's classify [this sentiment example](https://platform.openai.com/docs/guides/completion/classification)
 from the OpenAI text completion docs.
 
+<details>
+<summary>Using an OpenAI model</summary>
+
+These currently seem to be far ahead of other models, but this'll cost ya 💰!
+
 ```python
-from lm_classification.classify import predict_proba
+from lm_classification.openai.classify import predict_proba
 
 tweet = 'I loved the new Batman movie!'
 prompt = f'Tweet: {tweet}\nSentiment:'
@@ -28,29 +33,44 @@ pred_probs = predict_proba(prompts=[prompt],
                            prior=prior,
                            model='text-ada-001')
 
-print(pred_probs.round(2))
-# [[0.98 0.   0.02]]
+print(pred_probs.round(3))
+# [[0.979 0.001 0.02 ]]
 
 pred_class_idxs = pred_probs.argmax(axis=1)
 print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
 # ['positive']
 ```
 
+</details>
+
+<details>
+<summary>Using a HuggingFace model </summary>
+
+```python
+from lm_classification.huggingface.classify import predict_proba
+
+tweet = 'I loved the new Batman movie!'
+prompt = f'Tweet: {tweet}\nSentiment:'
+
+class_names = ('positive', 'neutral', 'negative')
+prior = None # uniform prior
+
+pred_probs = predict_proba(prompts=[prompt],
+                           completions=class_names,
+                           prior=prior,
+                           model='gpt2')
+
+print(pred_probs.round(3))
+# [[0.668 0.006 0.326]]
+
+pred_class_idxs = pred_probs.argmax(axis=1)
+print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
+# ['positive']
+```
+</details>
+
 See [`demos/copa.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demos/copa.ipynb)
 for a harder classification task.
-
-
-## Disclaimers
-
-This package only supports
-[language models (LMs) in OpenAI's text completion API](https://platform.openai.com/docs/models/gpt-3),
-which you gotta pay for. Prices are [here](https://openai.com/api/pricing/).
-
-If you're something of an ML engineer, and you have labeled text, there are
-likely far better alternatives to this slightly hacky method.
-[SetFit](https://github.com/huggingface/setfit) or
-[plain old BERT embeddings](https://huggingface.co/docs/transformers/tasks/sequence_classification)
-are way less expensive, fully open source, and are less bad for the environment.
 
 
 ## Motivation
@@ -75,6 +95,8 @@ usability.
 
 ## Setup
 
+TODO: separate openai and huggingface
+
 Requires Python 3.8+
 
 1. Activate your Python environment
@@ -85,7 +107,8 @@ Requires Python 3.8+
    python -m pip install git+https://github.com/kddubey/lm-classification.git
    ```
 
-3. Set the environment variable `OPENAI_API_KEY`.
+3. [Sign up here](https://openai.com/api/) for an OpenAI API account.
+   Set the environment variable `OPENAI_API_KEY`.
 
 (Optional) For testing and demo-ing:
 
@@ -122,22 +145,19 @@ pytest
 
 ## Todo
 
-(**) = I'm currently working on this
+(**) = I'm currently working on this / will work on it really really soon
 
 Code:
-- [ ] Add unit tests
-  - [x] `classify` (could be improved though)
-  - [x] `utils.batch`
-  - [ ] `utils.api`
-- [ ] Add integration tests
-  - [x] `utils` + `classify`
-  - [ ] `classify`
-- [ ] Add support for HuggingFace `transformers.AutoModelForCausalLM` (**)
-  - [ ] Optional/targeted install, whatever they call it
-- [ ] Put dev requirements in setup extras
-- [ ] Auto-enforced code formatting b/c it's getting time-consuming
+- [ ] Add more unit tests
+- [ ] Add more integration tests
+- [x] Add support for HuggingFace `transformers.AutoModelForCausalLM`
+  - [ ] Optional/targeted install, whatever they call it so that you can pick
+  `openai`, `huggingface`, or both (**)
+- [ ] Put dev requirements in setup extras (**)
+- [ ] Auto-enforced code formatting b/c it's getting time-consuming (**)
 - [ ] Create a notebook template
 - [ ] Docs and user guides (not just docstrings)
+- [ ] De-automate overzealous auto-docstring stuff lol (**)
 
 Research: evaluate on more tasks, and understand its relative advantages and
 disadvantages vs other classification methods
@@ -146,7 +166,7 @@ disadvantages vs other classification methods
   approaches on statistical performance, cost, and computation
 - [ ] Compare against few-shot embeddings
 - [ ] More SuperGLUE tasks
-- [ ] Understand how sampling works, make a computational comparison
+- [ ] Understand how sampling works, make a computational comparison (**)
   - [ ] Assume I have full freedom to decide how inference works. Demo w/
   GPT-2 (**)
 - [ ] Calibration
@@ -158,4 +178,7 @@ disadvantages vs other classification methods
   - [ ] Again, compare against sampling
 - [ ] Evaluate different aggregation functions. Currently taking mean, but
 there was no good motivation for that
-- [ ] Give this method and package a more specific name.
+- [ ] A bit ambitious: support insertion. For transformers, I think this just
+entails manipulating position IDs?
+- [ ] Give this method and package a more specific name. I thought of one
+  at chiptole: CALLM = Classification using an Autoregressive LLM

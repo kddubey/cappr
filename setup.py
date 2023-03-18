@@ -13,9 +13,11 @@ setup(name='lm-classification',
       url='https://github.com/kddubey/lm-classification/',
       license='MIT',
       python_requires='>=3.8.0',
-      install_requires=['numpy>=1.17.3',
+      install_requires=['numpy>=1.21.0',
                         'openai>=0.26.0',
                         'tiktoken>=0.2.0',
-                        'tqdm>=4.27.0'],
+                        'tqdm>=4.27.0',
+                        'torch>=1.12.1', ## TODO: split huggingface vs openai
+                        'transformers>=4.26.1'],
       author_email='kushdubey63@gmail.com',
       packages=find_packages())

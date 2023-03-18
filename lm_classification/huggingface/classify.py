@@ -1,9 +1,9 @@
 '''
-Fast mirror of `slow`.
+Perform prompt-completion classification using a
+`transformers.AutoModelForCausalLM`.
 
-Works by precomputing every attention block's keys and values for prompts, and
-sharing them for completion-given-prompt calculations. This should eliminate
-the repeated computation done in `slow`.
+This module is a fast mirror of `classify_slow`. It works by precomputing every
+attention block's keys and values for prompts.
 '''
 from __future__ import annotations
 from typing import Mapping, Sequence, Union
@@ -11,41 +11,17 @@ from typing import Mapping, Sequence, Union
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BatchEncoding
 
-from lm_classification import classify
-from lm_classification.utils import batch
+from lm_classification.utils import batch, classify, wrap
+from lm_classification.example import Example
+from lm_classification import huggingface as hf
 
-import utils
 
-
+@wrap.add_doc_before(hf.docstrings.KEYS_VALUES_PROMPTS)
 def _keys_values_prompts(
         model: AutoModelForCausalLM,
         tokenizer: AutoTokenizer,
         prompts: Sequence[str],
         num_completions_per_prompt: Union[int, Sequence[int]]):
-    '''
-    Returns past key-values, the attention mask, and position offsets after
-    efficiently performing this procedure:
-
-    1. Repeat `prompts[i]` `num_completions_per_prompt[i]` times (or, if it's an
-    integer, `num_completions_per_prompt` times), e.g., if there are 2 prompts
-    and `num_completions_per_prompt=(2,3)`:
-
-    ```
-        [prompts[0],
-         prompts[0],
-         prompts[1],
-         prompts[1],
-         prompts[1]]
-    ```
-
-    2. Apply `tokenizer`
-
-    3. Apply `model`.
-
-    "Efficient" = don't actually repeat each prompt; run the model on each
-    prompt and then repeat the output data according to
-    `num_completions_per_prompt`.
-    '''
     if not tokenizer.padding_side == 'right':
         raise ValueError('Gotta use right padding to ensure position IDs are '
                          'correct.')
@@ -64,7 +40,7 @@ def _keys_values_prompts(
     ## Batch inference prompts
     prompts = list(prompts) ## 0-index in case it's a Series or something
     encodings = (tokenizer(prompts, return_tensors='pt', padding=True)
-                 .to(utils.DEVICE))
+                 .to(hf.utils.DEVICE))
     with torch.no_grad():
         out = model(**encodings)
 
@@ -135,7 +111,7 @@ def _blessed_helper(
     ## Prepare completion data
     completions = list(completions) ## 0-index in case it's a Series or somethin
     completions_encoding = tokenizer(completions, return_tensors='pt',
-                                     padding=True).to(utils.DEVICE)
+                                     padding=True).to(hf.utils.DEVICE)
     completions_input_ids = (completions_encoding.input_ids
                              .repeat(completions_repeats, 1))
     completions_attention_mask = (completions_encoding.attention_mask
@@ -173,8 +149,12 @@ def _blessed_helper(
     return logits, encodings
 
 
-@utils.cat_logits_encodings
-@utils.batchify(batchable_arg='prompts', push_up_arg='tokenizer',
+@wrap.add_doc_before(hf.docstrings.LOGITS_COMPLETIONS_GIVEN_PROMPTS_OUTPUT
+                     .format(text='completion'))
+@wrap.add_doc_after(hf.docstrings.TEXTS_FROM_PROMPTS_COMPLETIONS)
+@wrap.add_doc_after(hf.docstrings.BATCH_SIZE)
+@hf.utils.cat_logits_encodings
+@batch.batchify(batchable_arg='prompts', push_up_arg='tokenizer',
                 progress_bar_desc='logits (fast)')
 def _logits_completions_given_prompts(
         model: AutoModelForCausalLM,
@@ -183,29 +163,6 @@ def _logits_completions_given_prompts(
         completions: Sequence[str],
         end_of_prompt: str=' ',
         batch_size: int=32):
-    '''
-    If `texts` is
-
-    ```python
-    [prompt + end_of_prompt + completions
-     for prompt in prompts
-     for completion in completions]
-    ```
-
-    then this function returns
-
-    1. `logits`: tensor with shape
-
-        (`len(texts)`, max # tokens `completions`, `tokenizer.vocab_size`)
-
-    where `logits[i,j]` are the `model`'s logits for token `j+1` of the
-    completion in `texts[i]` given the prompt in `texts[i]`. This tensor
-    includes logits for right-padded tokens. Use the `encodings.attention_mask`
-    to ignore them before further processing.
-
-    2. `encodings`: `BatchEncoding` containing the input IDs, attention mask,
-    and position offsets.
-    '''
     completions = [end_of_prompt + completion.lstrip()
                    for completion in completions]
     ## TODO: figure out how to do this generally, not just for ' ' end_of_prompt
@@ -215,37 +172,18 @@ def _logits_completions_given_prompts(
                completions_repeats=len(prompts))
 
 
-@utils.cat_logits_encodings
-@utils.batchify(batchable_arg='examples', push_up_arg='tokenizer',
+@wrap.add_doc_before(hf.docstrings.LOGITS_COMPLETIONS_GIVEN_PROMPTS_OUTPUT
+                     .format(text='completion'))
+@wrap.add_doc_after(hf.docstrings.TEXTS_FROM_EXAMPLES)
+@wrap.add_doc_after(hf.docstrings.BATCH_SIZE)
+@hf.utils.cat_logits_encodings
+@batch.batchify(batchable_arg='examples', push_up_arg='tokenizer',
                 progress_bar_desc='logits (fast)')
 def _logits_completions_given_prompts_examples(
         model: AutoModelForCausalLM,
         tokenizer: AutoTokenizer,
-        examples: Sequence[classify.Example],
+        examples: Sequence[Example],
         batch_size: int=32):
-    '''
-    If `texts` is
-
-    ```python
-    [example.prompt + example.end_of_prompt + completion
-     for example in examples
-     for completion in example.completions]
-    ```
-
-    then this function returns
-
-    1. `logits`: tensor with shape
-
-        (`len(texts)`, max # tokens `completions`, `tokenizer.vocab_size`)
-
-    where `logits[i,j]` are the `model`'s logits for token `j+1` of the
-    completion in `texts[i]` given the prompt in `texts[i]`. This tensor
-    includes logits for right-padded tokens. Use the `encodings.attention_mask`
-    to ignore them before further processing.
-
-    2. `encodings`: `BatchEncoding` containing the input IDs, attention mask,
-    and position offsets.
-    '''
     prompts = [example.prompt for example in examples]
     completions = [example.end_of_prompt + completion.lstrip()
                    for example in examples
@@ -260,28 +198,13 @@ def _logits_completions_given_prompts_examples(
         completions_repeats=completions_repeats)
 
 
+@wrap.add_doc_before(hf.docstrings.LOGITS_TO_LOG_PROBS_COMPLETIONS)
 def _logits_to_log_probs_completions(logits: torch.Tensor,
                                      encodings: Mapping[str, torch.Tensor]
     ) -> list[list[float]]:
-    '''
-    Returns a list `log_probs_completions` where `log_probs_completions[i][j]`
-    is the log-probablity of *completion* token
-
-        `encodings['input_ids'][i,j]`
-
-    given its previous tokens
-
-        `encodings['input_ids'][i,:j]`
-
-    Pad tokens, i.e., tokens where `encodings['attention_mask'] == 0` are
-    excluded.
-
-    `logits[i,j]` is assumed to be an unnormalized distribution (over tokens in
-    the vocab) given tokens `input_ids[i,:j]`.
-    '''
-    log_probs = utils.logits_to_log_probs(logits, encodings['input_ids'],
-                                          input_ids_start_idx=None,
-                                          logits_end_idx=None)
+    log_probs = hf.utils.logits_to_log_probs(logits, encodings['input_ids'],
+                                             input_ids_start_idx=None,
+                                             logits_end_idx=None)
     last_idx_non_pad = encodings['attention_mask'].sum(dim=1)
     ## i.e., # of tokens per completion
     return [log_probs_prompt_completion[:completion_end].tolist()
@@ -289,15 +212,12 @@ def _logits_to_log_probs_completions(logits: torch.Tensor,
             in zip(log_probs, last_idx_non_pad)]
 
 
-def log_probs_conditional(prompts: Sequence[str],
-                          completions: Sequence[str],
-                          model_name: str,
-                          end_of_prompt: str=' ',
+@wrap.add_doc_before(classify.docstrings.LOG_PROBS_CONDITIONAL)
+@wrap.add_doc_after(hf.docstrings.BATCH_SIZE)
+def log_probs_conditional(prompts: Sequence[str], completions: Sequence[str],
+                          model: str, end_of_prompt: str=' ',
                           batch_size: int=32):
-    '''
-    TODO: docstring
-    '''
-    model, tokenizer = utils.load_model_and_tokenizer(model_name)
+    model, tokenizer = hf.utils.load_model_and_tokenizer(model)
     logits, encodings = _logits_completions_given_prompts(
                             model, tokenizer, prompts, completions,
                             end_of_prompt=end_of_prompt, batch_size=batch_size)
@@ -305,12 +225,11 @@ def log_probs_conditional(prompts: Sequence[str],
     return list(batch.constant(log_probs_completions, size=len(completions)))
 
 
-def log_probs_conditional_examples(examples: Sequence[classify.Example],
-                                   model_name: str, batch_size: int=32):
-    '''
-    TODO: docstring
-    '''
-    model, tokenizer = utils.load_model_and_tokenizer(model_name)
+@wrap.add_doc_before(classify.docstrings.LOG_PROBS_CONDITIONAL_EXAMPLES)
+@wrap.add_doc_after(hf.docstrings.BATCH_SIZE)
+def log_probs_conditional_examples(examples: Sequence[Example], model: str,
+                                   batch_size: int=32):
+    model, tokenizer = hf.utils.load_model_and_tokenizer(model)
     logits, encodings = _logits_completions_given_prompts_examples(
                             model, tokenizer, examples, batch_size=batch_size)
     log_probs_completions = _logits_to_log_probs_completions(logits, encodings)
@@ -318,3 +237,19 @@ def log_probs_conditional_examples(examples: Sequence[classify.Example],
                                   for example in examples]
     return list(batch.variable(log_probs_completions,
                                sizes=num_completions_per_prompt))
+
+@wrap.add_doc_after(hf.docstrings.BATCH_SIZE)
+@classify.predict_proba
+def predict_proba(prompts: Sequence[str], completions: Sequence[str],
+                  model: str, end_of_prompt: str=' ', batch_size: int=32):
+    return log_probs_conditional(prompts, completions, model,
+                                 end_of_prompt=end_of_prompt,
+                                 batch_size=batch_size)
+
+
+@wrap.add_doc_after(hf.docstrings.BATCH_SIZE)
+@classify.predict_proba_examples
+def predict_proba_examples(examples: Sequence[Example], model: str,
+                           batch_size: int=32):
+    return log_probs_conditional_examples(examples, model,
+                                          batch_size=batch_size)
