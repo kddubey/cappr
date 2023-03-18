@@ -11,13 +11,14 @@ The method is fleshed out
 
 ## Usage
 
-Let's classify [this sentiment example](https://platform.openai.com/docs/guides/completion/classification)
-from the OpenAI text completion docs.
-
 <details>
 <summary>Using an OpenAI model</summary>
 
-These currently seem to be far ahead of other models, but this'll cost ya 💰!
+For zero-shot classification, these models are currently far ahead of others, but using them will cost ya 💰!
+
+Let's classify
+[this sentiment example](https://platform.openai.com/docs/guides/completion/classification)
+from the OpenAI text completion docs.
 
 ```python
 from lm_classification.openai.classify import predict_proba
