@@ -51,13 +51,9 @@ def test_variable(lst, sizes):
 
 @pytest.mark.parametrize('batch_size', (2,3))
 def test_batchify(lst, batch_size):
-    ## Setup
+    @batch.batchify(batchable_arg='lst')
     def func(dummy_arg, lst, batch_size=100, dummy_kwarg='dummy', **kwargs):
         return lst
 
-    @batch.batchify(batchable_arg='lst')
-    def func_batchified(dummy_arg, lst, **kwargs):
-        return func(dummy_arg, lst, **kwargs)
-
-    out = func_batchified('dummy', lst, batch_size=batch_size)
+    out = func('dummy', lst, batch_size=batch_size)
     assert out == list(batch.constant(lst, size=batch_size))
