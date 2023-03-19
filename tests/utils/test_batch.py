@@ -1,11 +1,11 @@
 '''
-Unit tests `lm_classification.utils.batch`.
+Unit tests `callm.utils.batch`.
 '''
 from __future__ import annotations
 
 import pytest
 
-from lm_classification.utils import batch
+from callm.utils import batch
 
 
 def _test_partition_and_order(batches: list[list], source_lst: list):

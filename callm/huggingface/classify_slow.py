@@ -2,8 +2,9 @@
 Perform prompt-completion classification using a
 `transformers.AutoModelForCausalLM`.
 
-This module is a slow mirror of `classify`, and should therefore only be used
-for testing and benchmarking purposes.
+This module is a slow mirror of `classify`. It **does not** precompute
+attention block keys and values for prompts. It's only used for testing and
+benchmarking purposes.
 '''
 from __future__ import annotations
 from typing import Mapping, Sequence, Union
@@ -11,9 +12,9 @@ from typing import Mapping, Sequence, Union
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BatchEncoding
 
-from lm_classification.utils import batch, classify, wrap
-from lm_classification.example import Example
-from lm_classification import huggingface as hf
+from callm.utils import batch, classify, wrap
+from callm.example import Example
+from callm import huggingface as hf
 
 
 @wrap.add_doc_before(hf.docstrings.KEYS_VALUES_PROMPTS)

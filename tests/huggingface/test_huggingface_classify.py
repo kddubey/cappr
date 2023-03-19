@@ -1,6 +1,6 @@
 '''
-Unit tests `lm_classification.huggingface.classify` by comparing its functions'
-outputs to those from `lm_classification.huggingface.classify_slow`, which is
+Unit tests `callm.huggingface.classify` by comparing its functions'
+outputs to those from `callm.huggingface.classify_slow`, which is
 assumed to be correct (TODO: yeah I really should test that).
 '''
 from __future__ import annotations
@@ -11,9 +11,9 @@ import pytest
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from lm_classification.example import Example as Ex
-from lm_classification.huggingface import classify as fast
-from lm_classification.huggingface import classify_slow as slow
+from callm.example import Example as Ex
+from callm.huggingface import classify as fast
+from callm.huggingface import classify_slow as slow
 
 
 @pytest.fixture(scope='module')

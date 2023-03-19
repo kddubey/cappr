@@ -8,9 +8,9 @@ from typing import Callable, Optional, Sequence, Union
 import numpy as np
 import numpy.typing as npt
 
-from lm_classification.utils import wrap
-from lm_classification.example import Example
-from lm_classification.utils import check
+from callm.utils import wrap
+from callm.example import Example
+from callm.utils import check
 
 
 class docstrings:

@@ -7,9 +7,9 @@ from typing import Sequence
 
 import tiktoken
 
-from lm_classification.utils import batch, classify, wrap
-from lm_classification.example import Example
-from lm_classification import openai
+from callm.utils import batch, classify, wrap
+from callm.example import Example
+from callm import openai
 
 
 def token_logprobs(texts: Sequence[str], model: openai.api.Model,

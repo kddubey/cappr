@@ -1,12 +1,12 @@
 '''
-Unit tests `lm_classification.utils.wrap`.
+Unit tests `callm.utils.wrap`.
 
 TODO: cover more.
 '''
 from __future__ import annotations
 from functools import WRAPPER_ASSIGNMENTS
 
-from lm_classification.utils import wrap
+from callm.utils import wrap
 
 
 def test_wraps_but_keep_wrapper_return_ann():

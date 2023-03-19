@@ -1,13 +1,13 @@
 '''
-Unit tests `lm_classification.openai.classify`.
+Unit tests `callm.openai.classify`.
 '''
 from __future__ import annotations
 
 import pytest
 import tiktoken
 
-from lm_classification.example import Example as Ex
-from lm_classification.openai import classify
+from callm.example import Example as Ex
+from callm.openai import classify
 
 
 def _log_probs(texts: list[str]) -> list[list[float]]:
@@ -31,8 +31,7 @@ def patch_openai_method_retry(monkeypatch):
         return {'choices': [{'logprobs': {'token_logprobs': list(token_logprobs)}}
                             for token_logprobs in token_logprobs_batch]}
 
-    monkeypatch.setattr('lm_classification.openai.api.openai_method_retry',
-                        mocked)
+    monkeypatch.setattr('callm.openai.api.openai_method_retry', mocked)
 
 
 @pytest.fixture(autouse=True)
@@ -114,8 +113,7 @@ def test_log_probs_conditional_examples(examples, model):
 def test_predict_proba(monkeypatch, prompts, completions, model):
     def mock_log_probs_conditional(prompts, completions, model, **kwargs):
         return [_log_probs(completions) for _ in prompts]
-    monkeypatch.setattr('lm_classification.openai.classify.'
-                        'log_probs_conditional',
+    monkeypatch.setattr('callm.openai.classify.log_probs_conditional',
                         mock_log_probs_conditional)
     pred_probs = classify.predict_proba(prompts, completions, model)
     assert pred_probs.shape == (len(prompts), len(completions))
@@ -125,8 +123,7 @@ def test_predict_proba_examples(monkeypatch, examples, model):
     def mock_log_probs_conditional_examples(examples: list[classify.Example],
                                             model, **kwargs):
         return [_log_probs(example.completions) for example in examples]
-    monkeypatch.setattr('lm_classification.openai.classify.'
-                        'log_probs_conditional_examples',
+    monkeypatch.setattr('callm.openai.classify.log_probs_conditional_examples',
                         mock_log_probs_conditional_examples)
     pred_probs = classify.predict_proba_examples(examples, model)
     assert len(pred_probs) == len(examples)

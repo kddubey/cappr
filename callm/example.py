@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Optional, Sequence
 
 
-from lm_classification.utils import check
+from callm.utils import check
 
 
 @dataclass(frozen=True)

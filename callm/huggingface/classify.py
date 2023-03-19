@@ -2,7 +2,7 @@
 Perform prompt-completion classification using a
 `transformers.AutoModelForCausalLM`.
 
-This module is a fast mirror of `classify_slow`. It works by precomputing every
+This module is a fast mirror of `classify`. It precomputes each
 attention block's keys and values for prompts.
 '''
 from __future__ import annotations
@@ -11,9 +11,9 @@ from typing import Mapping, Sequence, Union
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BatchEncoding
 
-from lm_classification.utils import batch, classify, wrap
-from lm_classification.example import Example
-from lm_classification import huggingface as hf
+from callm.utils import batch, classify, wrap
+from callm.example import Example
+from callm import huggingface as hf
 
 
 @wrap.add_doc_before(hf.docstrings.KEYS_VALUES_PROMPTS)

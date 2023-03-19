@@ -1,8 +1,16 @@
-# Zero-shot text classification
+# **CALLM**: zero-shot text **C**lassification using **A**utoregressive **LLM**s
+
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
+🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧
+
+🚧 ⚠️ This package is currently under construction. ⚠️ 🚧
+
+🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧
 
 Perform zero-shot text classification based on the following idea: for a given
-prompt and completion, what's the probability that the completion follows the
-prompt?
+prompt and completion text pair, what's the probability that the completion
+comes after the prompt?
 
 The method is fleshed out
 [here in CrossValidated](https://stats.stackexchange.com/q/601159/337906)
@@ -12,16 +20,14 @@ The method is fleshed out
 ## Usage
 
 <details>
-<summary>Using an OpenAI model</summary>
-
-For zero-shot classification, these models are currently far ahead of others, but using them will cost ya 💰!
+<summary>Using an OpenAI API model</summary>
 
 Let's classify
 [this sentiment example](https://platform.openai.com/docs/guides/completion/classification)
 from the OpenAI text completion docs.
 
 ```python
-from lm_classification.openai.classify import predict_proba
+from callm.openai.classify import predict_proba
 
 tweet = 'I loved the new Batman movie!'
 prompt = f'Tweet: {tweet}\nSentiment:'
@@ -45,10 +51,10 @@ print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
 </details>
 
 <details>
-<summary>Using a HuggingFace model </summary>
+<summary>Using a HuggingFace model</summary>
 
 ```python
-from lm_classification.huggingface.classify import predict_proba
+from callm.huggingface.classify import predict_proba
 
 tweet = 'I loved the new Batman movie!'
 prompt = f'Tweet: {tweet}\nSentiment:'
@@ -70,7 +76,7 @@ print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
 ```
 </details>
 
-See [`demos/copa.ipynb`](https://github.com/kddubey/lm-classification/blob/main/demos/copa.ipynb)
+See [`demos/copa.ipynb`](https://github.com/kddubey/callm/blob/main/demos/copa.ipynb)
 for a harder classification task.
 
 
@@ -78,10 +84,12 @@ for a harder classification task.
 
 Improve my understanding of LMs.
 
-Product-y motivation: create a more usable zero-shot text classification
-interface than
+<details>
+<summary>Product-y motivation</summary>
+
+Create a more usable zero-shot text classification interface than
 [classification via sampling](https://platform.openai.com/docs/guides/completion/classification) (CVS).
-([Cookbook here](https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit).)
+[Cookbook here](https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit).
 With this package's `predict_proba` interface, you no longer have to:
   1. study sampled completion strings which aren't in your label set
   2. figure out how to map them back to the label set
@@ -92,34 +100,42 @@ With this package's `predict_proba` interface, you no longer have to:
 This package tries to do one thing well: classification. I'll assess it across
 these dimensions: statistical performance, computational performance, and
 usability.
-
+</details>
 
 ## Setup
 
-TODO: separate openai and huggingface
+If you intend on using OpenAI models,
+[sign up for the OpenAI API here](https://openai.com/api/), and then set the 
+environment variable `OPENAI_API_KEY`. For zero-shot classification, OpenAI 
+models are currently far ahead of others. But using them will cost ya 💰!
 
 Requires Python 3.8+
 
 1. Activate your Python environment
 
-2. Install from git
+2. Install from source
 
    ```
-   python -m pip install git+https://github.com/kddubey/lm-classification.git
+   python -m pip install git+https://github.com/kddubey/callm.git#egg=callm
    ```
 
-3. [Sign up here](https://openai.com/api/) for an OpenAI API account.
-   Set the environment variable `OPENAI_API_KEY`.
-
-(Optional) For testing and demo-ing:
-
-1. Create a new Python 3.8+ environment
-
-2. Install the requirements
+3. (Optional) Install requirements for HuggingFace models
 
    ```
-   python -m pip install -r requirements.txt
+   python -m pip install git+https://github.com/kddubey/callm.git#egg=callm[hf]
    ```
+
+<details>
+<summary>(Optional) Set up to run demos</summary>
+
+1. Activate your Python environment
+
+2. Install requirements to run `demos`
+
+   ```
+   python -m pip install git+https://github.com/kddubey/callm.git#egg=callm[demos]
+   ```
+</details>
 
 
 ## Related work
@@ -137,7 +153,25 @@ I saw the same motivation again in
 > Schick, Timo, and Hinrich Schütze. "It's not just size that matters: Small language models are also few-shot learners." arXiv preprint arXiv:2009.07118 (2020).
 
 
-## Test code
+## Testing
+
+### Setup
+
+1. Create a new Python 3.8+ environment
+
+2. Clone the repo to local
+
+   ```
+   git clone https://github.com/kddubey/callm.git
+   ```
+
+3. Install this package in editable mode, along with development requirements
+
+   ```
+   python -m pip install -e .[dev]
+   ```
+
+### Run tests
 
 ```
 pytest
