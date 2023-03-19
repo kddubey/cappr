@@ -20,7 +20,7 @@ The method is fleshed out
 ## Usage
 
 <details>
-<summary>Using an OpenAI API model</summary>
+<summary>Using a model from the OpenAI API</summary>
 
 Let's classify
 [this sentiment example](https://platform.openai.com/docs/guides/completion/classification)
@@ -51,7 +51,10 @@ print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
 </details>
 
 <details>
-<summary>Using a HuggingFace model</summary>
+<summary>Using a model from the HuggingFace hub</summary>
+
+Smaller LMs may not work nearly as well. But there will likely be better ones
+in the HF hub soon.
 
 ```python
 from callm.huggingface.classify import predict_proba
@@ -73,6 +76,96 @@ print(pred_probs.round(3))
 pred_class_idxs = pred_probs.argmax(axis=1)
 print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
 # ['positive']
+```
+</details>
+
+<details>
+<summary>Run in batches</summary>
+
+Let's use `huggingface` for this example cuz it's free.
+
+```python
+from callm.huggingface.classify import predict_proba
+
+prompts = [
+    'Stephen Curry is a',
+    'Martina Navratilova was a',
+    "Dexter, from the TV Series, Dexter's Laboratory, is a",
+    'LeBron James is a',    
+]
+
+# each of the prompts could be completed with one of these:
+class_names = (
+    'basketball player',
+    'tennis player',
+    'scientist'
+)
+
+prior = (
+    1/6, # few
+    1/6, # few
+    2/3  # there are more
+)
+
+pred_probs = predict_proba(prompts=prompts,
+                           completions=class_names,
+                           prior=prior,
+                           batch_size=32, # whatever fits on your CPU/GPU
+                           model='gpt2')
+
+# pred_probs[i,j] = probability that prompts[i] is followed by class_names[j]
+print(pred_probs.round(1))
+# [[0.5 0.3 0.2]
+#  [0.3 0.6 0.2]
+#  [0.1 0.1 0.7]
+#  [0.8 0.2 0. ]]
+
+# for each prompt, which completion is most likely?
+pred_class_idxs = pred_probs.argmax(axis=1)
+print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
+# ['basketball player',
+#  'tennis player',
+#  'scientist',
+#  'basketball player']
+```
+</details>
+
+<details>
+<summary>Run in batches, where each prompt has a different set of possible
+completions</summary>
+
+Again, let's use `huggingface` here.
+
+```python
+import numpy as np
+
+from callm.example import Example
+from callm.huggingface.classify import predict_proba_examples
+
+examples = [
+    Example(prompt='Jodie Foster played',
+            completions=('Clarice Starling', 'Trinity in The Matrix')),
+    Example(prompt='Batman, from Batman: The Animated Series, was played by',
+            completions=('Kevin Conroy', 'Pete Holmes', 'Spongebob!'),
+            prior=      (     2/3      ,      1/3     ,      0      ))
+]
+
+pred_probs = predict_proba_examples(examples, model='gpt2')
+
+# pred_probs[i][j] = probability that examples[i].prompt is followed by
+# examples[i].completions[j]
+print([example_pred_probs.round(2)
+       for example_pred_probs in pred_probs])
+# [array([0.7, 0.3]),
+#  array([0.97, 0.03, 0.  ])]
+
+# for each example, which completion is most likely?
+pred_class_idxs = [np.argmax(example_pred_probs)
+                   for example_pred_probs in pred_probs]
+print([example.completions[pred_class_idx]
+       for example, pred_class_idx in zip(examples, pred_class_idxs)])
+# ['Clarice Starling in Silence of the Lambs',
+#  'Kevin Conroy']
 ```
 </details>
 
@@ -147,7 +240,7 @@ identical motivation:
 
 > Trinh, Trieu H., and Quoc V. Le. "A simple method for commonsense reasoning." arXiv preprint arXiv:1806.02847 (2018).
 
-I saw the same motivation again in
+I saw the motivation again as part of
 [this paper](https://arxiv.org/abs/2009.07118):
 
 > Schick, Timo, and Hinrich Schütze. "It's not just size that matters: Small language models are also few-shot learners." arXiv preprint arXiv:2009.07118 (2020).
@@ -157,13 +250,13 @@ I saw the same motivation again in
 
 ### Setup
 
-1. Create a new Python 3.8+ environment
-
-2. Clone the repo to local
+1. Clone the repo
 
    ```
    git clone https://github.com/kddubey/callm.git
    ```
+
+2. Create a new Python 3.8+ environment
 
 3. Install this package in editable mode, along with development requirements
 
@@ -187,10 +280,12 @@ Code:
   - [ ] Increase coverage
   - [ ] Standardize
 - [ ] Factor out input checks on prompts and completions
-- [x] Add support for HuggingFace `transformers.AutoModelForCausalLM`
+- [ ] HuggingFace `transformers.AutoModelForCausalLM`
+  - [x] Optimize backend to allow for parallelization over completions/classes
+  - [ ] Fix `end_of_prompt`
+  - [ ] Allow user to pass in an instantiated model instead of a string
   - [x] Optional/extra install, so that you can optionally add the hefty
     requirements needed to run `huggingface`
-  both
 - [x] Put dev requirements in setup extras
 - [ ] Auto-enforced code formatting b/c it's getting time-consuming (**)
 - [ ] Create a notebook template
@@ -206,11 +301,12 @@ disadvantages vs other classification methods
   - [ ] Assume I have full freedom to decide how inference works. Demo w/
   GPT-2 (**)
 - [ ] More SuperGLUE tasks
-- [ ] Compare against few-shot embeddings
-- [ ] Calibration
-  - [ ] (easy) Is the prior actually effective? Downsample and see
 - [ ] More real world or harder tasks
   - [ ] Multi-token labels w/ non-uniform prior
+- [ ] Calibration
+  - [ ] (easy) Is the prior actually effective? Downsample and see
+  - [ ] curves
+- [ ] Compare against few-shot embeddings
 - [ ] Finetune smaller, cheaper model and compare against zero-shot w/ davinci
   - [ ] e.g., GPT-2 from huggingface, `text-ada-001`
   - [ ] Again, compare against sampling
