@@ -33,17 +33,18 @@ with open('README.md', mode='r', encoding='utf-8') as f:
 
 setup(name='callm',
       version='1.0',
-      description='Zero-shot text classification using OpenAI language models',
+      description=('Zero-shot text classification using autoregressive '
+                   'language models.'),
       long_description=readme,
       long_description_content_type='text/markdown',
       url='https://github.com/kddubey/callm/',
       license='Apache License 2.0',
       python_requires='>=3.8.0',
       install_requires=requirements_base + requirements_openai,
-      extras_requires = {'hf': requirements_huggingface,
-                         'demos': requirements_huggingface + requirements_demos,
-                         'dev': (requirements_huggingface +
-                                 requirements_demos + requirements_dev),
+      extras_require = {'hf': requirements_huggingface,
+                        'demos': requirements_huggingface + requirements_demos,
+                        'dev': (requirements_huggingface +
+                                requirements_demos + requirements_dev),
                         },
       author_email='kushdubey63@gmail.com',
       packages=find_packages())
