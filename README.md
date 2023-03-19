@@ -209,7 +209,7 @@ Requires Python 3.8+
 2. Install from source
 
    ```
-   python -m pip install git+https://github.com/kddubey/callm.git#egg=callm
+   python -m pip install git+https://github.com/kddubey/callm.git
    ```
 
 3. (Optional) Install requirements for HuggingFace models
