@@ -183,12 +183,14 @@ pytest
 (**) = I'm currently working on this / will work on it really really soon
 
 Code:
-- [ ] Add more unit tests
-- [ ] Add more integration tests
+- [ ] Testing
+  - [ ] Increase coverage
+  - [ ] Standardize
+- [ ] Factor out input checks on prompts and completions
 - [x] Add support for HuggingFace `transformers.AutoModelForCausalLM`
-  - [ ] Optional/targeted install, whatever they call it so that you can pick
-  `openai`, `huggingface`, or both (**)
-- [ ] Put dev requirements in setup extras (**)
+  - [x] Optional/extra install, so that you can pick `openai`, `huggingface`, or
+  both
+- [x] Put dev requirements in setup extras
 - [ ] Auto-enforced code formatting b/c it's getting time-consuming (**)
 - [ ] Create a notebook template
 - [ ] Docs and user guides (not just docstrings)
@@ -199,11 +201,11 @@ disadvantages vs other classification methods
 
 - [ ] Create a user guide, build a table of results comparing competing
   approaches on statistical performance, cost, and computation
-- [ ] Compare against few-shot embeddings
-- [ ] More SuperGLUE tasks
 - [ ] Understand how sampling works, make a computational comparison (**)
   - [ ] Assume I have full freedom to decide how inference works. Demo w/
   GPT-2 (**)
+- [ ] More SuperGLUE tasks
+- [ ] Compare against few-shot embeddings
 - [ ] Calibration
   - [ ] (easy) Is the prior actually effective? Downsample and see
 - [ ] More real world or harder tasks
@@ -215,5 +217,3 @@ disadvantages vs other classification methods
 there was no good motivation for that
 - [ ] A bit ambitious: support insertion. For transformers, I think this just
 entails manipulating position IDs?
-- [ ] Give this method and package a more specific name. I thought of one
-  at chiptole: CALLM = Classification using an Autoregressive LLM
