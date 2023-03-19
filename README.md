@@ -188,7 +188,8 @@ Code:
   - [ ] Standardize
 - [ ] Factor out input checks on prompts and completions
 - [x] Add support for HuggingFace `transformers.AutoModelForCausalLM`
-  - [x] Optional/extra install, so that you can pick `openai`, `huggingface`, or
+  - [x] Optional/extra install, so that you can optionally add the hefty
+    requirements needed to run `huggingface`
   both
 - [x] Put dev requirements in setup extras
 - [ ] Auto-enforced code formatting b/c it's getting time-consuming (**)
@@ -201,7 +202,7 @@ disadvantages vs other classification methods
 
 - [ ] Create a user guide, build a table of results comparing competing
   approaches on statistical performance, cost, and computation
-- [ ] Understand how sampling works, make a computational comparison (**)
+- [ ] Make a computational comparison to sampling (**)
   - [ ] Assume I have full freedom to decide how inference works. Demo w/
   GPT-2 (**)
 - [ ] More SuperGLUE tasks
