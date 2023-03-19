@@ -122,7 +122,7 @@ Requires Python 3.8+
 3. (Optional) Install requirements for HuggingFace models
 
    ```
-   python -m pip install git+https://github.com/kddubey/callm.git#egg=callm[hf]
+   python -m pip install "callm[hf] @ git+https://github.com/kddubey/callm.git"
    ```
 
 <details>
@@ -133,7 +133,7 @@ Requires Python 3.8+
 2. Install requirements to run `demos`
 
    ```
-   python -m pip install git+https://github.com/kddubey/callm.git#egg=callm[demos]
+   python -m pip install "callm[demos] @ git+https://github.com/kddubey/callm.git"
    ```
 </details>
 
@@ -168,7 +168,7 @@ I saw the same motivation again in
 3. Install this package in editable mode, along with development requirements
 
    ```
-   python -m pip install -e .[dev]
+   python -m pip install -e callm[dev]
    ```
 
 ### Run tests
