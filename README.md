@@ -1,16 +1,14 @@
 # *CALLM*: zero-shot text *C*lassification using *A*utoregressive *LLM*s
 
+[![test](https://github.com/kddubey/callm/actions/workflows/test.yml/badge.svg)](https://github.com/kddubey/callm/actions/workflows/test.yml)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/) 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 Perform zero-shot text classification based on the following idea: for a given prompt 
 and completion text pair, what's the probability that the completion comes after the 
-prompt?
-
-The method is fleshed out
-[here in CrossValidated](https://stats.stackexchange.com/q/601159/337906)
-(I'm chicxulub).
+prompt? The method is fleshed out
+[here in CrossValidated](https://stats.stackexchange.com/q/601159/337906).
 
 ⚠️ This package is currently under construction. ⚠️
 
