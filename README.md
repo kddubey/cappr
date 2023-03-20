@@ -52,7 +52,10 @@ print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
 </details>
 
 <details>
-<summary>Use an autoregressive LM from the HuggingFace model hub</summary>
+<summary>Use a model from the HuggingFace model hub</summary>
+
+Specifically, this model must be able to be loaded using
+`transformers.AutoModelForCausalLM.from_pretrained(model)`.
 
 Smaller LMs may not work well. But there will likely be better ones in the hub soon.
 
@@ -113,7 +116,7 @@ pred_probs = predict_proba(prompts=prompts,
                            batch_size=32,  # whatever fits on your CPU/GPU
                            model='gpt2')
 
-# pred_probs[i,j] = probability that prompts[i] is followed by class_names[j]
+# pred_probs[i,j] = probability that prompts[i] is classified as class_names[j]
 print(pred_probs.round(1))
 # [[0.5 0.3 0.2]
 #  [0.3 0.6 0.2]
@@ -152,7 +155,7 @@ examples = [
 
 pred_probs = predict_proba_examples(examples, model='gpt2')
 
-# pred_probs[i][j] = probability that examples[i].prompt is followed by
+# pred_probs[i][j] = probability that examples[i].prompt is classified as
 # examples[i].completions[j]
 print([example_pred_probs.round(2)
        for example_pred_probs in pred_probs])
@@ -202,38 +205,34 @@ If you intend on using OpenAI models,
 variable `OPENAI_API_KEY`. For zero-shot classification, OpenAI models are currently far
 ahead of others. But using them will cost ya 💰!
 
-Requires Python 3.8+
+Install from source:
 
-1. Activate your Python environment
+```
+python -m pip install git+https://github.com/kddubey/callm.git
+```
 
-2. Install from source
+<details>
+<summary>(Optional) Install requirements for HuggingFace models</summary>
 
-   ```
-   python -m pip install git+https://github.com/kddubey/callm.git
-   ```
-
-3. (Optional) Install requirements for HuggingFace models
-
-   ```
-   python -m pip install "callm[hf] @ git+https://github.com/kddubey/callm.git"
-   ```
+```
+python -m pip install "callm[hf] @ git+https://github.com/kddubey/callm.git"
+```
+</details>
 
 <details>
 <summary>(Optional) Set up to run demos</summary>
 
-1. Activate your Python environment
-
-2. Install requirements to run `demos`
-
-   ```
-   python -m pip install "callm[demos] @ git+https://github.com/kddubey/callm.git"
-   ```
+```
+python -m pip install "callm[demos] @ git+https://github.com/kddubey/callm.git"
+```
 </details>
 
 
 ## Related work
 
-While benchmarking this method on the
+While
+[benchmarking this method](https://github.com/kddubey/callm/blob/main/demos/wsc.ipynb) 
+on the
 [Winograd Schema Challenge (WSC)](https://cs.nyu.edu/~davise/papers/WinogradSchemas/WS.html),
 I found that [this paper](https://arxiv.org/abs/1806.02847) is pretty similar:
 
@@ -271,9 +270,11 @@ pytest
 
 ## Todo
 
-(**) = I'm currently working on this / will work on it really really soon
+(**) = I'm currently working on this or will work on it really soon
 
-Code:
+<details>
+<summary>Code</summary>
+
 - [ ] Testing
   - [ ] Increase coverage
   - [ ] Standardize
@@ -289,9 +290,13 @@ Code:
 - [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
 - [ ] Create a notebook template
 - [ ] Docs and user guides (not just docstrings)
+</details>
 
-Research: evaluate on more tasks, and understand its relative advantages and
-disadvantages vs other classification methods
+<details>
+<summary>Research</summary>
+
+Evaluate on more tasks, and understand its relative advantages and disadvantages vs
+other classification methods.
 
 - [ ] Create a user guide, build a table of results comparing competing
   approaches on statistical performance, cost, and computation
@@ -312,3 +317,4 @@ disadvantages vs other classification methods
 there was no good motivation for that
 - [ ] A bit ambitious: support insertion. For transformers, I think this just
 entails manipulating position IDs?
+</details>
