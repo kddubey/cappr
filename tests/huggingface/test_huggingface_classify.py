@@ -17,6 +17,14 @@ from callm.huggingface import classify_slow as slow
 
 
 @pytest.fixture(scope="module")
+def atol():
+    ## Reading through some transformers tests, it looks like 1e-3 is considered
+    ## "close enough" for model outputs. See, e.g.,
+    ## https://github.com/huggingface/transformers/blob/main/tests/models/gpt2/test_modeling_gpt2.py#L250
+    return 1e-4
+
+
+@pytest.fixture(scope="module")
 def model_name():
     return "sshleifer/tiny-gpt2"  ## for testing this'll do fine
 
@@ -38,7 +46,9 @@ def tokenizer(model_name):
 
 @pytest.mark.parametrize("prompts", (["a b c", "c"],))
 @pytest.mark.parametrize("num_completions_per_prompt", (2, (2, 3)))
-def test__keys_values_prompts(model, tokenizer, prompts, num_completions_per_prompt):
+def test__keys_values_prompts(
+    model, tokenizer, prompts, num_completions_per_prompt, atol
+):
     _outputs_slow = slow._keys_values_prompts(
         model, tokenizer, prompts, num_completions_per_prompt
     )
@@ -52,14 +62,14 @@ def test__keys_values_prompts(model, tokenizer, prompts, num_completions_per_pro
     for (keys_slow, vals_slow), (keys_fast, vals_fast) in zip(
         keys_vals_slow, keys_vals_fast
     ):
-        assert torch.allclose(keys_slow, keys_fast)
-        assert torch.allclose(vals_slow, vals_fast)
+        assert torch.allclose(keys_slow, keys_fast, atol=atol)
+        assert torch.allclose(vals_slow, vals_fast, atol=atol)
 
     assert torch.equal(encodings_slow.input_ids, encodings_fast.input_ids)
     assert torch.equal(encodings_slow.attention_mask, encodings_fast.attention_mask)
     assert torch.equal(offsets_slow, offsets_fast)
 
-    assert torch.allclose(logits_last_slow, logits_last_fast)
+    assert torch.allclose(logits_last_slow, logits_last_fast, atol=atol)
 
 
 def _test_encodings(
@@ -87,6 +97,7 @@ def _test_logits(
     encodings_slow: Mapping[str, torch.Tensor],
     logits_fast: torch.Tensor,
     encodings_fast: Mapping[str, torch.Tensor],
+    atol,
 ):
     ## Test shapes
     assert logits_slow.shape[0] == logits_fast.shape[0]  ## batch size
@@ -108,6 +119,7 @@ def _test_logits(
             assert torch.allclose(
                 logits_fast[text_idx, completion_token_idx],
                 logits_slow[text_idx, offset + completion_token_idx],
+                atol=atol,
             )
 
 
@@ -116,6 +128,7 @@ def _test_log_probs(
     log_probs_completions_fast,
     expected_len,
     num_completions_per_prompt,
+    atol,
 ):
     assert len(log_probs_completions_slow) == len(log_probs_completions_fast)
     assert len(log_probs_completions_fast) == expected_len
@@ -130,7 +143,9 @@ def _test_log_probs(
         zipped_inner = zip(log_probs_slow, log_probs_fast)
         for log_probs_tokens_slow, log_probs_tokens_fast in zipped_inner:
             assert torch.allclose(
-                torch.tensor(log_probs_tokens_slow), torch.tensor(log_probs_tokens_fast)
+                torch.tensor(log_probs_tokens_slow),
+                torch.tensor(log_probs_tokens_fast),
+                atol=atol,
             )
 
 
@@ -147,7 +162,7 @@ def _test_log_probs(
 @pytest.mark.parametrize("batch_size", (2, 1))
 class TestPromptsCompletions:
     def test__logits_completions_given_prompts(
-        self, model, tokenizer, prompts, completions, end_of_prompt, batch_size
+        self, model, tokenizer, prompts, completions, end_of_prompt, batch_size, atol
     ):
         slow_out = slow._logits_completions_given_prompts(
             model,
@@ -166,10 +181,10 @@ class TestPromptsCompletions:
             batch_size=batch_size,
         )
         _test_encodings(*slow_out, *fast_out)
-        _test_logits(*slow_out, *fast_out)
+        _test_logits(*slow_out, *fast_out, atol)
 
     def test_log_probs_conditional(
-        self, prompts, completions, model_name, end_of_prompt, batch_size
+        self, prompts, completions, model_name, end_of_prompt, batch_size, atol
     ):
         log_probs_completions_slow = slow.log_probs_conditional(
             prompts,
@@ -190,8 +205,9 @@ class TestPromptsCompletions:
         _test_log_probs(
             log_probs_completions_slow,
             log_probs_completions_fast,
-            expected_len=expected_len,
-            num_completions_per_prompt=num_completions_per_prompt,
+            expected_len,
+            num_completions_per_prompt,
+            atol,
         )
 
 
@@ -210,7 +226,7 @@ class TestPromptsCompletions:
 @pytest.mark.parametrize("batch_size", (2, 1))
 class TestExamples:
     def test__logits_completions_given_prompts_examples(
-        self, model, tokenizer, examples, batch_size
+        self, model, tokenizer, examples, batch_size, atol
     ):
         slow_out = slow._logits_completions_given_prompts_examples(
             model, tokenizer, examples, batch_size=batch_size
@@ -219,10 +235,10 @@ class TestExamples:
             model, tokenizer, examples, batch_size=batch_size
         )
         _test_encodings(*slow_out, *fast_out)
-        _test_logits(*slow_out, *fast_out)
+        _test_logits(*slow_out, *fast_out, atol)
 
     def test_log_probs_conditional_examples(
-        self, examples: list[Ex], model_name, batch_size
+        self, examples: list[Ex], model_name, batch_size, atol
     ):
         log_probs_completions_slow = slow.log_probs_conditional_examples(
             examples, model_name, batch_size=batch_size
@@ -235,6 +251,7 @@ class TestExamples:
         _test_log_probs(
             log_probs_completions_slow,
             log_probs_completions_fast,
-            expected_len=expected_len,
-            num_completions_per_prompt=num_completions_per_prompt,
+            expected_len,
+            num_completions_per_prompt,
+            atol,
         )
