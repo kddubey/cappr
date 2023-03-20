@@ -1,26 +1,23 @@
-# **CALLM**: zero-shot text **C**lassification using **A**utoregressive **LLM**s
+# *CALLM*: zero-shot text *C*lassification using *A*utoregressive *LLM*s
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/) 
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) 
 
-🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧
-
-🚧 ⚠️ This package is currently under construction. ⚠️ 🚧
-
-🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧🚧
-
-Perform zero-shot text classification based on the following idea: for a given
-prompt and completion text pair, what's the probability that the completion
-comes after the prompt?
+Perform zero-shot text classification based on the following idea: for a given prompt 
+and completion text pair, what's the probability that the completion comes after the 
+prompt?
 
 The method is fleshed out
 [here in CrossValidated](https://stats.stackexchange.com/q/601159/337906)
 (I'm chicxulub).
 
+⚠️ This package is currently under construction. ⚠️
 
 ## Usage
 
 <details>
-<summary>Using a model from the OpenAI API</summary>
+<summary>Use a model from the OpenAI API</summary>
 
 Let's classify
 [this sentiment example](https://platform.openai.com/docs/guides/completion/classification)
@@ -51,10 +48,9 @@ print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
 </details>
 
 <details>
-<summary>Using a model from the HuggingFace hub</summary>
+<summary>Use an autoregressive LM from the HuggingFace model hub</summary>
 
-Smaller LMs may not work nearly as well. But there will likely be better ones
-in the HF hub soon.
+Smaller LMs may not work well. But there will likely be better ones in the hub soon.
 
 ```python
 from callm.huggingface.classify import predict_proba
@@ -131,8 +127,8 @@ print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
 </details>
 
 <details>
-<summary>Run in batches, where each prompt has a different set of possible
-completions</summary>
+<summary>Run in batches, where each prompt has a different set of possible completions
+</summary>
 
 Again, let's use `huggingface` here.
 
@@ -186,8 +182,8 @@ Create a more usable zero-shot text classification interface than
 With this package's `predict_proba` interface, you no longer have to:
   1. study sampled completion strings which aren't in your label set
   2. figure out how to map them back to the label set
-  3. figure out how to transform or point multi-token labels to single tokens,
-     ignoring their semantics if they were transformed
+  3. figure out how to transform or point multi-token labels to single tokens, ignoring
+  their semantics if they were transformed
   4. ignore your prior over multi-token labels.
 
 This package tries to do one thing well: classification. I'll assess it across
@@ -198,9 +194,9 @@ usability.
 ## Setup
 
 If you intend on using OpenAI models,
-[sign up for the OpenAI API here](https://openai.com/api/), and then set the 
-environment variable `OPENAI_API_KEY`. For zero-shot classification, OpenAI 
-models are currently far ahead of others. But using them will cost ya 💰!
+[sign up for the OpenAI API here](https://openai.com/api/), and then set the environment
+variable `OPENAI_API_KEY`. For zero-shot classification, OpenAI models are currently far
+ahead of others. But using them will cost ya 💰!
 
 Requires Python 3.8+
 
@@ -235,18 +231,16 @@ Requires Python 3.8+
 
 While benchmarking this method on the
 [Winograd Schema Challenge (WSC)](https://cs.nyu.edu/~davise/papers/WinogradSchemas/WS.html),
-I found that [this paper](https://arxiv.org/abs/1806.02847) has an
-identical motivation:
+I found that [this paper](https://arxiv.org/abs/1806.02847) is pretty similar:
 
 > Trinh, Trieu H., and Quoc V. Le. "A simple method for commonsense reasoning." arXiv preprint arXiv:1806.02847 (2018).
 
-I saw the motivation again as part of
-[this paper](https://arxiv.org/abs/2009.07118):
+[This paper](https://arxiv.org/abs/2009.07118) is also similar in spirit:
 
 > Schick, Timo, and Hinrich Schütze. "It's not just size that matters: Small language models are also few-shot learners." arXiv preprint arXiv:2009.07118 (2020).
 
 
-## Testing
+## Testing and development
 
 ### Setup
 
@@ -287,7 +281,7 @@ Code:
   - [x] Optional/extra install, so that you can optionally add the hefty
     requirements needed to run `huggingface`
 - [x] Put dev requirements in setup extras
-- [ ] Auto-enforced code formatting b/c it's getting time-consuming (**)
+- [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
 - [ ] Create a notebook template
 - [ ] Docs and user guides (not just docstrings)
 - [ ] De-automate overzealous auto-docstring stuff lol (**)

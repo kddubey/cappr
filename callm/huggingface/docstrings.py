@@ -1,4 +1,4 @@
-KEYS_VALUES_PROMPTS = '''
+KEYS_VALUES_PROMPTS = """
     Returns past key-values, the attention mask, and position offsets after
     efficiently performing this procedure:
 
@@ -21,10 +21,10 @@ KEYS_VALUES_PROMPTS = '''
     "Efficient" = don't actually repeat each prompt; run the model on each
     prompt and then repeat the output data according to
     `num_completions_per_prompt`.
-    '''
+    """
 
 
-TEXTS_FROM_PROMPTS_COMPLETIONS = '''
+TEXTS_FROM_PROMPTS_COMPLETIONS = """
     If `texts` is
 
     ```python
@@ -33,10 +33,10 @@ TEXTS_FROM_PROMPTS_COMPLETIONS = '''
      for completion in completions]
     ```
 
-    '''
+    """
 
 
-TEXTS_FROM_EXAMPLES = '''
+TEXTS_FROM_EXAMPLES = """
     If `texts` is
 
     ```python
@@ -45,10 +45,10 @@ TEXTS_FROM_EXAMPLES = '''
      for completion in example.completions]
     ```
 
-    '''
+    """
 
 
-LOGITS_COMPLETIONS_GIVEN_PROMPTS_OUTPUT = '''
+LOGITS_COMPLETIONS_GIVEN_PROMPTS_OUTPUT = """
     then this function returns
 
     1. `logits`: tensor with shape
@@ -62,15 +62,15 @@ LOGITS_COMPLETIONS_GIVEN_PROMPTS_OUTPUT = '''
 
     2. `encodings`: `BatchEncoding` containing the input IDs, attention mask,
     and position offsets.
-    '''
+    """
 
 
-BATCH_SIZE = '''
+BATCH_SIZE = """
     Texts are processed by the model in batches of size `batch_size`.
-    '''
+    """
 
 
-LOGITS_TO_LOG_PROBS_COMPLETIONS = '''
+LOGITS_TO_LOG_PROBS_COMPLETIONS = """
     Returns a list `log_probs_completions` where `log_probs_completions[i][j]`
     is the log-probablity of *completion* token
 
@@ -85,4 +85,4 @@ LOGITS_TO_LOG_PROBS_COMPLETIONS = '''
 
     `logits[i,j]` is assumed to be an unnormalized distribution (over tokens in
     the vocab) given tokens `input_ids[i,:j]`.
-    '''
+    """
