@@ -1,8 +1,8 @@
 # *CALLM*: zero-shot text *C*lassification using *A*utoregressive *LLM*s
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/) 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) 
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 Perform zero-shot text classification based on the following idea: for a given prompt 
 and completion text pair, what's the probability that the completion comes after the 
@@ -18,6 +18,10 @@ The method is fleshed out
 
 <details>
 <summary>Use a model from the OpenAI API</summary>
+
+Specifically, this model must be compatible with the
+[/v1/completions](https://platform.openai.com/docs/models/model-endpoint-compatibility)
+endpoint.
 
 Let's classify
 [this sentiment example](https://platform.openai.com/docs/guides/completion/classification)
@@ -59,7 +63,7 @@ tweet = 'I loved the new Batman movie!'
 prompt = f'Tweet: {tweet}\nSentiment:'
 
 class_names = ('positive', 'neutral', 'negative')
-prior = None # uniform prior
+prior = None  # uniform prior
 
 pred_probs = predict_proba(prompts=[prompt],
                            completions=class_names,
@@ -98,15 +102,15 @@ class_names = (
 )
 
 prior = (
-    1/6, # few
-    1/6, # few
-    2/3  # there are more
+    1/6,  # few
+    1/6,  # few
+    2/3   # there are more
 )
 
 pred_probs = predict_proba(prompts=prompts,
                            completions=class_names,
                            prior=prior,
-                           batch_size=32, # whatever fits on your CPU/GPU
+                           batch_size=32,  # whatever fits on your CPU/GPU
                            model='gpt2')
 
 # pred_probs[i,j] = probability that prompts[i] is followed by class_names[j]
@@ -240,7 +244,7 @@ I found that [this paper](https://arxiv.org/abs/1806.02847) is pretty similar:
 > Schick, Timo, and Hinrich Schütze. "It's not just size that matters: Small language models are also few-shot learners." arXiv preprint arXiv:2009.07118 (2020).
 
 
-## Testing and development
+## Testing
 
 ### Setup
 
@@ -273,7 +277,8 @@ Code:
 - [ ] Testing
   - [ ] Increase coverage
   - [ ] Standardize
-- [ ] Factor out input checks on prompts and completions
+- [ ] Factor out input checks on prompts and completions (**)
+- [ ] De-automate overzealous auto-docstring stuff lol (**)
 - [ ] HuggingFace `transformers.AutoModelForCausalLM`
   - [x] Optimize backend to allow for parallelization over completions/classes
   - [ ] Fix `end_of_prompt`
@@ -284,7 +289,6 @@ Code:
 - [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
 - [ ] Create a notebook template
 - [ ] Docs and user guides (not just docstrings)
-- [ ] De-automate overzealous auto-docstring stuff lol (**)
 
 Research: evaluate on more tasks, and understand its relative advantages and
 disadvantages vs other classification methods
