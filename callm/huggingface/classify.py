@@ -1,8 +1,8 @@
 """
 Perform prompt-completion classification using a `transformers.AutoModelForCausalLM`.
 
-This module is a fast mirror of `classify`. It precomputes each attention block's keys
-and values for prompts.
+This module is a fast mirror of `classify_slow`. It precomputes each attention block's
+keys and values for prompts, enabling greater parallelization over completions.
 """
 from __future__ import annotations
 from typing import Mapping, Sequence, Union
