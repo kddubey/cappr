@@ -201,17 +201,12 @@ def _blessed_helper(
     return logits, encodings
 
 
-@hf.utils.cat_logits_encodings
-@batch.batchify(
-    batchable_arg="prompts", push_up_arg="tokenizer", progress_bar_desc="logits (fast)"
-)
 def _logits_completions_given_prompts(
     model: AutoModelForCausalLM,
     tokenizer: AutoTokenizer,
     prompts: Sequence[str],
     completions: Sequence[str],
     end_of_prompt: str = " ",
-    batch_size: int = 32,
 ):
     """
     If `texts` is
@@ -235,8 +230,6 @@ def _logits_completions_given_prompts(
 
     2. `encodings`: `BatchEncoding` containing the input IDs, attention mask,
     and position offsets.
-
-    Texts are processed by the model in batches of size `batch_size`.
     """
     if end_of_prompt != " ":
         raise ValueError("end_of_prompt must be ' ' for now. Sorry!")
@@ -252,15 +245,10 @@ def _logits_completions_given_prompts(
     )
 
 
-@hf.utils.cat_logits_encodings
-@batch.batchify(
-    batchable_arg="examples", push_up_arg="tokenizer", progress_bar_desc="logits (fast)"
-)
 def _logits_completions_given_prompts_examples(
     model: AutoModelForCausalLM,
     tokenizer: AutoTokenizer,
     examples: Sequence[Example],
-    batch_size: int = 32,
 ):
     """
     If `texts` is
@@ -283,8 +271,6 @@ def _logits_completions_given_prompts_examples(
 
     2. `encodings`: `BatchEncoding` containing the input IDs, attention mask,
     and position offsets.
-
-    Texts are processed by the model in batches of size `batch_size`.
     """
     if any([example.end_of_prompt != " " for example in examples]):
         raise ValueError("Every example's end_of_prompt must be ' ' for now. Sorry!")
@@ -353,15 +339,16 @@ def log_probs_conditional(
     Texts are processed by the model in batches of size `batch_size`.
     """
     model, tokenizer = hf.utils.load_model_and_tokenizer(model)
-    logits, encodings = _logits_completions_given_prompts(
-        model,
-        tokenizer,
-        prompts,
-        completions,
-        end_of_prompt=end_of_prompt,
-        batch_size=batch_size,
-    )
-    log_probs_completions = _logits_to_log_probs_completions(logits, encodings)
+
+    @batch.flatten
+    @batch.batchify(batchable_arg="prompts", progress_bar_desc="log-probs (fast)")
+    def log_probs_completions_batch(prompts, batch_size=batch_size):
+        logits, encodings = _logits_completions_given_prompts(
+            model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
+        )
+        return _logits_to_log_probs_completions(logits, encodings)
+
+    log_probs_completions = log_probs_completions_batch(prompts)
     return list(batch.constant(log_probs_completions, size=len(completions)))
 
 
@@ -377,10 +364,16 @@ def log_probs_conditional_examples(
     Texts are processed by the model in batches of size `batch_size`.
     """
     model, tokenizer = hf.utils.load_model_and_tokenizer(model)
-    logits, encodings = _logits_completions_given_prompts_examples(
-        model, tokenizer, examples, batch_size=batch_size
-    )
-    log_probs_completions = _logits_to_log_probs_completions(logits, encodings)
+
+    @batch.flatten
+    @batch.batchify(batchable_arg="examples", progress_bar_desc="log-probs (fast)")
+    def log_probs_completions_batch(examples, batch_size=batch_size):
+        logits, encodings = _logits_completions_given_prompts_examples(
+            model, tokenizer, examples
+        )
+        return _logits_to_log_probs_completions(logits, encodings)
+
+    log_probs_completions = log_probs_completions_batch(examples)
     num_completions_per_prompt = [len(example.completions) for example in examples]
     return list(batch.variable(log_probs_completions, sizes=num_completions_per_prompt))
 

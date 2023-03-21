@@ -57,29 +57,20 @@ def _kwarg_name_to_value(func):
     }
 
 
-def batchify(
-    batchable_arg: str,
-    batch_size: int = 32,
-    push_up_arg: Optional[str] = None,
-    progress_bar_desc: str = "",
-):
+def batchify(batchable_arg: str, batch_size: int = 32, progress_bar_desc: str = ""):
     """
     Returns a decorator which runs the decorated function in batches along its
-    `batchable_arg`, returning a list of the functions outputs for each batch.
+    `batchable_arg`, returning a list of the function's outputs for each batch.
 
     If the function includes a `'batch_size'` keyword argument, then its value is used
     as the batch size instead of the decorator's default `batch_size`.
-
-    If `push_up_arg` is supplied, then its value from the function call is also
-    returned.
+    TODO: allow non-kwarg too.
     """
 
     def decorator(func):
         _arg_names = inspect.getfullargspec(func).args
         batchable_arg_idx = _arg_names.index(batchable_arg)
         batch_size_default = _kwarg_name_to_value(func).get("batch_size", batch_size)
-        if push_up_arg is not None:
-            push_up_arg_idx = _arg_names.index(push_up_arg)
 
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -92,10 +83,21 @@ def batchify(
                     args[batchable_arg_idx] = batch_
                     outputs.append(func(*args, **kwargs))
                     progress_bar.update(len(batch_))
-            if push_up_arg is not None:
-                return outputs, args[push_up_arg_idx]
             return outputs
 
         return wrapper
 
     return decorator
+
+
+def flatten(batchified_func):
+    """
+    Decorates a `callm.utils.batch.batchify`d function. Flattens the output.
+    """
+
+    @wraps(batchified_func)
+    def wrapper(*args, **kwargs):
+        nested_outputs = batchified_func(*args, **kwargs)
+        return [output for inner_outputs in nested_outputs for output in inner_outputs]
+
+    return wrapper

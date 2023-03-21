@@ -159,30 +159,20 @@ def _test_log_probs(
     ),
 )
 @pytest.mark.parametrize("end_of_prompt", (" ",))  ## TODO: We need to expand
-@pytest.mark.parametrize("batch_size", (2, 1))
 class TestPromptsCompletions:
     def test__logits_completions_given_prompts(
-        self, model, tokenizer, prompts, completions, end_of_prompt, batch_size, atol
+        self, model, tokenizer, prompts, completions, end_of_prompt, atol
     ):
         slow_out = slow._logits_completions_given_prompts(
-            model,
-            tokenizer,
-            prompts,
-            completions,
-            end_of_prompt=end_of_prompt,
-            batch_size=batch_size,
+            model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
         )
         fast_out = fast._logits_completions_given_prompts(
-            model,
-            tokenizer,
-            prompts,
-            completions,
-            end_of_prompt=end_of_prompt,
-            batch_size=batch_size,
+            model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
         )
         _test_encodings(*slow_out, *fast_out)
         _test_logits(*slow_out, *fast_out, atol)
 
+    @pytest.mark.parametrize("batch_size", (2, 1))
     def test_log_probs_conditional(
         self, prompts, completions, model_name, end_of_prompt, batch_size, atol
     ):
@@ -214,7 +204,10 @@ class TestPromptsCompletions:
 @pytest.mark.parametrize(
     "examples",
     (
-        [Ex("a b c", ["d", "e f g"]), Ex("c", ["d", "d e f", "ya later"])],
+        [
+            Ex("a b c", ["d", "e f g"]),
+            Ex("C", ["p G C p G", "d e f", "ya later alligator"]),
+        ],
         ########## Next set of examples ##########
         [
             Ex("chi", ["can", "ery"]),
@@ -223,20 +216,20 @@ class TestPromptsCompletions:
         ],
     ),
 )
-@pytest.mark.parametrize("batch_size", (2, 1))
 class TestExamples:
     def test__logits_completions_given_prompts_examples(
-        self, model, tokenizer, examples, batch_size, atol
+        self, model, tokenizer, examples, atol
     ):
         slow_out = slow._logits_completions_given_prompts_examples(
-            model, tokenizer, examples, batch_size=batch_size
+            model, tokenizer, examples
         )
         fast_out = fast._logits_completions_given_prompts_examples(
-            model, tokenizer, examples, batch_size=batch_size
+            model, tokenizer, examples
         )
         _test_encodings(*slow_out, *fast_out)
         _test_logits(*slow_out, *fast_out, atol)
 
+    @pytest.mark.parametrize("batch_size", (2, 1))
     def test_log_probs_conditional_examples(
         self, examples: list[Ex], model_name, batch_size, atol
     ):

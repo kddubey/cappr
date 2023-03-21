@@ -86,15 +86,10 @@ def _keys_values_prompts(
     return out.past_key_values, encodings, offsets, last_nonpad_token_logits
 
 
-@hf.utils.cat_logits_encodings
-@batch.batchify(
-    batchable_arg="texts", push_up_arg="tokenizer", progress_bar_desc="logits (slow)"
-)
 def _logits_texts(
     model: AutoModelForCausalLM,
     tokenizer: AutoTokenizer,
     texts: Sequence[str],
-    batch_size: int = 32,
 ) -> tuple[torch.Tensor, BatchEncoding]:
     """
     TODO: docstring
@@ -131,7 +126,6 @@ def _logits_completions_given_prompts(
     prompts: Sequence[str],
     completions: Sequence[str],
     end_of_prompt: str = " ",
-    batch_size: int = 32,
 ):
     """
     If `texts` is
@@ -155,8 +149,6 @@ def _logits_completions_given_prompts(
 
     2. `encodings`: `BatchEncoding` containing the input IDs, attention mask,
     and position offsets.
-
-    Texts are processed by the model in batches of size `batch_size`.
     """
     if isinstance(prompts, str) or not isinstance(prompts, Sequence):
         raise TypeError("prompts must be a Sequence of strings.")
@@ -167,7 +159,7 @@ def _logits_completions_given_prompts(
         for prompt in prompts
         for completion in completions
     ]
-    logits, encodings = _logits_texts(model, tokenizer, texts, batch_size=batch_size)
+    logits, encodings = _logits_texts(model, tokenizer, texts)
     ## Need these indices to slice completion tokens
     encodings["offsets"] = _prompts_offsets(
         tokenizer, prompts, num_completions_per_prompt=len(completions)
@@ -179,7 +171,6 @@ def _logits_completions_given_prompts_examples(
     model: AutoModelForCausalLM,
     tokenizer: AutoTokenizer,
     examples: Sequence[classify.Example],
-    batch_size: int = 32,
 ):
     """
     If `texts` is
@@ -203,15 +194,13 @@ def _logits_completions_given_prompts_examples(
 
     2. `encodings`: `BatchEncoding` containing the input IDs, attention mask,
     and position offsets.
-
-    Texts are processed by the model in batches of size `batch_size`.
     """
     texts = [
         example.prompt + example.end_of_prompt + completion
         for example in examples
         for completion in example.completions
     ]
-    logits, encodings = _logits_texts(model, tokenizer, texts, batch_size=batch_size)
+    logits, encodings = _logits_texts(model, tokenizer, texts)
     ## Need these indices to slice completion tokens
     prompts = [example.prompt for example in examples]
     num_completions_per_prompt = [len(example.completions) for example in examples]
@@ -255,7 +244,7 @@ def _logits_to_log_probs_completions(
 def log_probs_conditional(
     prompts: Sequence[str],
     completions: Sequence[str],
-    model_name: str,
+    model: str,
     end_of_prompt: str = " ",
     batch_size: int = 32,
 ) -> list[list[list[float]]]:
@@ -266,21 +255,22 @@ def log_probs_conditional(
 
     Texts are processed by the model in batches of size `batch_size`.
     """
-    model, tokenizer = hf.utils.load_model_and_tokenizer(model_name)
-    logits, encodings = _logits_completions_given_prompts(
-        model,
-        tokenizer,
-        prompts,
-        completions,
-        end_of_prompt=end_of_prompt,
-        batch_size=batch_size,
-    )
-    log_probs_completions = _logits_to_log_probs_completions(logits, encodings)
+    model, tokenizer = hf.utils.load_model_and_tokenizer(model)
+
+    @batch.flatten
+    @batch.batchify(batchable_arg="prompts", progress_bar_desc="log-probs (fast)")
+    def log_probs_completions_batch(prompts, batch_size=batch_size):
+        logits, encodings = _logits_completions_given_prompts(
+            model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
+        )
+        return _logits_to_log_probs_completions(logits, encodings)
+
+    log_probs_completions = log_probs_completions_batch(prompts)
     return list(batch.constant(log_probs_completions, size=len(completions)))
 
 
 def log_probs_conditional_examples(
-    examples: Sequence[Example], model_name: str, batch_size: int = 32
+    examples: Sequence[Example], model: str, batch_size: int = 32
 ) -> list[list[list[float]]]:
     """
     Returns a list `log_probs_completions` where `log_probs_completions[i][j]` is a list
@@ -290,11 +280,17 @@ def log_probs_conditional_examples(
 
     Texts are processed by the model in batches of size `batch_size`.
     """
-    model, tokenizer = hf.utils.load_model_and_tokenizer(model_name)
-    logits, encodings = _logits_completions_given_prompts_examples(
-        model, tokenizer, examples, batch_size=batch_size
-    )
-    log_probs_completions = _logits_to_log_probs_completions(logits, encodings)
+    model, tokenizer = hf.utils.load_model_and_tokenizer(model)
+
+    @batch.flatten
+    @batch.batchify(batchable_arg="examples", progress_bar_desc="log-probs (fast)")
+    def log_probs_completions_batch(examples, batch_size=batch_size):
+        logits, encodings = _logits_completions_given_prompts_examples(
+            model, tokenizer, examples
+        )
+        return _logits_to_log_probs_completions(logits, encodings)
+
+    log_probs_completions = log_probs_completions_batch(examples)
     num_completions_per_prompt = [len(example.completions) for example in examples]
     return list(batch.variable(log_probs_completions, sizes=num_completions_per_prompt))
 
