@@ -59,7 +59,9 @@ def _keys_values_prompts(
     if not isinstance(num_completions_per_prompt, int) and not isinstance(
         num_completions_per_prompt, torch.Tensor
     ):
-        num_completions_per_prompt = torch.tensor(num_completions_per_prompt)
+        num_completions_per_prompt = torch.tensor(
+            num_completions_per_prompt, device=hf.utils.DEVICE
+        )
 
     ## Batch inference prompts
     prompts = list(prompts)  ## 0-index in case it's a Series or something
