@@ -274,10 +274,10 @@ pytest
 <summary>Code</summary>
 
 - [ ] Testing
-  - [ ] Increase coverage
-  - [ ] Standardize
-- [ ] Factor out input checks on prompts and completions (**)
-- [x] De-automate overzealous auto-docstring stuff lol
+  - [ ] Increase coverage (**)
+  - [ ] Standardize (**)
+- [ ] Factor out input checks on prompts and completions
+- [x] De-automate overzealous auto-docstring stuff
 - [ ] HuggingFace `transformers.AutoModelForCausalLM`
   - [x] Optimize backend to allow for parallelization over completions/classes
   - [ ] Fix `end_of_prompt`
