@@ -280,7 +280,8 @@ pytest
 - [x] De-automate overzealous auto-docstring stuff
 - [ ] HuggingFace `transformers.AutoModelForCausalLM`
   - [x] Optimize backend to allow for parallelization over completions/classes
-  - [ ] Fix `end_of_prompt`
+  - [ ] Allow non-`' '` `end_of_prompt`
+  - [ ] Get it working on GPU
   - [ ] Allow user to pass in an instantiated model instead of a string
   - [x] Optional/extra install, so that you can optionally add the hefty
     requirements needed to run `huggingface`

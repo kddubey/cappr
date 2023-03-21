@@ -111,11 +111,11 @@ def _keys_values_prompts(
     _last_nonpad_token_idxs = (offsets - 1)[:, None, None]
     # fmt: off
     last_nonpad_token_logits: torch.Tensor = (out
-                                             .logits
-                                             .repeat_interleave(
-                                                 num_completions_per_prompt, dim=0)
-                                             .take_along_dim(
-                                                 _last_nonpad_token_idxs, dim=1))
+                                              .logits
+                                              .repeat_interleave(
+                                                  num_completions_per_prompt, dim=0)
+                                              .take_along_dim(
+                                                  _last_nonpad_token_idxs, dim=1))
     # fmt: on
 
     return past_key_values, encodings, offsets, last_nonpad_token_logits
@@ -162,7 +162,9 @@ def _blessed_helper(
     ## Set position_ids to what they were had we fed the prompt + completion together w/
     ## right-padding (right b/c GPT-2 uses absolute position ids)
     _num_completion_tokens = completions_encoding.input_ids.shape[1]
-    completions_position_ids = torch.arange(_num_completion_tokens) + offsets[:, None]
+    completions_position_ids = (
+        torch.arange(_num_completion_tokens, device=hf.utils.DEVICE) + offsets[:, None]
+    )
     ## Need attention_mask to include the prompt since it prolly has padding
     attention_mask = torch.cat(
         (prompts_encodings["attention_mask"], completions_attention_mask), dim=1
