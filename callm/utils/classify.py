@@ -9,27 +9,7 @@ import numpy as np
 import numpy.typing as npt
 
 from callm.example import Example
-from callm.utils import check, wrap
-
-
-class docstrings:
-    """
-    Docstrings common to functions which compute conditional completion
-    log-probabilities.
-    """
-
-    LOG_PROBS_CONDITIONAL = """
-    Returns a list `log_probs_completions` where `log_probs_completions[i][j]` is a list
-    of the `model`'s estimates of log-probablities of each token in `completions[j]`,
-    conditional on previous tokens in the completion and `prompts[i]`.
-    """
-
-    LOG_PROBS_CONDITIONAL_EXAMPLES = """
-    Returns a list `log_probs_completions` where `log_probs_completions[i][j]` is a list
-    of the `model`'s estimates of log-probablities of each token in
-    `examples[i].completions[j]`, conditional on previous tokens in the completion and
-    `examples[i].prompt`.
-    """
+from callm.utils import check
 
 
 def agg_log_probs(
@@ -75,48 +55,16 @@ def posterior_prob(
     return posteriors_unnorm
 
 
-def _check_func(func: Callable[[Sequence[float]], float]):
-    """
-    Raises an error is `func` is not a function of `Sequence[float]` or it returns
-    `None`.
-    """
-    example_input = [0, -0.5, -1]
-    if func is None:
-        return np.mean
-    try:
-        out = func(example_input)
-    except Exception as e:
-        raise ValueError(
-            "func is not a function of Sequence[float]. Got this "
-            f"error on input {example_input}: {e}."
-        )
-    else:
-        if out is None:
-            raise ValueError(
-                "func must return a float. It returned None for "
-                f"this input: {example_input}."
-            )
-        return func
-
-
 def predict_proba(conditional_func):
     """
     TODO: docstring
     """
-    docstring = """
-    Returns an array with shape `(len(prompts), len(completions))` called `pred_probs`,
-    where `pred_probs[i, j]` is a `model`'s estimate of the probability of
-    `completions[j]` given `prompts[i] + end_of_prompt`.
-    """
 
-    @wrap.add_doc_before(docstring)
-    @wrap.wraps_but_keep_wrapper_return_ann(conditional_func)
     def wrapper(
-        prompts, completions, model, prior=None, func=None, **kwargs
+        prompts, completions, model, prior=None, **kwargs
     ) -> npt.NDArray[np.floating]:
-        func = _check_func(func)
         log_probs_completions = conditional_func(prompts, completions, model, **kwargs)
-        likelihoods = agg_log_probs(log_probs_completions, func=func)
+        likelihoods = agg_log_probs(log_probs_completions)
         ## If there's only 1 completion, normalizing will cause the prob to
         ## trivially be 1! So let's not normalize in that case, and hope the
         ## user knows what they're doing
@@ -131,23 +79,12 @@ def predict_proba_examples(conditional_examples_func):
     """
     TODO: docstring
     """
-    docstring = """
-    Returns a list, `pred_probs`, where `pred_probs[i][j]` is a `model`'s estimate of
-    the probability of `examples[i].completions[j]` given
-    `examples[i].prompt + examples[i].end_of_prompt`.
 
-    If the number of completions per example is a constant `k`, then an array with shape
-    `(len(examples), k)` is returned instead.
-    """
-
-    @wrap.add_doc_before(docstring)
-    @wrap.wraps_but_keep_wrapper_return_ann(conditional_examples_func)
     def wrapper(
-        examples: Sequence[Example], model, func=None, **kwargs
+        examples: Sequence[Example], model, **kwargs
     ) -> Union[list[list[float]], npt.NDArray[np.floating]]:
-        func = _check_func(func)
         log_probs_completions = conditional_examples_func(examples, model, **kwargs)
-        likelihoods_all = agg_log_probs(log_probs_completions, func=func)
+        likelihoods_all = agg_log_probs(log_probs_completions)
         ## If an example has just 1 completion, normalizing will cause the prob
         ## to trivially be 1! So let's not normalize in that case, and hope the
         ## user knows what they're doing

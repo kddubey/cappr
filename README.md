@@ -165,7 +165,7 @@ pred_class_idxs = [np.argmax(example_pred_probs)
                    for example_pred_probs in pred_probs]
 print([example.completions[pred_class_idx]
        for example, pred_class_idx in zip(examples, pred_class_idxs)])
-# ['Clarice Starling in Silence of the Lambs',
+# ['Clarice Starling',
 #  'Kevin Conroy']
 ```
 </details>
@@ -277,7 +277,7 @@ pytest
   - [ ] Increase coverage
   - [ ] Standardize
 - [ ] Factor out input checks on prompts and completions (**)
-- [ ] De-automate overzealous auto-docstring stuff lol (**)
+- [x] De-automate overzealous auto-docstring stuff lol
 - [ ] HuggingFace `transformers.AutoModelForCausalLM`
   - [x] Optimize backend to allow for parallelization over completions/classes
   - [ ] Fix `end_of_prompt`

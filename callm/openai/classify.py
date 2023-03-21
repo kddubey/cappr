@@ -3,11 +3,13 @@ Perform prompt-completion classification using models from OpenAI's text
 completion API.
 """
 from __future__ import annotations
-from typing import Sequence
+from typing import Sequence, Union
 
+import numpy as np
+import numpy.typing as npt
 import tiktoken
 
-from callm.utils import batch, classify, wrap
+from callm.utils import batch, classify
 from callm.example import Example
 from callm import openai
 
@@ -55,8 +57,6 @@ def slice_completions(
     ]
 
 
-@wrap.add_doc_after(openai.docstrings.ASK_IF_OK)
-@wrap.add_doc_before(classify.docstrings.LOG_PROBS_CONDITIONAL)
 def log_probs_conditional(
     prompts: Sequence[str],
     completions: Sequence[str],
@@ -64,6 +64,14 @@ def log_probs_conditional(
     end_of_prompt: str = " ",
     ask_if_ok: bool = False,
 ):
+    """
+    Returns a list `log_probs_completions` where `log_probs_completions[i][j]` is a list
+    of the `model`'s estimates of log-probablities of each token in `completions[j]`,
+    conditional on previous tokens in the completion and `prompts[i]`.
+
+    If `ask_if_ok`, then you'll be notified of the cost of the API calls, and
+    then prompted to give the go-ahead.
+    """
     ## str / non-Sequence[str] inputs silently, wastefully, and irreparably fail
     if isinstance(prompts, str) or not isinstance(prompts, Sequence):
         raise TypeError("prompts must be a Sequence of strings.")
@@ -84,11 +92,18 @@ def log_probs_conditional(
     ]
 
 
-@wrap.add_doc_after(openai.docstrings.ASK_IF_OK)
-@wrap.add_doc_before(classify.docstrings.LOG_PROBS_CONDITIONAL_EXAMPLES)
 def log_probs_conditional_examples(
     examples: Sequence[Example], model: openai.api.Model, ask_if_ok: bool = False
 ) -> list[list[list[float]]]:
+    """
+    Returns a list `log_probs_completions` where `log_probs_completions[i][j]` is a list
+    of the `model`'s estimates of log-probablities of each token in
+    `examples[i].completions[j]`, conditional on previous tokens in the completion and
+    `examples[i].prompt`.
+
+    If `ask_if_ok`, then you'll be notified of the cost of the API calls, and
+    then prompted to give the go-ahead.
+    """
     ## Flat list of prompts and their completions. Will post-process
     texts = [
         example.prompt + example.end_of_prompt + completion
@@ -108,7 +123,6 @@ def log_probs_conditional_examples(
     )
 
 
-@wrap.add_doc_after(openai.docstrings.ASK_IF_OK)
 @classify.predict_proba
 def predict_proba(
     prompts: Sequence[str],
@@ -116,15 +130,33 @@ def predict_proba(
     model: openai.api.Model,
     end_of_prompt: str = " ",
     ask_if_ok: bool = False,
-):
+) -> npt.NDArray[np.floating]:
+    """
+    Returns an array with shape `(len(prompts), len(completions))` called `pred_probs`,
+    where `pred_probs[i, j]` is a `model`'s estimate of the probability of
+    `completions[j]` given `prompts[i] + end_of_prompt`.
+
+    If `ask_if_ok`, then you'll be notified of the cost of the API calls, and
+    then prompted to give the go-ahead.
+    """
     return log_probs_conditional(
         prompts, completions, model, end_of_prompt=end_of_prompt, ask_if_ok=ask_if_ok
     )
 
 
-@wrap.add_doc_after(openai.docstrings.ASK_IF_OK)
 @classify.predict_proba_examples
 def predict_proba_examples(
     examples: Sequence[Example], model: openai.api.Model, ask_if_ok: bool = False
-):
+) -> Union[list[list[float]], npt.NDArray[np.floating]]:
+    """
+    Returns a list, `pred_probs`, where `pred_probs[i][j]` is a `model`'s estimate of
+    the probability of `examples[i].completions[j]` given
+    `examples[i].prompt + examples[i].end_of_prompt`.
+
+    If the number of completions per example is a constant `k`, then an array with shape
+    `(len(examples), k)` is returned instead.
+
+    If `ask_if_ok`, then you'll be notified of the cost of the API calls, and
+    then prompted to give the go-ahead.
+    """
     return log_probs_conditional_examples(examples, model, ask_if_ok=ask_if_ok)

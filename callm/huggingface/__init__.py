@@ -1,1 +1,1 @@
-from . import docstrings, utils, classify, classify_slow
+from . import utils, classify, classify_slow

@@ -13,8 +13,7 @@ import openai
 import tiktoken
 from tqdm.auto import tqdm
 
-from callm.utils import batch, wrap
-from callm.openai import docstrings
+from callm.utils import batch
 
 
 logger = logging.getLogger(__name__)
@@ -107,7 +106,6 @@ def _openai_api_call_is_ok(
         raise UserCanceled("smell ya later")
 
 
-@wrap.add_doc_after(docstrings.ASK_IF_OK)
 def gpt_complete(
     texts: Sequence[str],
     model: Model,
@@ -120,6 +118,9 @@ def gpt_complete(
     OpenAI Completion endpoint) for `texts[i]` using `model`.
 
     **Note that, by default, `max_tokens` to generate is 0!**
+
+    If `ask_if_ok`, then you'll be notified of the cost of the API calls, and
+    then prompted to give the go-ahead.
     """
     _batch_size = 20  ## max that the API can currently handle
     if isinstance(texts, str):
@@ -142,7 +143,6 @@ def gpt_complete(
     return choices
 
 
-@wrap.add_doc_after(docstrings.ASK_IF_OK)
 def gpt_chat_complete(
     texts: Sequence[str],
     model: str = "gpt-3.5-turbo",
@@ -156,6 +156,9 @@ def gpt_chat_complete(
     OpenAI Chat completions endpoint) for `texts[i]` using `model`.
 
     #### Note that, by default, `max_tokens` to generate is 5.
+
+    If `ask_if_ok`, then you'll be notified of the cost of the API calls, and
+    then prompted to give the go-ahead.
     """
     ## TODO: batch, if possible
     if isinstance(texts, str):
