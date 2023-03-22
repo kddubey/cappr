@@ -39,8 +39,8 @@ pred_probs = predict_proba(prompts=[prompt],
                            prior=prior,
                            model='text-ada-001')
 
-print(pred_probs.round(3))
-# [[0.979 0.001 0.02 ]]
+print(pred_probs.round(2))
+# [[0.98 0.   0.02]]
 
 pred_class_idxs = pred_probs.argmax(axis=1)
 print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
@@ -285,7 +285,7 @@ pytest
 - [x] De-automate overzealous auto-docstring stuff
 - [ ] Make progress bar optional
 - [ ] HuggingFace `transformers.AutoModelForCausalLM`
-  - [x] Optimize backend to allow for parallelization over completions/classes
+  - [x] Optimize backend to enable greater scaling wrt # completions/classes
   - [x] Get it working on single-GPU, check that it's faster than sampling
   - [ ] Allow non-`' '` `end_of_prompt`
   - [ ] Factor out repeated code b/t fast and slow modules
@@ -294,9 +294,15 @@ pytest
   - [ ] Evaluate a bigger model like GPT-J
 - [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
 - [ ] Docs and user guides (not just docstrings)
-- [ ] Small (CPU) speed-ups
-  - [ ] Add option to parallelize `agg_log_probs`
-  - [ ] For `examples` input, if # completions per prompt is constant, do mat-mul
+- [ ] Allow for multi-label classification
+  - [ ] Pass `normalize` as an argument to predict_proba functions
+  - [ ] For `huggingface`, add note that you'll get faster results by passing all
+  labels at once (assuming prompt is identical for each label)
+- [x] Small CPU speed-ups
+  - [x] For constant-completions input, vectorize `agg_log_probs`
+  - [x] For `examples` input, if # completions per prompt is constant, vectorize
+  `posterior_prob`
+- Annotate arrays and tensors using [this cool strategy](https://stackoverflow.com/a/64032593/18758987), or [`nptyping`](https://github.com/ramonhagenaars/nptyping) for arrays
 - [ ] Create a notebook template
 </details>
 

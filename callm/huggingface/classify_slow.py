@@ -57,10 +57,8 @@ def _keys_values_prompts(
                 f"{len(prompts)}."
             )
     if isinstance(num_completions_per_prompt, int):
-        ## for code simplicity, just repeat it
-        num_completions_per_prompt = [
-            num_completions_per_prompt for _ in range(len(prompts))
-        ]
+        ## For code simplicity, just repeat it
+        num_completions_per_prompt = [num_completions_per_prompt] * len(prompts)
     prompts_repeated = [
         prompt
         for prompt, num_repeats in zip(prompts, num_completions_per_prompt)
