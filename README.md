@@ -135,10 +135,12 @@ print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
 <summary>Run in batches, where each prompt has a different set of possible completions
 </summary>
 
-Again, let's use `huggingface` here.
+Again, let's use `huggingface` here. And this time, just for kicks, let's instead pass
+in an instantiated model and tokenizer instead of its name.
 
 ```python
 import numpy as np
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from callm.example import Example
 from callm.huggingface.classify import predict_proba_examples
@@ -151,7 +153,10 @@ examples = [
             prior=      (     2/3      ,      1/3     ,      0      ))
 ]
 
-pred_probs = predict_proba_examples(examples, model='gpt2')
+model = AutoModelForCausalLM.from_pretrained('gpt2')
+tokenizer = AutoTokenizer.from_pretrained('gpt2')
+pred_probs = predict_proba_examples(examples,
+                                    model_and_tokenizer=(model, tokenizer))
 
 # pred_probs[i][j] = probability that examples[i].prompt is classified as
 # examples[i].completions[j]
@@ -278,17 +283,20 @@ pytest
   - [ ] Standardize (**)
 - [ ] Factor out input checks on prompts and completions
 - [x] De-automate overzealous auto-docstring stuff
+- [ ] Make progress bar optional
 - [ ] HuggingFace `transformers.AutoModelForCausalLM`
   - [x] Optimize backend to allow for parallelization over completions/classes
+  - [x] Get it working on single-GPU, check that it's faster than sampling
   - [ ] Allow non-`' '` `end_of_prompt`
-  - [ ] Get it working on GPU
-  - [ ] Allow user to pass in an instantiated model instead of a string
-  - [x] Optional/extra install, so that you can optionally add the hefty
-    requirements needed to run `huggingface`
-- [x] Put dev requirements in setup extras
+  - [ ] Support TensorFlow models
+  - [ ] Set device at function level, not globally
+  - [ ] Evaluate a bigger model like GPT-J
 - [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
-- [ ] Create a notebook template
 - [ ] Docs and user guides (not just docstrings)
+- [ ] Small (CPU) speed-ups
+  - [ ] Add option to parallelize `agg_log_probs`
+  - [ ] For `examples` input, if # completions per prompt is constant, do mat-mul
+- [ ] Create a notebook template
 </details>
 
 <details>

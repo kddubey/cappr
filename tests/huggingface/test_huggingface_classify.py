@@ -19,7 +19,7 @@ from callm.huggingface import classify_slow as slow
 @pytest.fixture(scope="module")
 def atol():
     ## Reading through some transformers tests, it looks like 1e-3 is considered
-    ## "close enough" for model outputs. See, e.g.,
+    ## "close enough" for model outputs, including hidden states and logits. See, e.g.,
     ## https://github.com/huggingface/transformers/blob/main/tests/models/gpt2/test_modeling_gpt2.py#L250
     return 1e-4
 
@@ -179,14 +179,14 @@ class TestPromptsCompletions:
         log_probs_completions_slow = slow.log_probs_conditional(
             prompts,
             completions,
-            model_name,
+            model=model_name,
             end_of_prompt=end_of_prompt,
             batch_size=batch_size,
         )
         log_probs_completions_fast = fast.log_probs_conditional(
             prompts,
             completions,
-            model_name,
+            model=model_name,
             end_of_prompt=end_of_prompt,
             batch_size=batch_size,
         )
@@ -234,10 +234,10 @@ class TestExamples:
         self, examples: list[Ex], model_name, batch_size, atol
     ):
         log_probs_completions_slow = slow.log_probs_conditional_examples(
-            examples, model_name, batch_size=batch_size
+            examples, model=model_name, batch_size=batch_size
         )
         log_probs_completions_fast = fast.log_probs_conditional_examples(
-            examples, model_name, batch_size=batch_size
+            examples, model=model_name, batch_size=batch_size
         )
         expected_len = len(examples)
         num_completions_per_prompt = [len(example.completions) for example in examples]

@@ -56,14 +56,28 @@ def logits_to_log_probs(
 
 
 def load_model_and_tokenizer(
-    model_name: str,
+    model: str = None,
+    model_and_tokenizer: tuple[AutoModelForCausalLM, AutoTokenizer] = None,
 ) -> tuple[PreTrainedModel, PreTrainedTokenizer]:
     """
     TODO: docstring
     """
-    model = AutoModelForCausalLM.from_pretrained(model_name).to(DEVICE)
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    if (model is not None and model_and_tokenizer is not None) or (
+        model is None and model_and_tokenizer is None
+    ):
+        raise ValueError(
+            "One of model and model_and_tokenizer must be None, and the other not None."
+        )
+    if model is not None:
+        model_ = AutoModelForCausalLM.from_pretrained(model)
+        tokenizer = AutoTokenizer.from_pretrained(model)
+    else:
+        model_, tokenizer = model_and_tokenizer
+    ## Prepare model
+    model_.to(DEVICE)
+    model_.eval()
+    ## Prepare tokenizer
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token_id = tokenizer.eos_token_id
     tokenizer.padding_side = "right"
-    return model, tokenizer
+    return model_, tokenizer

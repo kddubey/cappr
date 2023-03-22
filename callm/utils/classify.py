@@ -3,6 +3,7 @@ Transform conditional completion log-probabilites to a probability distribution
 over completions.
 """
 from __future__ import annotations
+from functools import wraps
 from typing import Callable, Optional, Sequence, Union
 
 import numpy as np
@@ -60,10 +61,18 @@ def predict_proba(conditional_func):
     TODO: docstring
     """
 
+    @wraps(conditional_func)
     def wrapper(
-        prompts, completions, model, prior=None, **kwargs
+        prompts: Sequence[str], completions: Sequence[str], *args, prior=None, **kwargs
     ) -> npt.NDArray[np.floating]:
-        log_probs_completions = conditional_func(prompts, completions, model, **kwargs)
+        """
+        Returns an array with shape `(len(prompts), len(completions))` called
+        `pred_probs`, where `pred_probs[i, j]` is an estimate of the probability of
+        `completions[j]` given `prompts[i]`.
+        """
+        ## I'm only providing the docstring above in case the code analyzer doesn't
+        ## handle decorated functions properly, e.g., Google Colab
+        log_probs_completions = conditional_func(prompts, completions, *args, **kwargs)
         likelihoods = agg_log_probs(log_probs_completions)
         ## If there's only 1 completion, normalizing will cause the prob to
         ## trivially be 1! So let's not normalize in that case, and hope the
@@ -80,10 +89,21 @@ def predict_proba_examples(conditional_examples_func):
     TODO: docstring
     """
 
+    @wraps(conditional_examples_func)
     def wrapper(
-        examples: Sequence[Example], model, **kwargs
+        examples: Sequence[Example], *args, **kwargs
     ) -> Union[list[list[float]], npt.NDArray[np.floating]]:
-        log_probs_completions = conditional_examples_func(examples, model, **kwargs)
+        """
+        Returns a list, `pred_probs`, where `pred_probs[i][j]` is an estimate of the
+        probability of `examples[i].completions[j]` given
+        `examples[i].prompt + examples[i].end_of_prompt`.
+
+        If the number of completions per example is a constant `k`, then an array with
+        shape `(len(examples), k)` is returned instead.
+        """
+        ## I'm only providing the docstring above in case the code analyzer doesn't
+        ## handle decorated functions properly, e.g., Google Colab
+        log_probs_completions = conditional_examples_func(examples, *args, **kwargs)
         likelihoods_all = agg_log_probs(log_probs_completions)
         ## If an example has just 1 completion, normalizing will cause the prob
         ## to trivially be 1! So let's not normalize in that case, and hope the

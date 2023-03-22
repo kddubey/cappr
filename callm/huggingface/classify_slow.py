@@ -244,7 +244,8 @@ def _logits_to_log_probs_completions(
 def log_probs_conditional(
     prompts: Sequence[str],
     completions: Sequence[str],
-    model: str,
+    model: str = None,
+    model_and_tokenizer: tuple[AutoModelForCausalLM, AutoTokenizer] = None,
     end_of_prompt: str = " ",
     batch_size: int = 32,
 ) -> list[list[list[float]]]:
@@ -253,9 +254,13 @@ def log_probs_conditional(
     of the `model`'s estimates of log-probablities of each token in `completions[j]`,
     conditional on previous tokens in the completion and `prompts[i]`.
 
+    Exactly one of `model` or `model_and_tokenizer` must be supplied.
+
     Texts are processed by the model in batches of size `batch_size`.
     """
-    model, tokenizer = hf.utils.load_model_and_tokenizer(model)
+    model, tokenizer = hf.utils.load_model_and_tokenizer(
+        model=model, model_and_tokenizer=model_and_tokenizer
+    )
 
     @batch.flatten
     @batch.batchify(batchable_arg="prompts", progress_bar_desc="log-probs (fast)")
@@ -270,7 +275,10 @@ def log_probs_conditional(
 
 
 def log_probs_conditional_examples(
-    examples: Sequence[Example], model: str, batch_size: int = 32
+    examples: Sequence[Example],
+    model: str = None,
+    model_and_tokenizer: tuple[AutoModelForCausalLM, AutoTokenizer] = None,
+    batch_size: int = 32,
 ) -> list[list[list[float]]]:
     """
     Returns a list `log_probs_completions` where `log_probs_completions[i][j]` is a list
@@ -278,9 +286,13 @@ def log_probs_conditional_examples(
     `examples[i].completions[j]`, conditional on previous tokens in the completion and
     `examples[i].prompt`.
 
+    Exactly one of `model` or `model_and_tokenizer` must be supplied.
+
     Texts are processed by the model in batches of size `batch_size`.
     """
-    model, tokenizer = hf.utils.load_model_and_tokenizer(model)
+    model, tokenizer = hf.utils.load_model_and_tokenizer(
+        model=model, model_and_tokenizer=model_and_tokenizer
+    )
 
     @batch.flatten
     @batch.batchify(batchable_arg="examples", progress_bar_desc="log-probs (fast)")
@@ -299,7 +311,8 @@ def log_probs_conditional_examples(
 def predict_proba(
     prompts: Sequence[str],
     completions: Sequence[str],
-    model: str,
+    model: str = None,
+    model_and_tokenizer: tuple[AutoModelForCausalLM, AutoTokenizer] = None,
     end_of_prompt: str = " ",
     batch_size: int = 32,
 ) -> npt.NDArray[np.floating]:
@@ -308,16 +321,26 @@ def predict_proba(
     where `pred_probs[i, j]` is a `model`'s estimate of the probability of
     `completions[j]` given `prompts[i] + end_of_prompt`.
 
+    Exactly one of `model` or `model_and_tokenizer` must be supplied.
+
     Texts are processed by the model in batches of size `batch_size`.
     """
     return log_probs_conditional(
-        prompts, completions, model, end_of_prompt=end_of_prompt, batch_size=batch_size
+        prompts,
+        completions,
+        model=model,
+        model_and_tokenizer=model_and_tokenizer,
+        end_of_prompt=end_of_prompt,
+        batch_size=batch_size,
     )
 
 
 @classify.predict_proba_examples
 def predict_proba_examples(
-    examples: Sequence[Example], model: str, batch_size: int = 32
+    examples: Sequence[Example],
+    model: str = None,
+    model_and_tokenizer: tuple[AutoModelForCausalLM, AutoTokenizer] = None,
+    batch_size: int = 32,
 ) -> Union[list[list[float]], npt.NDArray[np.floating]]:
     """
     Returns a list, `pred_probs`, where `pred_probs[i][j]` is a `model`'s estimate of
@@ -327,6 +350,13 @@ def predict_proba_examples(
     If the number of completions per example is a constant `k`, then an array with shape
     `(len(examples), k)` is returned instead.
 
+    Exactly one of `model` or `model_and_tokenizer` must be supplied.
+
     Texts are processed by the model in batches of size `batch_size`.
     """
-    return log_probs_conditional_examples(examples, model, batch_size=batch_size)
+    return log_probs_conditional_examples(
+        examples,
+        model=model,
+        model_and_tokenizer=model_and_tokenizer,
+        batch_size=batch_size,
+    )
