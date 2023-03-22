@@ -291,7 +291,6 @@ pytest
   - [ ] Factor out repeated code b/t fast and slow modules
   - [ ] Support TensorFlow models
   - [ ] Set device at function level, not globally
-  - [ ] Evaluate a bigger model like GPT-J
 - [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
 - [ ] Docs and user guides (not just docstrings)
 - [ ] Allow for multi-label classification
@@ -302,7 +301,9 @@ pytest
   - [x] For constant-completions input, vectorize `agg_log_probs`
   - [x] For `examples` input, if # completions per prompt is constant, vectorize
   `posterior_prob`
-- Annotate arrays and tensors using [this cool strategy](https://stackoverflow.com/a/64032593/18758987), or [`nptyping`](https://github.com/ramonhagenaars/nptyping) for arrays
+- [ ] Annotate arrays and tensors using
+[this cool strategy](https://stackoverflow.com/a/64032593/18758987),
+or [`nptyping`](https://github.com/ramonhagenaars/nptyping) for arrays
 - [ ] Create a notebook template
 </details>
 
@@ -328,6 +329,7 @@ other classification methods.
 - [ ] Finetune smaller, cheaper model and compare against zero-shot w/ davinci
   - [ ] e.g., GPT-2 from huggingface, `text-ada-001`
   - [ ] Again, compare against sampling
+- [ ] Evaluate a bigger model like GPT-J
 - [ ] Evaluate different aggregation functions. Currently taking mean, but
 there was no good motivation for that
 - [ ] A bit ambitious: support insertion. For transformers, I think this just

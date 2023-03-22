@@ -1,6 +1,6 @@
 """
-Transform conditional completion token log-probabilites to a probability distribution
-over completions.
+Transform completion token log-probabilites to a probability distribution over
+completions.
 """
 from __future__ import annotations
 from functools import wraps
@@ -187,7 +187,8 @@ def predict_proba_examples(conditional_examples_func):
         if all([example.prior is None for example in examples]):
             prior = None
         else:
-            ## For coding simplicity, just supply a non-None prior
+            ## For coding simplicity, just supply a prior which is non-None *everywhere*
+            ## It's the same shape as likelihoods
             prior = np.array(
                 [
                     example.prior
