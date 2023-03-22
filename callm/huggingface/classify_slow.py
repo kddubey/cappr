@@ -263,7 +263,7 @@ def log_probs_conditional(
     )
 
     @batch.flatten
-    @batch.batchify(batchable_arg="prompts", progress_bar_desc="log-probs (fast)")
+    @batch.batchify(batchable_arg="prompts", progress_bar_desc="log-probs (slow)")
     def log_probs_completions_batch(prompts, batch_size=batch_size):
         logits, encodings = _logits_completions_given_prompts(
             model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
@@ -295,7 +295,7 @@ def log_probs_conditional_examples(
     )
 
     @batch.flatten
-    @batch.batchify(batchable_arg="examples", progress_bar_desc="log-probs (fast)")
+    @batch.batchify(batchable_arg="examples", progress_bar_desc="log-probs (slow)")
     def log_probs_completions_batch(examples, batch_size=batch_size):
         logits, encodings = _logits_completions_given_prompts_examples(
             model, tokenizer, examples

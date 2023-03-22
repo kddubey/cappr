@@ -288,6 +288,7 @@ pytest
   - [x] Optimize backend to allow for parallelization over completions/classes
   - [x] Get it working on single-GPU, check that it's faster than sampling
   - [ ] Allow non-`' '` `end_of_prompt`
+  - [ ] Factor out repeated code b/t fast and slow modules
   - [ ] Support TensorFlow models
   - [ ] Set device at function level, not globally
   - [ ] Evaluate a bigger model like GPT-J
@@ -305,6 +306,7 @@ pytest
 Evaluate on more tasks, and understand its relative advantages and disadvantages vs
 other classification methods.
 
+- [ ] Re-run COPA demo w/ left-stripped completions
 - [ ] Create a user guide, build a table of results comparing competing
   approaches on statistical performance, cost, and computation
 - [ ] Make a computational comparison to sampling (**)

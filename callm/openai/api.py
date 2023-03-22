@@ -129,7 +129,7 @@ def gpt_complete(
     if ask_if_ok:
         _openai_api_call_is_ok(model, texts, max_tokens=max_tokens)
     choices = []
-    with tqdm(total=len(texts), desc="Computing probs") as progress_bar:
+    with tqdm(total=len(texts), desc="log-probs") as progress_bar:
         for texts_batch in batch.constant(texts, _batch_size):
             response = openai_method_retry(
                 openai.Completion.create,
