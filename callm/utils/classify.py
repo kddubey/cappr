@@ -110,8 +110,8 @@ def posterior_prob(
     likelihoods = np.array(likelihoods)  ## it should not be jagged/inhomogenous
     if not isinstance(normalize, Sequence):
         ## For code simplicity, just repeat it
+        ## If likelihoods is 1-D, there's only a single probability distr to normalize
         num_repeats = 1 if len(likelihoods.shape) == 1 else likelihoods.shape[0]
-        ## If it's 1-D, there's only a single probability to normalize
         normalize = [normalize] * num_repeats
     elif len(normalize) != len(likelihoods):
         raise ValueError(
