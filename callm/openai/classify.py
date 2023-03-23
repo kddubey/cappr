@@ -14,7 +14,7 @@ from callm.example import Example
 from callm import openai
 
 
-def token_logprobs(
+def _token_logprobs(
     texts: Sequence[str], model: openai.api.Model, ask_if_ok: bool = False
 ) -> list[list[float]]:
     """
@@ -34,7 +34,7 @@ def token_logprobs(
     return [choice["logprobs"]["token_logprobs"] for choice in choices]
 
 
-def slice_completions(
+def _slice_completions(
     completions: Sequence[str],
     log_probs: Sequence[Sequence[float]],
     model: openai.api.Model,
@@ -83,11 +83,11 @@ def log_probs_conditional(
         for prompt in prompts
         for completion in completions
     ]
-    log_probs = token_logprobs(texts, model=model, ask_if_ok=ask_if_ok)
+    log_probs = _token_logprobs(texts, model=model, ask_if_ok=ask_if_ok)
     ## Since log_probs is a flat list, we'll need to batch them by the size and order of
     ## completions to fulfill the spec.
     return [
-        slice_completions(completions, log_probs_batch, model)
+        _slice_completions(completions, log_probs_batch, model)
         for log_probs_batch in batch.constant(log_probs, size=len(completions))
     ]
 
@@ -110,12 +110,14 @@ def log_probs_conditional_examples(
         for example in examples
         for completion in example.completions
     ]
-    log_probs_all = token_logprobs(texts, model=model, ask_if_ok=ask_if_ok)
+    log_probs_all = _token_logprobs(texts, model=model, ask_if_ok=ask_if_ok)
     ## Flatten completions in same order as examples were flattened
     completions_all = [
         completion for example in examples for completion in example.completions
     ]
-    log_probs_completions_all = slice_completions(completions_all, log_probs_all, model)
+    log_probs_completions_all = _slice_completions(
+        completions_all, log_probs_all, model
+    )
     ## Batch by completions to fulfill the spec
     num_completions_per_prompt = [len(example.completions) for example in examples]
     return list(
@@ -123,7 +125,7 @@ def log_probs_conditional_examples(
     )
 
 
-@classify.predict_proba
+@classify._predict_proba
 def predict_proba(
     prompts: Sequence[str],
     completions: Sequence[str],
@@ -144,7 +146,7 @@ def predict_proba(
     )
 
 
-@classify.predict_proba_examples
+@classify._predict_proba_examples
 def predict_proba_examples(
     examples: Sequence[Example], model: openai.api.Model, ask_if_ok: bool = False
 ) -> Union[list[list[float]], npt.NDArray[np.floating]]:

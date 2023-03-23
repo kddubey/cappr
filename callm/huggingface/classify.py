@@ -390,7 +390,7 @@ def log_probs_conditional_examples(
     return list(batch.variable(log_probs_completions, sizes=num_completions_per_prompt))
 
 
-@classify.predict_proba
+@classify._predict_proba
 def predict_proba(
     prompts: Sequence[str],
     completions: Sequence[str],
@@ -418,7 +418,7 @@ def predict_proba(
     )
 
 
-@classify.predict_proba_examples
+@classify._predict_proba_examples
 def predict_proba_examples(
     examples: Sequence[Example],
     model: str = None,

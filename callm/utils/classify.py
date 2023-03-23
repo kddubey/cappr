@@ -132,7 +132,7 @@ def posterior_prob(
     return posteriors_unnorm / marginals
 
 
-def predict_proba(conditional_func):
+def _predict_proba(conditional_func):
     """
     TODO: docstring
     """
@@ -152,7 +152,7 @@ def predict_proba(conditional_func):
     return wrapper
 
 
-def predict_proba_examples(conditional_examples_func):
+def _predict_proba_examples(conditional_examples_func):
     """
     TODO: docstring
     """

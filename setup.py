@@ -23,8 +23,10 @@ requirements_demos = [
 ]
 
 requirements_dev = [
-    "pytest>=7.2.1",
     "black>=23.1.0",
+    "pydata-sphinx-theme>=0.13.1",
+    "pytest>=7.2.1",
+    "sphinx>=6.1.3",
 ]
 
 
@@ -35,9 +37,7 @@ with open("README.md", mode="r", encoding="utf-8") as f:
 setup(
     name="callm",
     version="1.0",
-    description=(
-        "Zero-shot text classification using autoregressive language models."
-    ),
+    description=("Zero-shot text classification using autoregressive language models."),
     long_description=readme,
     long_description_content_type="text/markdown",
     url="https://github.com/kddubey/callm/",
