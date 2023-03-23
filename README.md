@@ -271,6 +271,37 @@ pytest
 ```
 
 
+## Results
+
+<details>
+<summary>
+Statistical performance
+</summary>
+Performs ok based on 2 datasets, when compared to classification via sampling (CVS).
+I need to run it on more ofc. Will update
+
+  * [`demos/copa.ipynb`](https://github.com/kddubey/callm/blob/main/demos/copa.ipynb)
+  * [`demos/wsc.ipynb`](https://github.com/kddubey/callm/blob/main/demos/wsc.ipynb)
+</details>
+
+
+<details>
+<summary>
+Computational performance
+</summary>
+
+One concern was that CALLM requires as many `model()` calls as there are classes. But
+in the CALLM scheme, we can simply cache each attention block's keys and values for the 
+prompts. This feature is already supported by `AutoModelForCausalLM`s. See
+[this code](https://github.com/kddubey/callm/blob/main/callm/huggingface/classify.py)
+for the implementation. Note that this caching is not implemented for OpenAI models,
+since I can't control their backend. **This means that when running `callm.openai`, you'll be on the *callm (slow)* line** :-(
+
+![](/demos/scaling_classes.png)
+
+*Figure 1: [COPA](https://people.ict.usc.edu/~gordon/copa.html) dataset, repeating the choices to simulate multi-class classification task. [GPT-2 (small)](https://huggingface.co/gpt2) was run on a Tesla K80 GPU (whatever was free in Google Colab in March 2023, idk what info to specify here lol). 160 classification inputs were processed in batches of size 32. Each point in the graph is a mean of 5 runs. For classification via sampling (CVS), exactly 4 tokens were generated for each prompt, which is the number of tokens in `'\n\nAnswer A'`. The 1-token times are also shown, but for COPA (and other multiple-choice style prompts), that may result in significantly lower zero-shot accuracy&mdash;some of the sampled completions in [this notebook](https://github.com/kddubey/callm/blob/main/demos/copa.ipynb) (see section CVS) are of the form `'\n\nAnswer A'`.*
+</details>
+
 ## Todo
 
 (**) = I'm currently working on this or will work on it really soon
