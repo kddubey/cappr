@@ -295,11 +295,12 @@ in the CALLM scheme, we can simply cache each attention block's keys and values 
 prompts. This feature is already supported by `AutoModelForCausalLM`s. See
 [this code](https://github.com/kddubey/callm/blob/main/callm/huggingface/classify.py)
 for the implementation. Note that this caching is not implemented for OpenAI models,
-since I can't control their backend. **This means that when running `callm.openai`, you'll be on the *callm (slow)* line** :-(
+as I can't control their backend.
+**This means that when running `callm.openai` functions, you'll be on the *callm (slow)* line** :-(
 
 ![](/demos/scaling_classes.png)
 
-*Figure 1: [COPA](https://people.ict.usc.edu/~gordon/copa.html) dataset, repeating the choices to simulate multi-class classification tasks. [GPT-2 (small)](https://huggingface.co/gpt2) was run on a Tesla K80 GPU (whatever was free in Google Colab in March 2023, idk a lick of hardware lol). 160 classification inputs were processed in batches of size 32. Each point in the graph is a mean of 5 runs. For classification via sampling (CVS), exactly 4 tokens were generated for each prompt, which is the number of tokens in `'\n\nAnswer A'`. 1-token times are also shown. But for COPA (and other multiple-choice style prompts), that may result in lower zero-shot accuracy, as most of the sampled choices come after the first token.*
+*Figure 1: [COPA](https://people.ict.usc.edu/~gordon/copa.html) dataset, repeating the choices to simulate multi-class classification tasks. [GPT-2 (small)](https://huggingface.co/gpt2) was run on a Tesla K80 GPU (whatever was free in Google Colab in March 2023, idk a lick of hardware lol). 160 classification inputs were processed in batches of size 32. Each point in the graph is a median of 5 runs. For classification via sampling (CVS), exactly 4 tokens were generated for each prompt, which is the number of tokens in `'\n\nAnswer A'`. 1-token times are also shown. But for COPA (and other multiple-choice style prompts), that may result in lower zero-shot accuracy, as most of the sampled choices come after the first token.*
 
 [See the `demos/computational_analysis.ipynb` notebook](https://github.com/kddubey/callm/blob/main/demos/computational_analysis.ipynb).
 
