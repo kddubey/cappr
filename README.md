@@ -215,6 +215,7 @@ improve my understanding of LMs.
 
 Create a more usable zero-shot text classification interface than
 [classification via sampling](https://platform.openai.com/docs/guides/completion/classification) (CVS).
+In CVS, completion tokens are sampled from a language model given a prompt.
 [Cookbook here](https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit).
 With this package's `predict` interface, you no longer have to:
   1. study sampled completion strings which aren't in your label set

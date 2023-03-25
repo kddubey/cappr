@@ -26,7 +26,7 @@ def constant(lst: list, size: int):
 def variable(lst: list, sizes: Sequence[int]):
     """
     Generates sublists in the order of `lst` which partition `lst`. The `i`'th generated
-    sublist has length `sizes[i]`\.
+    sublist has length `sizes[i]`.
     """
     sizes: np.ndarray = np.array(sizes)
     if np.any(sizes <= 0):
@@ -60,10 +60,10 @@ def _kwarg_name_to_value(func):
 def batchify(batchable_arg: str, batch_size: int = 32, progress_bar_desc: str = ""):
     """
     Returns a decorator which runs the decorated function in batches along its
-    `batchable_arg`\, returning a list of the function's outputs for each batch.
+    `batchable_arg`, returning a list of the function's outputs for each batch.
 
     If the function includes a `'batch_size'` keyword argument, then its value is used
-    as the batch size instead of the decorator's default `batch_size`\.
+    as the batch size instead of the decorator's default `batch_size`.
     TODO: allow non-kwarg too.
     """
 
@@ -92,7 +92,7 @@ def batchify(batchable_arg: str, batch_size: int = 32, progress_bar_desc: str = 
 
 def flatten(batchified_func):
     """
-    Decorates a `cappr.utils.batch.batchify`\d function. Flattens the output.
+    Decorates a `cappr.utils.batch.batchify`d function. Flattens the output.
     """
 
     @wraps(batchified_func)
