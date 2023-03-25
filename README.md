@@ -129,7 +129,8 @@ print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
 </summary>
 
 Again, let's use `huggingface` to predict probabilities. And this time, let's pass in an 
-instantiated model and tokenizer instead of its name. That's better practice.
+instantiated model and tokenizer instead of its name. That way, the model isn't
+re-loaded every time you wanna use it.
 
 ```python
 import numpy as np
@@ -215,7 +216,7 @@ improve my understanding of LMs.
 Create a more usable zero-shot text classification interface than
 [classification via sampling](https://platform.openai.com/docs/guides/completion/classification) (CVS).
 [Cookbook here](https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit).
-With this package's `predict_proba` interface, you no longer have to:
+With this package's `predict` interface, you no longer have to:
   1. study sampled completion strings which aren't in your label set
   2. figure out how to map them back to the label set
   3. figure out how to transform or point multi-token labels to single tokens, ignoring
@@ -223,7 +224,7 @@ With this package's `predict_proba` interface, you no longer have to:
   4. ignore your prior over multi-token labels.
 
 All you have to do is figure out how to frame your classification task as a
-`{prompt} {completion}` string.
+`{prompt}{end_of_prompt}{completion}` string.
 
 </details>
 
@@ -241,36 +242,6 @@ I found that [this paper](https://arxiv.org/abs/1806.02847) is pretty similar:
 [This paper](https://arxiv.org/abs/2009.07118) is also similar in spirit:
 
 > Schick, Timo, and Hinrich Schütze. "It's not just size that matters: Small language models are also few-shot learners." arXiv preprint arXiv:2009.07118 (2020).
-
-
-## Testing
-
-### Setup
-
-1. Clone the repo
-
-   ```
-   git clone https://github.com/kddubey/cappr.git
-   ```
-
-2. Create a new Python 3.8+ environment
-
-3. Install this package in editable mode, along with development requirements
-
-   ```
-   python -m pip install -e cappr[dev]
-   ```
-
-### Run tests
-
-```
-pytest
-```
-
-Dumping VS code extensions for development:
-  * [autoDocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring). This tool is awesome
-    * format: numpy
-  * [Set Python formatting to `black`](https://dev.to/adamlombard/how-to-use-the-black-python-code-formatter-in-vscode-3lo0)
 
 
 ## Results
@@ -309,6 +280,36 @@ as I can't control their backend.
 </details>
 
 
+## Testing
+
+### Setup
+
+1. Clone the repo
+
+   ```
+   git clone https://github.com/kddubey/cappr.git
+   ```
+
+2. Create a new Python 3.8+ environment
+
+3. Install this package in editable mode, along with development requirements
+
+   ```
+   python -m pip install -e cappr[dev]
+   ```
+
+### Run tests
+
+```
+pytest
+```
+
+Dumping VS code extensions for development:
+  * [autoDocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring). This tool is awesome
+    * format: numpy
+  * [Set Python formatting to `black`](https://dev.to/adamlombard/how-to-use-the-black-python-code-formatter-in-vscode-3lo0)
+
+
 ## Todo
 
 (**) = I'm currently working on this or will work on it really soon
@@ -319,18 +320,21 @@ as I can't control their backend.
 - [ ] Testing
   - [ ] Increase coverage (**)
   - [ ] Standardize (**)
+- [ ] ReadTheDocs w/ user guide (**)
+  - [ ] Need to figure out how to cleanly automate some of the manual things needed to
+  build from scratch
+- [ ] Publish to PyPi
 - [ ] Factor out input checks on prompts and completions
 - [x] De-automate overzealous auto-docstring stuff
 - [ ] Make progress bar optional
 - [ ] HuggingFace `transformers.AutoModelForCausalLM`
   - [x] Optimize backend to enable greater scaling wrt # completions/classes
   - [x] Get it working on single-GPU, check that it's faster than sampling
-  - [ ] Allow non-`' '` `end_of_prompt`
-  - [ ] Factor out repeated code b/t fast and slow modules
-  - [ ] Support TensorFlow models
+  - [ ] Allow non-`' '` `end_of_prompt`!
+  - [ ] Factor out repeated code b/t fast and slow modules? I don't really care
   - [ ] Set device at function level, not globally
+  - [ ] Support TensorFlow models
 - [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
-- [ ] Docs and user guides (not just docstrings)
 - [ ] Allow for multi-label classification
   - [ ] Pass `normalize` as an argument to predict_proba functions
   - [ ] For `huggingface`, add note that you'll get faster results by passing all
@@ -351,7 +355,7 @@ or [`nptyping`](https://github.com/ramonhagenaars/nptyping) for arrays
 Evaluate on more tasks, and understand its relative advantages and disadvantages vs
 other classification methods.
 
-- [ ] Re-run COPA demo w/ left-stripped completions
+- [ ] Re-run COPA demo w/ left-stripped completions (there are a few which aren't)
 - [ ] Create a user guide, build a table of results comparing competing
   approaches on statistical performance, cost, and computation
 - [ ] Make a computational comparison to sampling (**)
