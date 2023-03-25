@@ -13,7 +13,7 @@ import openai
 import tiktoken
 from tqdm.auto import tqdm
 
-from callm.utils import batch
+from cappr.utils import batch
 
 
 logger = logging.getLogger(__name__)

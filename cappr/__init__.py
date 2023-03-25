@@ -1,4 +1,6 @@
-from . import utils, example, openai
+from . import utils
+from .example import Example
+from . import openai
 
 try:
     from . import huggingface  ## optional

@@ -9,8 +9,7 @@ from typing import Callable, Optional, Sequence, Union
 import numpy as np
 import numpy.typing as npt
 
-from callm.example import Example
-from callm.utils import check
+from cappr.utils import check
 
 
 def agg_log_probs(
@@ -139,7 +138,7 @@ def _predict_proba(conditional_func):
 
     @wraps(conditional_func)
     def wrapper(
-        prompts: Sequence[str], completions: Sequence[str], *args, prior=None, **kwargs
+        prompts: Sequence[str], completions: Sequence[str], *args, **kwargs
     ) -> npt.NDArray[np.floating]:
         log_probs_completions = conditional_func(prompts, completions, *args, **kwargs)
         likelihoods = agg_log_probs_from_constant_completions(log_probs_completions)
@@ -147,6 +146,7 @@ def _predict_proba(conditional_func):
         ## trivially be 1! So let's not normalize in that case, and hope the user knows
         ## what they're doing
         normalize = len(completions) > 1
+        prior = kwargs.get("prior", None)
         return posterior_prob(likelihoods, axis=1, prior=prior, normalize=normalize)
 
     return wrapper
@@ -159,7 +159,7 @@ def _predict_proba_examples(conditional_examples_func):
 
     @wraps(conditional_examples_func)
     def wrapper(
-        examples: Sequence[Example], *args, **kwargs
+        examples, *args, **kwargs
     ) -> Union[list[list[float]], npt.NDArray[np.floating]]:
         log_probs_completions = conditional_examples_func(examples, *args, **kwargs)
         likelihoods = agg_log_probs(log_probs_completions)
@@ -204,5 +204,48 @@ def _predict_proba_examples(conditional_examples_func):
             normalize=normalize,
             check_prior=False,  ## already checked when constructing each example
         )
+
+    return wrapper
+
+
+def _predict(predict_proba_func):
+    """
+    TODO: docstring
+    """
+
+    @wraps(predict_proba_func)
+    def wrapper(
+        prompts: Sequence[str], completions: Sequence[str], *args, **kwargs
+    ) -> list[str]:
+        pred_probs: npt.NDArray = predict_proba_func(
+            prompts, completions, *args, **kwargs
+        )
+        pred_class_idxs = pred_probs.argmax(axis=1)
+        return [completions[pred_class_idx] for pred_class_idx in pred_class_idxs]
+
+    return wrapper
+
+
+def _predict_examples(predict_proba_examples_func):
+    """
+    TODO: docstring
+    """
+
+    @wraps(predict_proba_examples_func)
+    def wrapper(examples, *args, **kwargs) -> list[str]:
+        pred_probs: Union[
+            list[list[float]], npt.NDArray[np.floating]
+        ] = predict_proba_examples_func(examples, *args, **kwargs)
+        ## If it's an array, we can call .argmax, which is faster
+        try:
+            pred_class_idxs = pred_probs.argmax(axis=1)
+        except AttributeError:
+            pred_class_idxs = [
+                np.argmax(example_pred_probs) for example_pred_probs in pred_probs
+            ]
+        return [
+            example.completions[pred_class_idx]
+            for example, pred_class_idx in zip(examples, pred_class_idxs)
+        ]
 
     return wrapper

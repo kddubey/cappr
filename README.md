@@ -1,14 +1,18 @@
-# *CALLM*: zero-shot text *C*lassification using *A*utoregressive *LLM*s
+# CAPPr: zero-shot text classification using autoregressive LMs
 
-[![test](https://github.com/kddubey/callm/actions/workflows/test.yml/badge.svg)](https://github.com/kddubey/callm/actions/workflows/test.yml)
+[![test](https://github.com/kddubey/cappr/actions/workflows/test.yml/badge.svg)](https://github.com/kddubey/cappr/actions/workflows/test.yml)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/) 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 Perform zero-shot text classification based on the following idea: for a given prompt 
 and completion text pair, what's the probability that the completion comes after the 
-prompt? The method is fleshed out
-[here in CrossValidated](https://stats.stackexchange.com/q/601159/337906).
+prompt? Hence the name:
+
+> **C**ompletion<br>
+  **A**fter<br>
+  **P**rompt<br>
+  **Pr**obability<br>
 
 ⚠️ This package is currently under construction. ⚠️
 
@@ -26,7 +30,7 @@ Let's classify
 from the OpenAI text completion docs.
 
 ```python
-from callm.openai.classify import predict_proba
+from cappr.openai.classify import predict
 
 tweet = 'I loved the new Batman movie!'
 prompt = f'Tweet: {tweet}\nSentiment:'
@@ -34,19 +38,13 @@ prompt = f'Tweet: {tweet}\nSentiment:'
 class_names = ('positive', 'neutral', 'negative')
 prior       = (   1/8    ,    1/8   ,     3/4   )
 
-pred_probs = predict_proba(prompts=[prompt],
-                           completions=class_names,
-                           prior=prior,
-                           model='text-ada-001')
-
-print(pred_probs.round(2))
-# [[0.98 0.   0.02]]
-
-pred_class_idxs = pred_probs.argmax(axis=1)
-print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
+preds = predict(prompts=[prompt],
+                completions=class_names,
+                prior=prior,
+                model='text-ada-001')
+preds
 # ['positive']
 ```
-
 </details>
 
 <details>
@@ -58,40 +56,35 @@ Specifically, this model must be able to be loaded using
 Smaller LMs may not work well. But there will likely be better ones in the hub soon.
 
 ```python
-from callm.huggingface.classify import predict_proba
+from cappr.huggingface.classify import predict
 
-tweet = 'I loved the new Batman movie!'
-prompt = f'Tweet: {tweet}\nSentiment:'
+prompt = 'Which planet is closer to the Sun: Mercury or Earth?'
 
-class_names = ('positive', 'neutral', 'negative')
+class_names = ('Mercury', 'Earth')
 prior = None  # uniform prior
 
-pred_probs = predict_proba(prompts=[prompt],
-                           completions=class_names,
-                           prior=prior,
-                           model='gpt2')
-
-print(pred_probs.round(3))
-# [[0.668 0.006 0.326]]
-
-pred_class_idxs = pred_probs.argmax(axis=1)
-print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
-# ['positive']
+preds = predict(prompts=[prompt],
+                completions=class_names,
+                prior=prior,
+                model='gpt2')
+preds
+# ['Mercury']
 ```
 </details>
 
 <details>
 <summary>Run in batches</summary>
 
-Let's use `huggingface` for this example cuz it's free.
+Let's use `huggingface` for this example cuz it's free. And let's predict probabilities
+instead of the class.
 
 ```python
-from callm.huggingface.classify import predict_proba
+from cappr.huggingface.classify import predict_proba
 
 prompts = [
     'Stephen Curry is a',
     'Martina Navratilova was a',
-    "Dexter, from the TV Series, Dexter's Laboratory, is a",
+    "Dexter, from the TV Series Dexter's Laboratory, is a",
     'LeBron James is a',    
 ]
 
@@ -118,7 +111,7 @@ pred_probs = predict_proba(prompts=prompts,
 print(pred_probs.round(1))
 # [[0.5 0.3 0.2]
 #  [0.3 0.6 0.2]
-#  [0.1 0.1 0.7]
+#  [0.1 0.1 0.8]
 #  [0.8 0.2 0. ]]
 
 # for each prompt, which completion is most likely?
@@ -135,15 +128,15 @@ print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
 <summary>Run in batches, where each prompt has a different set of possible completions
 </summary>
 
-Again, let's use `huggingface` here. And this time, just for kicks, let's instead pass
-in an instantiated model and tokenizer instead of its name.
+Again, let's use `huggingface` to predict probabilities. And this time, let's pass in an 
+instantiated model and tokenizer instead of its name. That's better practice.
 
 ```python
 import numpy as np
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from callm.example import Example
-from callm.huggingface.classify import predict_proba_examples
+from cappr import Example
+from cappr.huggingface.classify import predict_proba_examples
 
 examples = [
     Example(prompt='Jodie Foster played',
@@ -175,13 +168,46 @@ print([example.completions[pred_class_idx]
 ```
 </details>
 
-See [`demos/copa.ipynb`](https://github.com/kddubey/callm/blob/main/demos/copa.ipynb)
-for a harder classification task.
+TODO: see the user guide for more details 
+
+See [`demos/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/copa.ipynb)
+for a demonstration of a slightly harder classification task.
+
+
+## Setup
+
+If you intend on using OpenAI models,
+[sign up for the OpenAI API here](https://openai.com/api/), and then set the environment
+variable `OPENAI_API_KEY`. For zero-shot classification, OpenAI models are currently far
+ahead of others. But using them will cost ya 💰!
+
+Install from source:
+
+```
+python -m pip install git+https://github.com/kddubey/cappr.git
+```
+
+<details>
+<summary>(Optional) Install requirements for HuggingFace models</summary>
+
+```
+python -m pip install "cappr[hf] @ git+https://github.com/kddubey/cappr.git"
+```
+</details>
+
+<details>
+<summary>(Optional) Set up to run demos</summary>
+
+```
+python -m pip install "cappr[demos] @ git+https://github.com/kddubey/cappr.git"
+```
+</details>
 
 
 ## Motivation
 
-Improve my understanding of LMs.
+Answer my [CrossValidated question](https://stats.stackexchange.com/q/601159/337906),
+improve my understanding of LMs.
 
 <details>
 <summary>Product-y motivation</summary>
@@ -196,45 +222,16 @@ With this package's `predict_proba` interface, you no longer have to:
   their semantics if they were transformed
   4. ignore your prior over multi-token labels.
 
-This package tries to do one thing well: classification. I'll assess it across
-these dimensions: statistical performance, computational performance, and
-usability.
-</details>
+All you have to do is figure out how to frame your classification task as a
+`{prompt} {completion}` string.
 
-## Setup
-
-If you intend on using OpenAI models,
-[sign up for the OpenAI API here](https://openai.com/api/), and then set the environment
-variable `OPENAI_API_KEY`. For zero-shot classification, OpenAI models are currently far
-ahead of others. But using them will cost ya 💰!
-
-Install from source:
-
-```
-python -m pip install git+https://github.com/kddubey/callm.git
-```
-
-<details>
-<summary>(Optional) Install requirements for HuggingFace models</summary>
-
-```
-python -m pip install "callm[hf] @ git+https://github.com/kddubey/callm.git"
-```
-</details>
-
-<details>
-<summary>(Optional) Set up to run demos</summary>
-
-```
-python -m pip install "callm[demos] @ git+https://github.com/kddubey/callm.git"
-```
 </details>
 
 
 ## Related work
 
 While
-[benchmarking this method](https://github.com/kddubey/callm/blob/main/demos/wsc.ipynb) 
+[benchmarking this method](https://github.com/kddubey/cappr/blob/main/demos/wsc.ipynb) 
 on the
 [Winograd Schema Challenge (WSC)](https://cs.nyu.edu/~davise/papers/WinogradSchemas/WS.html),
 I found that [this paper](https://arxiv.org/abs/1806.02847) is pretty similar:
@@ -253,7 +250,7 @@ I found that [this paper](https://arxiv.org/abs/1806.02847) is pretty similar:
 1. Clone the repo
 
    ```
-   git clone https://github.com/kddubey/callm.git
+   git clone https://github.com/kddubey/cappr.git
    ```
 
 2. Create a new Python 3.8+ environment
@@ -261,7 +258,7 @@ I found that [this paper](https://arxiv.org/abs/1806.02847) is pretty similar:
 3. Install this package in editable mode, along with development requirements
 
    ```
-   python -m pip install -e callm[dev]
+   python -m pip install -e cappr[dev]
    ```
 
 ### Run tests
@@ -269,6 +266,11 @@ I found that [this paper](https://arxiv.org/abs/1806.02847) is pretty similar:
 ```
 pytest
 ```
+
+Dumping VS code extensions for development:
+  * [autoDocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring). This tool is awesome
+    * format: numpy
+  * [Set Python formatting to `black`](https://dev.to/adamlombard/how-to-use-the-black-python-code-formatter-in-vscode-3lo0)
 
 
 ## Results
@@ -280,8 +282,8 @@ Statistical performance
 Performs ok based on 2 datasets, when compared to classification via sampling (CVS).
 I need to run it on more ofc. Will update
 
-  * [`demos/copa.ipynb`](https://github.com/kddubey/callm/blob/main/demos/copa.ipynb)
-  * [`demos/wsc.ipynb`](https://github.com/kddubey/callm/blob/main/demos/wsc.ipynb)
+  * [`demos/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/copa.ipynb)
+  * [`demos/wsc.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/wsc.ipynb)
 </details>
 
 
@@ -290,21 +292,22 @@ I need to run it on more ofc. Will update
 Computational performance
 </summary>
 
-One concern was that CALLM requires as many `model()` calls as there are classes. But
-in the CALLM scheme, we can simply cache each attention block's keys and values for the 
+One concern was that CAPPr requires as many `model()` calls as there are classes. But
+in the CAPPr scheme, we can simply cache each attention block's keys and values for the 
 prompts. This feature is already supported by `AutoModelForCausalLM`s. See
-[this code](https://github.com/kddubey/callm/blob/main/callm/huggingface/classify.py)
+[this code](https://github.com/kddubey/cappr/blob/main/cappr/huggingface/classify.py)
 for the implementation. Note that this caching is not implemented for OpenAI models,
 as I can't control their backend.
-**This means that when running `callm.openai` functions, you'll be on the *callm (slow)* line** :-(
+**This means that when running `cappr.openai` functions, you'll be on the *cappr (slow)* line** :-(
 
 ![](/demos/scaling_classes.png)
 
 *Figure 1: [COPA](https://people.ict.usc.edu/~gordon/copa.html) dataset, repeating the choices to simulate multi-class classification tasks. [GPT-2 (small)](https://huggingface.co/gpt2) was run on a Tesla K80 GPU (whatever was free in Google Colab in March 2023, idk a lick of hardware lol). 160 classification inputs were processed in batches of size 32. Each point in the graph is a median of 5 runs. For classification via sampling (CVS), exactly 4 tokens were generated for each prompt, which is the number of tokens in `'\n\nAnswer A'`. 1-token times are also shown. But for COPA (and other multiple-choice style prompts), that may result in lower zero-shot accuracy, as most of the sampled choices come after the first token.*
 
-[See the `demos/computational_analysis.ipynb` notebook](https://github.com/kddubey/callm/blob/main/demos/computational_analysis.ipynb).
+[See the `demos/computational_analysis.ipynb` notebook](https://github.com/kddubey/cappr/blob/main/demos/computational_analysis.ipynb).
 
 </details>
+
 
 ## Todo
 

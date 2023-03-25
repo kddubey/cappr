@@ -5,16 +5,16 @@ This module is a slow mirror of `classify`. It **does not** precompute attention
 keys and values for prompts. It's only used for testing and benchmarking purposes.
 """
 from __future__ import annotations
-from typing import Mapping, Sequence, Union
+from typing import Mapping, Optional, Sequence, Union
 
 import numpy as np
 import numpy.typing as npt
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BatchEncoding
 
-from callm.utils import batch, classify
-from callm.example import Example
-from callm import huggingface as hf
+from cappr.utils import batch, classify
+from cappr import Example
+from cappr import huggingface as hf
 
 
 def _keys_values_prompts(
@@ -23,28 +23,6 @@ def _keys_values_prompts(
     prompts: Sequence[str],
     num_completions_per_prompt: Union[int, Sequence[int]],
 ):
-    """
-    Only used for testing purposes.
-
-    Returns past key-values, the tokenizer encodings, position offsets, and the last
-    (non-pad) token's logits after performing this procedure:
-
-    1. Repeat `prompts[i]` `num_completions_per_prompt[i]` times (or, if it's an
-    integer, `num_completions_per_prompt` times), e.g., if there are 2 prompts
-    and `num_completions_per_prompt=(2,3)`:
-
-    ```
-        [prompts[0],
-         prompts[0],
-         prompts[1],
-         prompts[1],
-         prompts[1]]
-    ```
-
-    2. Apply `tokenizer`
-
-    3. Apply `model`.
-    """
     if not tokenizer.padding_side == "right":
         raise ValueError("Gotta use right padding to ensure position IDs are correct.")
     if isinstance(prompts, str) or not isinstance(prompts, Sequence):
@@ -89,9 +67,6 @@ def _logits_texts(
     tokenizer: AutoTokenizer,
     texts: Sequence[str],
 ) -> tuple[torch.Tensor, BatchEncoding]:
-    """
-    TODO: docstring
-    """
     encodings = tokenizer(texts, return_tensors="pt", padding=True).to(hf.utils.DEVICE)
     with torch.no_grad():
         out = model(**encodings)
@@ -103,9 +78,6 @@ def _prompts_offsets(
     prompts: Sequence[str],
     num_completions_per_prompt: Union[int, Sequence[int]],
 ) -> torch.Tensor:
-    """
-    TODO: docstring
-    """
     if not isinstance(num_completions_per_prompt, int) and not isinstance(
         num_completions_per_prompt, torch.Tensor
     ):
@@ -125,29 +97,6 @@ def _logits_completions_given_prompts(
     completions: Sequence[str],
     end_of_prompt: str = " ",
 ):
-    """
-    If `texts` is
-
-    ```python
-    [prompt + end_of_prompt + completions
-     for prompt in prompts
-     for completion in completions]
-    ```
-
-    then this function returns
-
-    1. `logits`: tensor with shape
-
-        (`len(texts)`, max # tokens `texts`, `tokenizer.vocab_size`)
-
-    where `logits[i,j]` are the `model`'s logits for token `j+1` of the text in
-    `texts[i]` given the prompt in `texts[i]`. This tensor includes logits for
-    right-padded tokens. Use the `encodings.attention_mask` to ignore them before
-    further processing.
-
-    2. `encodings`: `BatchEncoding` containing the input IDs, attention mask,
-    and position offsets.
-    """
     if isinstance(prompts, str) or not isinstance(prompts, Sequence):
         raise TypeError("prompts must be a Sequence of strings.")
     if isinstance(completions, str) or not isinstance(completions, Sequence):
@@ -170,29 +119,6 @@ def _logits_completions_given_prompts_examples(
     tokenizer: AutoTokenizer,
     examples: Sequence[classify.Example],
 ):
-    """
-    If `texts` is
-
-    ```python
-    [example.prompt + example.end_of_prompt + completion
-     for example in examples
-     for completion in example.completions]
-    ```
-
-    then this function returns
-
-    1. `logits`: tensor with shape
-
-        (`len(texts)`, max # tokens `texts`, `tokenizer.vocab_size`)
-
-    where `logits[i,j]` are the `model`'s logits for token `j+1` of the text in
-    `texts[i]` given the prompt in `texts[i]`. This tensor includes logits for
-    right-padded tokens. Use the `encodings.attention_mask` to ignore them before
-    further processing.
-
-    2. `encodings`: `BatchEncoding` containing the input IDs, attention mask,
-    and position offsets.
-    """
     texts = [
         example.prompt + example.end_of_prompt + completion
         for example in examples
@@ -211,21 +137,6 @@ def _logits_completions_given_prompts_examples(
 def _logits_to_log_probs_completions(
     logits: torch.Tensor, encodings: Mapping[str, torch.Tensor]
 ) -> list[list[float]]:
-    """
-    Returns a list `log_probs_completions` where `log_probs_completions[i][j]` is the
-    log-probablity of *completion* token
-
-        `encodings['input_ids'][i,j]`
-
-    given its previous tokens
-
-        `encodings['input_ids'][i,:j]`
-
-    Pad tokens, i.e., tokens where `encodings['attention_mask'] == 0` are excluded.
-
-    `logits[i,j]` is assumed to be an unnormalized distribution (over tokens in
-    the vocab) given tokens `input_ids[i,:j]`.
-    """
     log_probs = hf.utils.logits_to_log_probs(
         logits, encodings["input_ids"], input_ids_start_idx=1, logits_end_idx=-1
     )
@@ -247,15 +158,6 @@ def log_probs_conditional(
     end_of_prompt: str = " ",
     batch_size: int = 32,
 ) -> list[list[list[float]]]:
-    """
-    Returns a list `log_probs_completions` where `log_probs_completions[i][j]` is a list
-    of the `model`'s estimates of log-probablities of each token in `completions[j]`,
-    conditional on previous tokens in the completion and `prompts[i]`.
-
-    Exactly one of `model` or `model_and_tokenizer` must be supplied.
-
-    Texts are processed by the model in batches of size `batch_size`.
-    """
     model, tokenizer = hf.utils.load_model_and_tokenizer(
         model=model, model_and_tokenizer=model_and_tokenizer
     )
@@ -278,16 +180,6 @@ def log_probs_conditional_examples(
     model_and_tokenizer: tuple[AutoModelForCausalLM, AutoTokenizer] = None,
     batch_size: int = 32,
 ) -> list[list[list[float]]]:
-    """
-    Returns a list `log_probs_completions` where `log_probs_completions[i][j]` is a list
-    of the `model`'s estimates of log-probablities of each token in
-    `examples[i].completions[j]`, conditional on previous tokens in the completion and
-    `examples[i].prompt`.
-
-    Exactly one of `model` or `model_and_tokenizer` must be supplied.
-
-    Texts are processed by the model in batches of size `batch_size`.
-    """
     model, tokenizer = hf.utils.load_model_and_tokenizer(
         model=model, model_and_tokenizer=model_and_tokenizer
     )
@@ -314,15 +206,6 @@ def predict_proba(
     end_of_prompt: str = " ",
     batch_size: int = 32,
 ) -> npt.NDArray[np.floating]:
-    """
-    Returns an array with shape `(len(prompts), len(completions))` called `pred_probs`,
-    where `pred_probs[i, j]` is a `model`'s estimate of the probability of
-    `completions[j]` given `prompts[i] + end_of_prompt`.
-
-    Exactly one of `model` or `model_and_tokenizer` must be supplied.
-
-    Texts are processed by the model in batches of size `batch_size`.
-    """
     return log_probs_conditional(
         prompts,
         completions,
@@ -340,19 +223,43 @@ def predict_proba_examples(
     model_and_tokenizer: tuple[AutoModelForCausalLM, AutoTokenizer] = None,
     batch_size: int = 32,
 ) -> Union[list[list[float]], npt.NDArray[np.floating]]:
-    """
-    Returns a list, `pred_probs`, where `pred_probs[i][j]` is a `model`'s estimate of
-    the probability of `examples[i].completions[j]` given
-    `examples[i].prompt + examples[i].end_of_prompt`.
-
-    If the number of completions per example is a constant `k`, then an array with shape
-    `(len(examples), k)` is returned instead.
-
-    Exactly one of `model` or `model_and_tokenizer` must be supplied.
-
-    Texts are processed by the model in batches of size `batch_size`.
-    """
     return log_probs_conditional_examples(
+        examples,
+        model=model,
+        model_and_tokenizer=model_and_tokenizer,
+        batch_size=batch_size,
+    )
+
+
+@classify._predict
+def predict(
+    prompts: Sequence[str],
+    completions: Sequence[str],
+    model: str = None,
+    model_and_tokenizer: tuple[AutoModelForCausalLM, AutoTokenizer] = None,
+    prior: Optional[Sequence[float]] = None,
+    end_of_prompt: str = " ",
+    batch_size: int = 32,
+) -> list[str]:
+    return predict_proba(
+        prompts,
+        completions,
+        model=model,
+        model_and_tokenizer=model_and_tokenizer,
+        prior=prior,
+        end_of_prompt=end_of_prompt,
+        batch_size=batch_size,
+    )
+
+
+@classify._predict_examples
+def predict_examples(
+    examples: Sequence[Example],
+    model: str = None,
+    model_and_tokenizer: tuple[AutoModelForCausalLM, AutoTokenizer] = None,
+    batch_size: int = 32,
+) -> list[str]:
+    return predict_proba_examples(
         examples,
         model=model,
         model_and_tokenizer=model_and_tokenizer,

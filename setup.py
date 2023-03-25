@@ -27,6 +27,7 @@ requirements_dev = [
     "pydata-sphinx-theme>=0.13.1",
     "pytest>=7.2.1",
     "sphinx>=6.1.3",
+    "sphinxcontrib-napoleon>=0.7",
 ]
 
 
@@ -35,12 +36,12 @@ with open("README.md", mode="r", encoding="utf-8") as f:
 
 
 setup(
-    name="callm",
+    name="cappr",
     version="1.0",
     description=("Zero-shot text classification using autoregressive language models."),
     long_description=readme,
     long_description_content_type="text/markdown",
-    url="https://github.com/kddubey/callm/",
+    url="https://github.com/kddubey/cappr/",
     license="Apache License 2.0",
     python_requires=">=3.8.0",
     install_requires=requirements_base + requirements_openai,

@@ -12,7 +12,7 @@ def prior(prior: Optional[Sequence[float]] = None):
     if prior is None:  ## it's a uniform prior, no need to check anything
         return None
     if not isinstance(prior, Sequence):
-        raise TypeError("prior must be a Sequence.")
+        raise TypeError("prior must be None or a Sequence.")
     if len(np.shape(prior)) != 1:
         raise ValueError("prior must be 1-D.")
     prior_arr = np.array(prior, dtype=float)  ## try casting to float

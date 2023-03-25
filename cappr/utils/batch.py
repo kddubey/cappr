@@ -92,7 +92,7 @@ def batchify(batchable_arg: str, batch_size: int = 32, progress_bar_desc: str = 
 
 def flatten(batchified_func):
     """
-    Decorates a `callm.utils.batch.batchify`\d function. Flattens the output.
+    Decorates a `cappr.utils.batch.batchify`\d function. Flattens the output.
     """
 
     @wraps(batchified_func)

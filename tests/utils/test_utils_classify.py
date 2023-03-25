@@ -1,12 +1,12 @@
 """
-Unit tests `callm.utils.classify`.
+Unit tests `cappr.utils.classify`.
 """
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from callm.utils import classify
+from cappr.utils import classify
 
 
 def test_agg_log_probs():

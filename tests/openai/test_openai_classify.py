@@ -1,13 +1,13 @@
 """
-Unit tests `callm.openai.classify`.
+Unit tests `cappr.openai.classify`.
 """
 from __future__ import annotations
 
 import pytest
 import tiktoken
 
-from callm.example import Example as Ex
-from callm.openai import classify
+from cappr import Example as Ex
+from cappr.openai import classify
 
 
 def _log_probs(texts: list[str]) -> list[list[float]]:
@@ -34,7 +34,7 @@ def patch_openai_method_retry(monkeypatch):
             ]
         }
 
-    monkeypatch.setattr("callm.openai.api.openai_method_retry", mocked)
+    monkeypatch.setattr("cappr.openai.api.openai_method_retry", mocked)
 
 
 @pytest.fixture(autouse=True)
@@ -116,7 +116,7 @@ def test_predict_proba(monkeypatch, prompts, completions, model):
         return [_log_probs(completions) for _ in prompts]
 
     monkeypatch.setattr(
-        "callm.openai.classify.log_probs_conditional", mock_log_probs_conditional
+        "cappr.openai.classify.log_probs_conditional", mock_log_probs_conditional
     )
     pred_probs = classify.predict_proba(prompts, completions, model)
     assert pred_probs.shape == (len(prompts), len(completions))
@@ -129,7 +129,7 @@ def test_predict_proba_examples(monkeypatch, examples, model):
         return [_log_probs(example.completions) for example in examples]
 
     monkeypatch.setattr(
-        "callm.openai.classify.log_probs_conditional_examples",
+        "cappr.openai.classify.log_probs_conditional_examples",
         mock_log_probs_conditional_examples,
     )
     pred_probs = classify.predict_proba_examples(examples, model)
