@@ -1,5 +1,5 @@
 """
-Perform prompt-completion classification using a `transformers.AutoModelForCausalLM`.
+Perform prompt-completion classification using a ``transformers.AutoModelForCausalLM``.
 
 This module is a slow mirror of `classify`. It **does not** precompute attention block
 keys and values for prompts. It's only used for testing and benchmarking purposes.

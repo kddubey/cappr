@@ -1,5 +1,5 @@
 """
-Perform prompt-completion classification using a `transformers.AutoModelForCausalLM`.
+Perform prompt-completion classification using a ``transformers.AutoModelForCausalLM``.
 
 Currently, only PyTorch models are supported.
 """
@@ -374,7 +374,7 @@ def log_probs_conditional(
     batch_size: int = 32,
 ) -> list[list[list[float]]]:
     """
-    Log-probabilities of each completion token conditional on a prompt and previous
+    Log-probabilities of each completion token conditional on each prompt and previous
     completion tokens.
 
     **Either model or model_and_tokenizer must be inputted.**
@@ -401,7 +401,7 @@ def log_probs_conditional(
     log_probs_completions : list[list[list[float]]]
         `log_probs_completions[prompt_idx][completion_idx][completion_token_idx]` is the
         log-probability of the completion token in `completions[completion_idx]`,
-        conditional on conditional on `prompts[prompt_idx] + end_of_prompt` and previous
+        conditional on `prompts[prompt_idx] + end_of_prompt` and previous
         completion tokens.
     """
     model, tokenizer = hf._utils.load_model_and_tokenizer(
@@ -427,7 +427,7 @@ def log_probs_conditional_examples(
     batch_size: int = 32,
 ) -> list[list[list[float]]]:
     """
-    Log-probabilities of each completion token conditional on a prompt and previous
+    Log-probabilities of each completion token conditional on each prompt and previous
     completion tokens.
 
     **Either model or model_and_tokenizer must be inputted.**
@@ -488,8 +488,8 @@ def predict_proba(
 
     Here, the set of possible completions which could follow each prompt is the same for
     every prompt. If instead, each prompt could be followed by a *different* set of
-    completions, then construct a sequence of `cappr.example.Example` objects and pass
-    them to `cappr.huggingface.classify.predict_proba_examples`.
+    completions, then construct a sequence of :class:`cappr.Example` objects and pass
+    them to :func:`predict_proba_examples`.
 
     Parameters
     ----------
@@ -590,8 +590,8 @@ def predict(
 
     Here, the set of possible completions which could follow each prompt is the same for
     every prompt. If instead, each prompt could be followed by a *different* set of
-    completions, then construct a sequence of `cappr.example.Example` objects and pass
-    them to `cappr.huggingface.classify.predict_proba_examples`.
+    completions, then construct a sequence of :class:`cappr.Example` objects and pass
+    them to :func:`predict_examples`.
 
     Parameters
     ----------

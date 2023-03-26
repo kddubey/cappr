@@ -69,7 +69,7 @@ def log_probs_conditional(
     ask_if_ok: bool = False,
 ):
     """
-    Log-probabilities of each completion token conditional on a prompt.
+    Log-probabilities of each completion token conditional on each prompt.
 
     Parameters
     ----------
@@ -93,7 +93,7 @@ def log_probs_conditional(
     log_probs_completions : list[list[list[float]]]
         `log_probs_completions[prompt_idx][completion_idx][completion_token_idx]` is the
         log-probability of the completion token in `completions[completion_idx]`,
-        conditional on conditional on `prompts[prompt_idx] + end_of_prompt` and previous
+        conditional on `prompts[prompt_idx] + end_of_prompt` and previous
         completion tokens.
     """
     ## str / non-Sequence[str] inputs silently, wastefully, and irreparably fail
@@ -120,7 +120,7 @@ def log_probs_conditional_examples(
     examples: Sequence[Example], model: openai.api.Model, ask_if_ok: bool = False
 ) -> list[list[list[float]]]:
     """
-    Log-probabilities of each completion token conditional on a prompt.
+    Log-probabilities of each completion token conditional on each prompt.
 
     Parameters
     ----------
@@ -179,8 +179,8 @@ def predict_proba(
 
     Here, the set of possible completions which could follow each prompt is the same for
     every prompt. If instead, each prompt could be followed by a *different* set of
-    completions, then construct a sequence of `cappr.example.Example` objects and pass
-    them to `cappr.openai.classify.predict_proba_examples`.
+    completions, then construct a sequence of :class:`cappr.Example` objects and pass
+    them to :func:`predict_proba_examples`.
 
     Parameters
     ----------
@@ -267,8 +267,8 @@ def predict(
 
     Here, the set of possible completions which could follow each prompt is the same for
     every prompt. If instead, each prompt could be followed by a *different* set of
-    completions, then construct a sequence of `cappr.example.Example` objects and pass
-    them to `cappr.openai.classify.predict_proba_examples`.
+    completions, then construct a sequence of :class:`cappr.Example` objects and pass
+    them to :func:`predict_examples`.
 
     Parameters
     ----------

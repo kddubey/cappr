@@ -1,5 +1,5 @@
 from . import _utils
-from .example import Example
+from ._example import Example
 from . import openai
 
 try:

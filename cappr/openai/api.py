@@ -184,7 +184,7 @@ def gpt_complete(
     max_tokens : int, optional
         maximum number of tokens to generate, by default 0
     **openai_completion_kwargs
-        other arguments passed to the text completion endpoint, e.g., `logprobs=1`.
+        other arguments passed to the text completion endpoint, e.g., `logprobs=1`
 
     Returns
     -------
@@ -234,7 +234,7 @@ def gpt_chat_complete(
     Parameters
     ----------
     texts : Sequence[str]
-        texts which are passed in 1-by-1 immediately after the system content as
+        texts which are passed in one by one immediately after the system content as
         ``{"role": "user", "content": text}``
     model : str, optional
         one of the chat model names, by default "gpt-3.5-turbo"
@@ -248,6 +248,8 @@ def gpt_chat_complete(
         text which is passed in `-by-1 immediately before every piece of
         user content in `texts` as ``{"role": "system", "content": system_msg}``. By
         default ``"You are an assistant which classifies text."``
+    **openai_chat_kwargs
+        other arguments passed to the chat completion endpoint, e.g., `temperature=0.8`
 
     Returns
     -------

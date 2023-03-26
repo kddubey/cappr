@@ -9,11 +9,10 @@ from cappr._utils import check
 @dataclass(frozen=True)
 class Example:
     """
-    Represents a single classification example.
+    Represents a single prompt-completion classification example.
 
-    This data structure is useful when different examples from the same dataset may
-    belong to different classes.
-    This applies to, e.g., COPA: https://people.ict.usc.edu/~gordon/copa.html.
+    This data structure is useful when different classification examples may belong to
+    a different set of classes.
 
     Parameters
     ----------
