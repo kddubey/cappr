@@ -26,6 +26,7 @@ requirements_dev = [
     "black>=23.1.0",
     "pydata-sphinx-theme>=0.13.1",
     "pytest>=7.2.1",
+    "pytest-cov>=4.0.0",
     "sphinx>=6.1.3",
     "sphinxcontrib-napoleon>=0.7",
 ]
