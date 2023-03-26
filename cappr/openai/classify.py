@@ -9,7 +9,7 @@ import numpy as np
 import numpy.typing as npt
 import tiktoken
 
-from cappr.utils import batch, classify
+from cappr._utils import batch, classify
 from cappr import Example
 from cappr import openai
 
@@ -85,7 +85,7 @@ def log_probs_conditional(
         the string to tack on at the end of every prompt, by default " "
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
-        after notifying you of the approximate cost of the OpenAI API calls, by default
+        after notifying you of the approximate cost of the OpenAI API calls. By default
         False
 
     Returns
@@ -132,7 +132,7 @@ def log_probs_conditional_examples(
         the ``/v1/completions`` endpoint: https://platform.openai.com/docs/models/model-endpoint-compatibility
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
-        after notifying you of the approximate cost of the OpenAI API calls, by default
+        after notifying you of the approximate cost of the OpenAI API calls. By default
         False
 
     Returns
@@ -200,7 +200,7 @@ def predict_proba(
         the string to tack on at the end of every prompt, by default " "
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
-        after notifying you of the approximate cost of the OpenAI API calls, by default
+        after notifying you of the approximate cost of the OpenAI API calls. By default
         False
 
     Returns
@@ -237,7 +237,7 @@ def predict_proba_examples(
         the ``/v1/completions`` endpoint: https://platform.openai.com/docs/models/model-endpoint-compatibility
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
-        after notifying you of the approximate cost of the OpenAI API calls, by default
+        after notifying you of the approximate cost of the OpenAI API calls. By default
         False
 
     Returns
@@ -288,7 +288,7 @@ def predict(
         the string to tack on at the end of every prompt, by default " "
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
-        after notifying you of the approximate cost of the OpenAI API calls, by default
+        after notifying you of the approximate cost of the OpenAI API calls. By default
         False
 
     Returns
@@ -325,7 +325,7 @@ def predict_examples(
         the ``/v1/completions`` endpoint: https://platform.openai.com/docs/models/model-endpoint-compatibility
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
-        after notifying you of the approximate cost of the OpenAI API calls, by default
+        after notifying you of the approximate cost of the OpenAI API calls. By default
         False
 
     Returns

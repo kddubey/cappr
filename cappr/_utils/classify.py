@@ -9,7 +9,7 @@ from typing import Callable, Optional, Sequence, Union
 import numpy as np
 import numpy.typing as npt
 
-from cappr.utils import check
+from cappr._utils import check
 
 
 def agg_log_probs(

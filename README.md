@@ -381,7 +381,7 @@ Dumping VS code extensions for development:
 - [ ] Testing
   - [ ] Increase test cases
   - [ ] Some more standardization b/t openai and huggingface tests
-  - [ ] Add code coverage badge to look cool
+  - [x] Add code coverage badge to look cool
 - [ ] ReadTheDocs w/ user guide (**)
   - [ ] Need to figure out how to cleanly automate some of the manual things needed to
   build from scratch

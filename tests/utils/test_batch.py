@@ -1,11 +1,11 @@
 """
-Unit tests `cappr.utils.batch`.
+Unit tests `cappr._utils.batch`.
 """
 from __future__ import annotations
 
 import pytest
 
-from cappr.utils import batch
+from cappr._utils import batch
 
 
 def _test_partition_and_order(batches: list[list], source_lst: list):

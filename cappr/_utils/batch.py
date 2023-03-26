@@ -4,7 +4,7 @@ Batch lists into sublists of constant or variable sizes, and batchify functions.
 from __future__ import annotations
 from functools import wraps
 import inspect
-from typing import Optional, Sequence
+from typing import Sequence
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -92,7 +92,7 @@ def batchify(batchable_arg: str, batch_size: int = 32, progress_bar_desc: str = 
 
 def flatten(batchified_func):
     """
-    Decorates a `cappr.utils.batch.batchify`d function. Flattens the output.
+    Decorates a `cappr._utils.batch.batchify`d function. Flattens the output.
     """
 
     @wraps(batchified_func)

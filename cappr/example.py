@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Optional, Sequence
 
 
-from cappr.utils import check
+from cappr._utils import check
 
 
 @dataclass(frozen=True)

@@ -1,7 +1,5 @@
 """
-Helpers for interacting with the OpenAI API:
-  - automatically retry and sleep if requests fail
-  - automatically batch requests for greater efficiency 
+Helpers for interacting with the OpenAI API.
 """
 from __future__ import annotations
 import logging
@@ -13,7 +11,7 @@ import openai
 import tiktoken
 from tqdm.auto import tqdm
 
-from cappr.utils import batch
+from cappr._utils import batch
 
 
 logger = logging.getLogger(__name__)
@@ -48,18 +46,47 @@ def openai_method_retry(
     openai_method: Callable,
     max_num_tries: int = 5,
     sleep_sec: float = 10,
+    retry_if_error_is: tuple = (
+        openai.error.ServiceUnavailableError,
+        openai.error.RateLimitError,
+    ),
     **openai_method_kwargs,
-):
+) -> Any:
     """
-    Returns `openai_method(**openai_method_kwargs)`, retrying up to `max_num_tries`
-    times and sleeping `sleep_sec` in between tries if the call raises
-    `openai.error.ServiceUnavailableError` or `openai.error.RateLimitError`.
+    Wrapper around OpenAI API calls which automatically retries and sleeps if requests
+    fail. Logs at level INFO when requests fail, and level ERROR if an exception is
+    raised.
+
+    Parameters
+    ----------
+    openai_method : Callable
+        a function or method whose inputs are `openai_method_kwargs`
+    max_num_tries : int, optional
+        maximum number of times to retry the request until raising the exception, by
+        default 5
+    sleep_sec : float, optional
+        number of seconds to sleep after a failed request, by default 10
+    retry_if_error_is : tuple[Exception], optional
+        if one of these exceptions is raised by the request, then retry, else raise the
+        exception immediately. By default: (openai.error.ServiceUnavailableError,
+        openai.error.RateLimitError)
+
+    Returns
+    -------
+    Any
+        `openai_method(**openai_method_kwargs)`
+
+    Raises
+    ------
+    Exception
+        if the `max_num_tries` is exceeded or an exception not in `retry_if_error_is`
+        is raised
     """
     num_tries = 0
     while num_tries < max_num_tries:
         try:
             return openai_method(**openai_method_kwargs)
-        except (openai.error.ServiceUnavailableError, openai.error.RateLimitError) as e:
+        except retry_if_error_is as e:
             num_tries += 1
             logger.info(f"openai error: {e}")
             logger.info(f"Try {num_tries}. Sleeping for {sleep_sec} sec.")
@@ -69,7 +96,7 @@ def openai_method_retry(
     raise exception
 
 
-class UserCanceled(Exception):
+class _UserCanceled(Exception):
     pass
 
 
@@ -80,8 +107,27 @@ def _openai_api_call_is_ok(
     cost_per_1k_tokens: Optional[float] = None,
 ):
     """
-    Prompts the user to input `y` or `n`, given info about cost. Raises `UserCanceled`
-    if the user inputs `n` to the prompt.
+    After displaying the cost (usually an upper bound) of hitting the OpenAI API
+    text completion endpoint, prompt the user to manually input ``y`` or ``n`` to
+    indicate whether the program can proceed.
+
+    Parameters
+    ----------
+    model : Model
+        name of the OpenAI API text completion model
+    texts : list[str]
+        texts or prompts inputted to the `model` OpenAI API call
+    max_tokens : int, optional
+        maximum number of tokens to generate, by default 0
+    cost_per_1k_tokens : Optional[float], optional
+        OpenAI API dollar cost for processing 1k tokens. If unset,
+        `cappr.openai.api.model_to_cost_per_1k[model]` is used. If it's still unknown,
+        the cost will be displayed as `unknown`. By default None
+
+    Raises
+    ------
+    _UserCanceled
+        if the user inputs ``n`` when prompted to give the go-ahead
     """
     texts = list(texts)
     try:
@@ -103,24 +149,49 @@ def _openai_api_call_is_ok(
             f"({num_tokens:_} tokens). Proceed? (y/n): "
         )
     if output == "n":
-        raise UserCanceled("smell ya later")
+        raise _UserCanceled("smell ya later")
 
 
 def gpt_complete(
     texts: Sequence[str],
     model: Model,
     ask_if_ok: bool = False,
+    progress_bar_desc: str = "log-probs",
     max_tokens: int = 0,
     **openai_completion_kwargs,
 ) -> list[Mapping[str, Any]]:
     """
-    Returns a list `choices` where `choices[i]` is the value of `'choices'` (from the
-    OpenAI Completion endpoint) for `texts[i]` using `model`.
+    Wrapper around the OpenAI text completion endpoint which automatically batches
+    texts into requests for greater efficiency, retries requests that fail, and displays
+    a progress bar.
 
-    **Note that, by default, `max_tokens` to generate is 0!**
+    **By default, no tokens will be generated.**
 
-    If `ask_if_ok`, then you'll be notified of the cost of the API calls, and
-    then prompted to give the go-ahead.
+    OpenAI API text completion reference: https://platform.openai.com/docs/api-reference/completions
+
+    Parameters
+    ----------
+    texts : Sequence[str]
+        these are passed as the `prompt` argument in a text completion request
+    model : Model
+        which text completion model to use
+    ask_if_ok : bool, optional
+        whether or not to prompt you to manually give the go-ahead to run this function,
+        after notifying you of the approximate cost of the OpenAI API calls. By default
+        False
+    progress_bar_desc: str, optional
+        description of the progress bar that's displayed, by default ``'log-probs'``
+    max_tokens : int, optional
+        maximum number of tokens to generate, by default 0
+    **openai_completion_kwargs
+        other arguments passed to the text completion endpoint, e.g., `logprobs=1`.
+
+    Returns
+    -------
+    list[Mapping[str, Any]]
+        (flat) list of the `choices` mappings which the text completion endpoint
+        returns. More specifically, it's a list of
+        ``openai.openai_object.OpenAIObject``
     """
     _batch_size = 20  ## max that the API can currently handle
     if isinstance(texts, str):
@@ -129,7 +200,7 @@ def gpt_complete(
     if ask_if_ok:
         _openai_api_call_is_ok(model, texts, max_tokens=max_tokens)
     choices = []
-    with tqdm(total=len(texts), desc="log-probs") as progress_bar:
+    with tqdm(total=len(texts), desc=progress_bar_desc) as progress_bar:
         for texts_batch in batch.constant(texts, _batch_size):
             response = openai_method_retry(
                 openai.Completion.create,
@@ -148,17 +219,42 @@ def gpt_chat_complete(
     model: str = "gpt-3.5-turbo",
     ask_if_ok: bool = False,
     max_tokens: int = 5,
-    system_msg: str = ("You are an assistant which " "classifies text."),
+    system_msg: str = ("You are an assistant which classifies text."),
     **openai_chat_kwargs,
 ) -> list[Mapping[str, Any]]:
     """
-    Returns a list `choices` where `choices[i]` is the value of `'choices'` (from the
-    OpenAI Chat completions endpoint) for `texts[i]` using `model`.
+    Wrapper around the OpenAI chat completion endpoint which retries requests that fail
+    and displays a progress bar. It does **not** yet batch `texts` for greater
+    efficiency, so this may take a while.
 
-    #### Note that, by default, `max_tokens` to generate is 5.
+    **By default, the system_msg asks ChatGPT to perform text classification.**
 
-    If `ask_if_ok`, then you'll be notified of the cost of the API calls, and
-    then prompted to give the go-ahead.
+    OpenAI API chat completion reference: https://platform.openai.com/docs/api-reference/chat
+
+    Parameters
+    ----------
+    texts : Sequence[str]
+        texts which are passed in 1-by-1 immediately after the system content as
+        ``{"role": "user", "content": text}``
+    model : str, optional
+        one of the chat model names, by default "gpt-3.5-turbo"
+    ask_if_ok : bool, optional
+        whether or not to prompt you to manually give the go-ahead to run this function,
+        after notifying you of the approximate cost of the OpenAI API calls. By default
+        False
+    max_tokens : int, optional
+        maximum number of tokens to generate, by default 5
+    system_msg : str, optional
+        text which is passed in `-by-1 immediately before every piece of
+        user content in `texts` as ``{"role": "system", "content": system_msg}``. By
+        default ``"You are an assistant which classifies text."``
+
+    Returns
+    -------
+    list[Mapping[str, Any]]
+        (flat) list of the `choices` mappings which the chat completion endpoint
+        returns. More specifically, it's a list of
+        ``openai.openai_object.OpenAIObject``
     """
     ## TODO: batch, if possible
     if isinstance(texts, str):

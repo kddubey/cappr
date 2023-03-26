@@ -12,7 +12,7 @@ import numpy.typing as npt
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BatchEncoding
 
-from cappr.utils import batch, classify
+from cappr._utils import batch, classify
 from cappr import Example
 from cappr import huggingface as hf
 
