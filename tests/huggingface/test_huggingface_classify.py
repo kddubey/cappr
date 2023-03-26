@@ -4,6 +4,8 @@ from `cappr.huggingface._classify_slow`, which is assumed to be correct (TODO: y
 really should test that).
 """
 from __future__ import annotations
+import os
+import sys
 from typing import Mapping
 
 import pytest
@@ -14,6 +16,10 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from cappr import Example as Ex
 from cappr.huggingface import classify as fast
 from cappr.huggingface import _classify_slow as slow
+
+## sys hack to import from parent. If someone has a cleaner solution, lmk
+sys.path.insert(1, os.path.join(sys.path[0], ".."))
+import _test
 
 
 @pytest.fixture(scope="module")
@@ -31,8 +37,7 @@ def model_name():
 
 @pytest.fixture(scope="module")
 def model(model_name):
-    model = AutoModelForCausalLM.from_pretrained(model_name)
-    return model
+    return AutoModelForCausalLM.from_pretrained(model_name)
 
 
 @pytest.fixture(scope="module")
@@ -158,7 +163,7 @@ def _test_log_probs(
         ["d", "d e f"],
     ),
 )
-@pytest.mark.parametrize("end_of_prompt", (" ",))  ## TODO: We need to expand
+@pytest.mark.parametrize("end_of_prompt", (" ",))  ## TODO: expand
 class TestPromptsCompletions:
     def test__logits_completions_given_prompts(
         self, model, tokenizer, prompts, completions, end_of_prompt, atol
@@ -200,13 +205,31 @@ class TestPromptsCompletions:
             atol,
         )
 
+    def test_predict_proba(self, prompts, completions, model_name, end_of_prompt):
+        _test.predict_proba(
+            fast.predict_proba,
+            prompts,
+            completions,
+            model=model_name,
+            end_of_prompt=end_of_prompt,
+        )
+
+    def test_predict(self, prompts, completions, model_name, end_of_prompt):
+        _test.predict(
+            fast.predict,
+            prompts,
+            completions,
+            model=model_name,
+            end_of_prompt=end_of_prompt,
+        )
+
 
 @pytest.mark.parametrize(
     "examples",
     (
         [
             Ex("a b c", ["d", "e f g"]),
-            Ex("C", ["p G C p G", "d e f", "ya later alligator"]),
+            Ex("C", ["p G C p G", "D E F", "ya later alligator"]),
         ],
         ########## Next set of examples ##########
         [
@@ -248,3 +271,11 @@ class TestExamples:
             num_completions_per_prompt,
             atol,
         )
+
+    def test_predict_proba_examples(self, examples, model_name):
+        _test.predict_proba_examples(
+            fast.predict_proba_examples, examples, model=model_name
+        )
+
+    def test_predict_examples(self, examples, model_name):
+        _test.predict_examples(fast.predict_examples, examples, model=model_name)

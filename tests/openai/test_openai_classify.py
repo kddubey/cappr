@@ -2,6 +2,8 @@
 Unit tests `cappr.openai.classify`.
 """
 from __future__ import annotations
+import os
+import sys
 
 import pytest
 import tiktoken
@@ -9,20 +11,26 @@ import tiktoken
 from cappr import Example as Ex
 from cappr.openai import classify
 
-
-def _log_probs(texts: list[str]) -> list[list[float]]:
-    """
-    Returns a list `log_probs` where `log_probs[i]` is `list(range(size))` where `size`
-    is the number of tokens in `texts[i]`.
-    """
-    tokenizer = tiktoken.get_encoding("gpt2")
-    return [list(range(len(tokens))) for tokens in tokenizer.encode_batch(texts)]
+## sys hack to import from parent. If someone has a cleaner solution, lmk
+sys.path.insert(1, os.path.join(sys.path[0], ".."))
+import _test
 
 
 @pytest.fixture(autouse=True)
 def patch_openai_method_retry(monkeypatch):
     ## During testing, there's never going to be a case where we want to actually hit
     ## an OpenAI endpoint!
+    def _log_probs(texts: list[str]) -> list[list[float]]:
+        """
+        Returns a list `log_probs` where `log_probs[i]` is `list(range(size))` where `size`
+        is the number of tokens in `texts[i]`.
+        """
+        tokenizer = tiktoken.get_encoding("gpt2")
+        return [list(range(len(tokens))) for tokens in tokenizer.encode_batch(texts)]
+
+    ## Note that the the text completion endpoint uses a kwarg named prompt, but that's
+    ## actually set to prompt + completion in the CAPPr scheme. We input that to get
+    ## log-probs of completion tokens given prompt
     def mocked(openai_method, prompt: list[str], **kwargs):
         ## Technically, we should return a openai.openai_object.OpenAIObject
         ## For now, just gonna return the minimum dict required
@@ -75,7 +83,7 @@ def examples():
     return [
         Ex(prompt="lotta", completions=("media", "food"), prior=(1 / 2, 1 / 2)),
         Ex(
-            prompt=("🎶The best time to wear a striped sweater " "is all the"),
+            prompt=("🎶The best time to wear a striped sweater is all the"),
             completions=("time🎶",),
         ),
         Ex(
@@ -111,28 +119,17 @@ def test_log_probs_conditional_examples(examples, model):
     assert log_probs_conditional == expected
 
 
-def test_predict_proba(monkeypatch, prompts, completions, model):
-    def mock_log_probs_conditional(prompts, completions, model, **kwargs):
-        return [_log_probs(completions) for _ in prompts]
-
-    monkeypatch.setattr(
-        "cappr.openai.classify.log_probs_conditional", mock_log_probs_conditional
-    )
-    pred_probs = classify.predict_proba(prompts, completions, model)
-    assert pred_probs.shape == (len(prompts), len(completions))
+def test_predict_proba(prompts, completions, model):
+    _test.predict_proba(classify.predict_proba, prompts, completions, model)
 
 
-def test_predict_proba_examples(monkeypatch, examples, model):
-    def mock_log_probs_conditional_examples(
-        examples: list[classify.Example], model, **kwargs
-    ):
-        return [_log_probs(example.completions) for example in examples]
+def test_predict_proba_examples(examples: list[Ex], model):
+    _test.predict_proba_examples(classify.predict_proba_examples, examples, model)
 
-    monkeypatch.setattr(
-        "cappr.openai.classify.log_probs_conditional_examples",
-        mock_log_probs_conditional_examples,
-    )
-    pred_probs = classify.predict_proba_examples(examples, model)
-    assert len(pred_probs) == len(examples)
-    for pred_prob_example, example in zip(pred_probs, examples):
-        assert len(pred_prob_example) == len(example.completions)
+
+def test_predict(prompts, completions, model):
+    _test.predict(classify.predict, prompts, completions, model)
+
+
+def test_predict_examples(examples: list[Ex], model):
+    _test.predict_examples(classify.predict_examples, examples, model)
