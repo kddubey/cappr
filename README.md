@@ -15,6 +15,8 @@ prompt? Hence the name:
   **P**rompt<br>
   **Pr**obability<br>
 
+The method is fleshed out in my [question on CrossValidated](https://stats.stackexchange.com/q/601159/337906).
+
 ⚠️ This package is currently under construction. ⚠️
 
 ## Usage
@@ -209,23 +211,16 @@ python -m pip install "cappr[demos] @ git+https://github.com/kddubey/cappr.git"
 
 ## Motivation
 
-Answer my [CrossValidated question](https://stats.stackexchange.com/q/601159/337906),
-improve my understanding of LMs.
-
-<details>
-<summary>Product motivation</summary>
-
 Create a more usable zero-shot text classification interface than
 [classification via sampling](https://platform.openai.com/docs/guides/completion/classification) (CVS).
 
 <details>
 <summary>Short</summary>
 
-In CVS, your work was to figure out how to frame your classification task in a `prompt` 
-string, and then write custom code to post-process arbitrary `completion` output
-strings.
+In CVS, your job is to write up your classification task in a `prompt` string, and then
+write custom code to post-process arbitrary `completion`/output strings.
 
-In CAPPr, your work starts and stops at framing your classification task as a
+In CAPPr, your job starts and stops at framing your classification task as a
 `{prompt}{end_of_prompt}{completion}` string. CAPPr reduces cognitive and engineering
 load.
 </details>
@@ -239,6 +234,7 @@ a tweet, CVS code looks like this:
 
 ```python
 class_names = ('positive', 'neutral', 'negative')
+
 tweet = 'I loved the new Batman movie!'
 prompt = f'''
 The sentiment of a tweet is one of {class_names}.
@@ -247,7 +243,7 @@ Tweet: {tweet}
 Sentiment:
 '''
 
-completion = openai_api_call(prompt)
+completion = openai_api_text_complete(prompt)
 
 if completion not in class_names:
     completion = post_process(completion)
@@ -256,14 +252,15 @@ assert completion in class_names
 ```
 
 If you've ever written this sort of code, then I'm sure you know that implementing
-`post_process` is challenging, especially for more complicated tasks. The fact that the
-`completion` is sampled from the space of all possible sequences of tokens means that
-you're going to have to deal with the case where GPT phrases its uncertainty in three
-different ways. Or deal with the case where GPT changes the case-ing in `class_names`,
-or it fixes what it thinks is a misspelling, or the `completion` starts with a bit of
-fluff before giving an answer, etc.
+`post_process` is challenging, especially for more complicated tasks. The `completion`
+is sampled from the space of all possible sequences of tokens. This means you're going
+to have to deal with the case where GPT phrases its uncertainty in three different ways.
+And with the case where GPT changes the case-ing in `class_names`, or it fixes what it
+thinks is a misspelling, or the `completion` starts with a bit of fluff before giving an
+answer, etc.
 
-The OpenAI community knows that this can be challenging, so [they suggest](https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit)
+The OpenAI community knows that this can be challenging, so
+[they suggest](https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit)
 that you modify your code in at least 1 of 2 ways:
   1. Transform multi-token class names into a single token. Or, if it works, (as done in
   [demos/copa.ipynb](https://github.com/kddubey/cappr/blob/main/demos/copa.ipynb)) point
