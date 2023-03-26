@@ -1,4 +1,4 @@
-# CAPPr: zero-shot text classification using autoregressive LMs
+# CAPPr: zero-shot text classification using autoregressive language models
 
 [![test](https://github.com/kddubey/cappr/actions/workflows/test.yml/badge.svg)](https://github.com/kddubey/cappr/actions/workflows/test.yml)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/) 
@@ -40,8 +40,8 @@ prior       = (   1/8    ,    1/8   ,     3/4   )
 
 preds = predict(prompts=[prompt],
                 completions=class_names,
-                prior=prior,
-                model='text-ada-001')
+                model='text-ada-001'
+                prior=prior)
 preds
 # ['positive']
 ```
@@ -65,8 +65,8 @@ prior = None  # uniform prior
 
 preds = predict(prompts=[prompt],
                 completions=class_names,
-                prior=prior,
-                model='gpt2')
+                model='gpt2',
+                prior=prior)
 preds
 # ['Mercury']
 ```
@@ -103,9 +103,9 @@ prior = (
 
 pred_probs = predict_proba(prompts=prompts,
                            completions=class_names,
-                           prior=prior,
+                           model='gpt2',
                            batch_size=32,  # whatever fits on your CPU/GPU
-                           model='gpt2')
+                           prior=prior)
 
 # pred_probs[i,j] = probability that prompts[i] is classified as class_names[j]
 print(pred_probs.round(1))
@@ -147,8 +147,9 @@ examples = [
             prior=      (     2/3      ,      1/3     ,      0      ))
 ]
 
-model = AutoModelForCausalLM.from_pretrained('gpt2')
-tokenizer = AutoTokenizer.from_pretrained('gpt2')
+model_name = 'gpt2'
+model = AutoModelForCausalLM.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
 pred_probs = predict_proba_examples(examples,
                                     model_and_tokenizer=(model, tokenizer))
 
@@ -211,38 +212,84 @@ Answer my [CrossValidated question](https://stats.stackexchange.com/q/601159/337
 improve my understanding of LMs.
 
 <details>
-<summary>Product-y motivation</summary>
+<summary>Product motivation</summary>
 
 Create a more usable zero-shot text classification interface than
 [classification via sampling](https://platform.openai.com/docs/guides/completion/classification) (CVS).
-In CVS, completion tokens are sampled from a language model given a prompt.
-[Cookbook here](https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit).
-With this package's `predict` interface, you no longer have to:
-  1. study sampled completion strings which aren't in your label set
+
+<details>
+<summary>Short</summary>
+
+In CVS, your work was to figure out how to frame your classification task in a `prompt` 
+string, and then write custom code to post-process arbitrary `completion` output
+strings.
+
+In CAPPr, your work starts and stops at framing your classification task as a
+`{prompt}{end_of_prompt}{completion}` string. CAPPr reduces cognitive and engineering
+load.
+</details>
+
+<details>
+<summary>Long</summary>
+
+In CVS, your job is to write up your classification task in a `prompt` string, and 
+then process the sampled `completion` string. For example, to classify the sentiment of
+a tweet, CVS code looks like this:
+
+```python
+class_names = ('positive', 'neutral', 'negative')
+tweet = 'I loved the new Batman movie!'
+prompt = f'''
+The sentiment of a tweet is one of {class_names}.
+
+Tweet: {tweet}
+Sentiment:
+'''
+
+completion = openai_api_call(prompt)
+
+if completion not in class_names:
+    completion = post_process(completion)
+
+assert completion in class_names
+```
+
+If you've ever written this sort of code, then I'm sure you know that implementing
+`post_process` is challenging, especially for more complicated tasks. The fact that the
+`completion` is sampled from the space of all possible sequences of tokens means that
+you're going to have to deal with the case where GPT phrases its uncertainty in three
+different ways. Or deal with the case where GPT changes the case-ing in `class_names`,
+or it fixes what it thinks is a misspelling, or the `completion` starts with a bit of
+fluff before giving an answer, etc.
+
+The OpenAI community knows that this can be challenging, so [they suggest](https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit)
+that you modify your code in at least 1 of 2 ways:
+  1. Transform multi-token class names into a single token. Or, if it works, (as done in
+  [demos/copa.ipynb](https://github.com/kddubey/cappr/blob/main/demos/copa.ipynb)) point
+  to multi-token class names using a single token.
+  2. Finetune a model so that it learns the mapping to the single tokens.
+
+These are nontrivial modifications. The single-token transformation could sacrifice 
+meaningful semantics in the multi-token class name. Finetuning is expensive, requires
+that you spend much of your dataset just to learn the mapping to classes, and goes 
+against the spirit of GPT being great at zero-shot tasks. All that and you'll 
+*still* have to implement `post_process`. Fundamentally, sampling is not a clean 
+solution to a classification problem.
+
+With CAPPr's `predict` interface, you no longer have to:
+  1. study sampled completion strings which aren't in your label set (`class_names`)
   2. figure out how to map them back to the label set
   3. figure out how to transform or point multi-token labels to single tokens, ignoring
   their semantics if they were transformed
   4. ignore your prior over multi-token labels.
 
-All you have to do is figure out how to frame your classification task as a
-`{prompt}{end_of_prompt}{completion}` string.
+Classification should be boring and easy. And CAPPr aims to be just that.
 
+It remains to be seen how much is sacrificed on the statistical front. See
+[`demos`](https://github.com/kddubey/cappr/tree/main/demos).
 </details>
 
-
-## Related work
-
-While
-[benchmarking this method](https://github.com/kddubey/cappr/blob/main/demos/wsc.ipynb) 
-on the
-[Winograd Schema Challenge (WSC)](https://cs.nyu.edu/~davise/papers/WinogradSchemas/WS.html),
-I found that [this paper](https://arxiv.org/abs/1806.02847) is pretty similar:
-
-> Trinh, Trieu H., and Quoc V. Le. "A simple method for commonsense reasoning." arXiv preprint arXiv:1806.02847 (2018).
-
-[This paper](https://arxiv.org/abs/2009.07118) is also similar in spirit:
-
-> Schick, Timo, and Hinrich Schütze. "It's not just size that matters: Small language models are also few-shot learners." arXiv preprint arXiv:2009.07118 (2020).
+</details>
 
 
 ## Results
@@ -279,6 +326,21 @@ as I can't control their backend.
 [See the `demos/computational_analysis.ipynb` notebook](https://github.com/kddubey/cappr/blob/main/demos/computational_analysis.ipynb).
 
 </details>
+
+
+## Related work
+
+While
+[benchmarking this method](https://github.com/kddubey/cappr/blob/main/demos/wsc.ipynb) 
+on the
+[Winograd Schema Challenge (WSC)](https://cs.nyu.edu/~davise/papers/WinogradSchemas/WS.html),
+I found that [this paper](https://arxiv.org/abs/1806.02847) is pretty similar:
+
+> Trinh, Trieu H., and Quoc V. Le. "A simple method for commonsense reasoning." arXiv preprint arXiv:1806.02847 (2018).
+
+[This paper](https://arxiv.org/abs/2009.07118) is also similar in spirit:
+
+> Schick, Timo, and Hinrich Schütze. "It's not just size that matters: Small language models are also few-shot learners." arXiv preprint arXiv:2009.07118 (2020).
 
 
 ## Testing
