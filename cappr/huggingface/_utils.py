@@ -14,7 +14,7 @@ from transformers import (
 
 
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
-## TODO: don't do this. Ok for now b/c I know I'll only use a single GPU
+## TODO: don't do this.
 
 
 def logits_to_log_probs(

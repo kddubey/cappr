@@ -95,14 +95,14 @@ def _keys_values_prompts(
         num_repeats_per_prompt, torch.Tensor
     ):
         num_repeats_per_prompt = torch.tensor(
-            num_repeats_per_prompt, device=hf.utils.DEVICE
+            num_repeats_per_prompt, device=hf._utils.DEVICE
         )
 
     ## Batch inference prompts
     prompts = list(prompts)  ## 0-index in case it's a Series or something
     # fmt: off
     encodings: BatchEncoding = (tokenizer(prompts, return_tensors="pt", padding=True)
-                                .to(hf.utils.DEVICE))
+                                .to(hf._utils.DEVICE))
     # fmt: on
     with torch.no_grad():
         out = model(**encodings)
@@ -188,7 +188,7 @@ def _blessed_helper(
     completions = list(completions)  ## 0-index in case it's a Series or somethin
     # fmt: off
     completions_encoding = (tokenizer(completions, return_tensors="pt", padding=True)
-                            .to(hf.utils.DEVICE))
+                            .to(hf._utils.DEVICE))
     completions_input_ids = (completions_encoding
                              .input_ids
                              .repeat(completions_repeats, 1))
@@ -200,7 +200,7 @@ def _blessed_helper(
     ## right-padding (right b/c GPT-2 uses absolute position ids)
     _num_completion_tokens = completions_encoding.input_ids.shape[1]
     completions_position_ids = (
-        torch.arange(_num_completion_tokens, device=hf.utils.DEVICE) + offsets[:, None]
+        torch.arange(_num_completion_tokens, device=hf._utils.DEVICE) + offsets[:, None]
     )
     ## Need attention_mask to include the prompt since it prolly has padding
     attention_mask = torch.cat(
@@ -352,7 +352,7 @@ def _logits_to_log_probs_completions(
     `logits[i,j]` is assumed to be an unnormalized distribution (over tokens in
     the vocab) given tokens `input_ids[i,:j]`.
     """
-    log_probs = hf.utils.logits_to_log_probs(
+    log_probs = hf._utils.logits_to_log_probs(
         logits, encodings["input_ids"], input_ids_start_idx=None, logits_end_idx=None
     )
     last_idx_non_pad = encodings["attention_mask"].sum(dim=1)
@@ -404,7 +404,7 @@ def log_probs_conditional(
         conditional on conditional on `prompts[prompt_idx] + end_of_prompt` and previous
         completion tokens.
     """
-    model, tokenizer = hf.utils.load_model_and_tokenizer(
+    model, tokenizer = hf._utils.load_model_and_tokenizer(
         model=model, model_and_tokenizer=model_and_tokenizer
     )
 
@@ -454,7 +454,7 @@ def log_probs_conditional_examples(
         `examples[example_idx].prompt + examples[example_idx].end_of_prompt` and
         previous completion tokens.
     """
-    model, tokenizer = hf.utils.load_model_and_tokenizer(
+    model, tokenizer = hf._utils.load_model_and_tokenizer(
         model=model, model_and_tokenizer=model_and_tokenizer
     )
 

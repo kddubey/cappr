@@ -1,1 +1,1 @@
-from . import utils, classify, _classify_slow
+from . import _utils, classify, _classify_slow

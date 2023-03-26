@@ -45,7 +45,7 @@ def _keys_values_prompts(
     # fmt: off
     encodings: BatchEncoding = (tokenizer(prompts_repeated, return_tensors="pt",
                                           padding=True)
-                                .to(hf.utils.DEVICE))
+                                .to(hf._utils.DEVICE))
     # fmt: on
     with torch.no_grad():
         out = model(**encodings)
@@ -67,7 +67,7 @@ def _logits_texts(
     tokenizer: AutoTokenizer,
     texts: Sequence[str],
 ) -> tuple[torch.Tensor, BatchEncoding]:
-    encodings = tokenizer(texts, return_tensors="pt", padding=True).to(hf.utils.DEVICE)
+    encodings = tokenizer(texts, return_tensors="pt", padding=True).to(hf._utils.DEVICE)
     with torch.no_grad():
         out = model(**encodings)
     return out.logits, encodings
@@ -86,7 +86,7 @@ def _prompts_offsets(
         tokenizer(prompts, return_tensors="pt", padding=True)
         .attention_mask.repeat_interleave(num_completions_per_prompt, dim=0)
         .sum(dim=1)
-        .to(hf.utils.DEVICE)
+        .to(hf._utils.DEVICE)
     )
 
 
@@ -137,7 +137,7 @@ def _logits_completions_given_prompts_examples(
 def _logits_to_log_probs_completions(
     logits: torch.Tensor, encodings: Mapping[str, torch.Tensor]
 ) -> list[list[float]]:
-    log_probs = hf.utils.logits_to_log_probs(
+    log_probs = hf._utils.logits_to_log_probs(
         logits, encodings["input_ids"], input_ids_start_idx=1, logits_end_idx=-1
     )
     last_idx_non_pad = encodings["attention_mask"].sum(dim=1)
@@ -158,7 +158,7 @@ def log_probs_conditional(
     end_of_prompt: str = " ",
     batch_size: int = 32,
 ) -> list[list[list[float]]]:
-    model, tokenizer = hf.utils.load_model_and_tokenizer(
+    model, tokenizer = hf._utils.load_model_and_tokenizer(
         model=model, model_and_tokenizer=model_and_tokenizer
     )
 
@@ -180,7 +180,7 @@ def log_probs_conditional_examples(
     model_and_tokenizer: tuple[AutoModelForCausalLM, AutoTokenizer] = None,
     batch_size: int = 32,
 ) -> list[list[list[float]]]:
-    model, tokenizer = hf.utils.load_model_and_tokenizer(
+    model, tokenizer = hf._utils.load_model_and_tokenizer(
         model=model, model_and_tokenizer=model_and_tokenizer
     )
 
