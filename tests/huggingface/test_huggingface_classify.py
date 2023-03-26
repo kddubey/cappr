@@ -49,6 +49,11 @@ def tokenizer(model_name):
     return tokenizer
 
 
+@pytest.fixture(scope="module")
+def model_and_tokenizer(model, tokenizer):
+    return model, tokenizer
+
+
 @pytest.mark.parametrize("prompts", (["a b c", "c"],))
 @pytest.mark.parametrize("num_completions_per_prompt", (2, (2, 3)))
 def test__keys_values_prompts(
@@ -179,19 +184,19 @@ class TestPromptsCompletions:
 
     @pytest.mark.parametrize("batch_size", (2, 1))
     def test_log_probs_conditional(
-        self, prompts, completions, model_name, end_of_prompt, batch_size, atol
+        self, prompts, completions, model_and_tokenizer, end_of_prompt, batch_size, atol
     ):
         log_probs_completions_slow = slow.log_probs_conditional(
             prompts,
             completions,
-            model=model_name,
+            model_and_tokenizer=model_and_tokenizer,
             end_of_prompt=end_of_prompt,
             batch_size=batch_size,
         )
         log_probs_completions_fast = fast.log_probs_conditional(
             prompts,
             completions,
-            model=model_name,
+            model_and_tokenizer=model_and_tokenizer,
             end_of_prompt=end_of_prompt,
             batch_size=batch_size,
         )
@@ -205,21 +210,23 @@ class TestPromptsCompletions:
             atol,
         )
 
-    def test_predict_proba(self, prompts, completions, model_name, end_of_prompt):
+    def test_predict_proba(
+        self, prompts, completions, model_and_tokenizer, end_of_prompt
+    ):
         _test.predict_proba(
             fast.predict_proba,
             prompts,
             completions,
-            model=model_name,
+            model_and_tokenizer=model_and_tokenizer,
             end_of_prompt=end_of_prompt,
         )
 
-    def test_predict(self, prompts, completions, model_name, end_of_prompt):
+    def test_predict(self, prompts, completions, model_and_tokenizer, end_of_prompt):
         _test.predict(
             fast.predict,
             prompts,
             completions,
-            model=model_name,
+            model_and_tokenizer=model_and_tokenizer,
             end_of_prompt=end_of_prompt,
         )
 
@@ -254,13 +261,13 @@ class TestExamples:
 
     @pytest.mark.parametrize("batch_size", (2, 1))
     def test_log_probs_conditional_examples(
-        self, examples: list[Ex], model_name, batch_size, atol
+        self, examples: list[Ex], model_and_tokenizer, batch_size, atol
     ):
         log_probs_completions_slow = slow.log_probs_conditional_examples(
-            examples, model=model_name, batch_size=batch_size
+            examples, model_and_tokenizer=model_and_tokenizer, batch_size=batch_size
         )
         log_probs_completions_fast = fast.log_probs_conditional_examples(
-            examples, model=model_name, batch_size=batch_size
+            examples, model_and_tokenizer=model_and_tokenizer, batch_size=batch_size
         )
         expected_len = len(examples)
         num_completions_per_prompt = [len(example.completions) for example in examples]
@@ -272,10 +279,14 @@ class TestExamples:
             atol,
         )
 
-    def test_predict_proba_examples(self, examples, model_name):
+    def test_predict_proba_examples(self, examples, model_and_tokenizer):
         _test.predict_proba_examples(
-            fast.predict_proba_examples, examples, model=model_name
+            fast.predict_proba_examples,
+            examples,
+            model_and_tokenizer=model_and_tokenizer,
         )
 
-    def test_predict_examples(self, examples, model_name):
-        _test.predict_examples(fast.predict_examples, examples, model=model_name)
+    def test_predict_examples(self, examples, model_and_tokenizer):
+        _test.predict_examples(
+            fast.predict_examples, examples, model_and_tokenizer=model_and_tokenizer
+        )
