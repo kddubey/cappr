@@ -12,6 +12,8 @@ from tqdm.auto import tqdm
 
 def constant(lst: list, size: int):
     """
+    TODO: numpy docstring
+
     Generates sublists in the order of `lst` which partition `lst`. All sublists (except
     potentially the last) have length `size`.
     """
@@ -25,6 +27,8 @@ def constant(lst: list, size: int):
 
 def variable(lst: list, sizes: Sequence[int]):
     """
+    TODO: numpy docstring
+
     Generates sublists in the order of `lst` which partition `lst`. The `i`'th generated
     sublist has length `sizes[i]`.
     """
@@ -59,6 +63,8 @@ def _kwarg_name_to_value(func):
 
 def batchify(batchable_arg: str, batch_size: int = 32, progress_bar_desc: str = ""):
     """
+    TODO: numpy docstring
+
     Returns a decorator which runs the decorated function in batches along its
     `batchable_arg`, returning a list of the function's outputs for each batch.
 
@@ -92,7 +98,9 @@ def batchify(batchable_arg: str, batch_size: int = 32, progress_bar_desc: str = 
 
 def flatten(batchified_func):
     """
-    Decorates a `cappr._utils.batch.batchify`d function. Flattens the output.
+    TODO: numpy docstring
+
+    Decorates a `cappr.utils._batch.batchify`d function. Flattens the output.
     """
 
     @wraps(batchified_func)

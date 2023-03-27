@@ -3,3 +3,5 @@
 __pycache__/
 .coverage
 docs/_build
+docs/build
+dist/

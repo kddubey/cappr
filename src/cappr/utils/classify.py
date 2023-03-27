@@ -9,7 +9,7 @@ from typing import Callable, Optional, Sequence, Union
 import numpy as np
 import numpy.typing as npt
 
-from cappr._utils import check
+from cappr.utils import _check
 
 
 def agg_log_probs(
@@ -17,8 +17,31 @@ def agg_log_probs(
     func: Callable[[Sequence[float]], float] = np.mean,
 ) -> list[list[float]]:
     """
-    Returns a list, `likelihoods`, where `likelihoods[i][j]` is
-    `np.exp(func(log_probs[i][j]))`.
+    Aggregate token log-probabilities along the last dimension into probabilities.
+
+    Note
+    ----
+    If `log_probs` was derived from a constant set of completions, e.g., it's the
+    output of
+    :func:`cappr.openai.classify.log_probs_conditional` or
+    :func:`cappr.huggingface.classify.log_probs_conditional`, then use the more
+    efficient :func:`agg_log_probs_from_constant_completions` function instead of this
+    one.
+
+    Parameters
+    ----------
+    log_probs : Sequence[Sequence[Sequence[float]]]
+        sequences where token log-probabilities are in the last dimension
+    func : Callable[[Sequence[float]], float], optional
+        function which aggregates a sequence of token log-probabilities into a single
+        log-probability, by default np.mean
+
+    Returns
+    -------
+    probs: list[list[float]]
+        Lists of probabilities where::
+
+            probs[i][j] = np.exp(func(log_probs[i][j]))
     """
     return [
         [
@@ -34,15 +57,31 @@ def agg_log_probs_from_constant_completions(
     func: Callable[[Sequence[float]], float] = np.mean,
 ) -> npt.NDArray[np.floating]:
     """
-    Returns an array, `likelihoods`, where `likelihoods[i,j]` is
-    `np.exp(func(log_probs[i][j]))`.
+    Aggregate token log-probabilities along the last dimension into probabilities.
 
-    `func` must take an `axis` keyword argument.
+    Warning
+    -------
+    If `log_probs` was NOT dervived from a constant set of completions, e.g., it's
+    the output of
+    :func:`cappr.openai.classify.log_probs_conditional_examples` or
+    :func:`cappr.huggingface.classify.log_probs_conditional_examples`, then you must use
+    :func:`agg_log_probs` function instead of this function.
 
-    This function is a fast version of `agg_log_probs`, but only applies to `log_probs`
-    which are from a constant set of completions, i.e., `log_probs` is the output from a
-    `log_probs_conditional` function, **NOT** from a `log_probs_condtional_examples`
-    function.
+    Parameters
+    ----------
+    log_probs : Sequence[Sequence[Sequence[float]]]
+        sequences where token log-probabilities (from a constant set of completions) are
+        in the last dimension
+    func : Callable[[Sequence[float]], float], optional
+        function which aggregates a sequence of token log-probabilities into a single
+        log-probability **AND** takes an ``axis`` keyword argument, by default np.mean
+
+    Returns
+    -------
+    probs: npt.NDArray[np.floating]
+        Array of probabilities where::
+
+            probs[i,j] = np.exp(func(log_probs[i][j]))
     """
     num_completions_per_prompt = [
         len(log_probs_completions) for log_probs_completions in log_probs
@@ -97,13 +136,35 @@ def posterior_prob(
     check_prior: bool = True,
 ) -> npt.NDArray[np.floating]:
     """
-    Returns an array, `posteriors`, where `posteriors[i]` is a (`normalize[i]`d)
-    probability distribution computed as `likelihoods[i] * prior`. If `prior is None`,
-    then a uniform prior is applied, i.e., `posteriors[i]` is simply a (`normalize[i]`d)
-    copy of `likelihoods[i]`.
+    Compute posterior probabilities from likelihoods and a prior.
 
-    Set `axis` to the axis over which the distribution is defined, e.g., `0` if
-    likelihoods is 1-D.
+    Parameters
+    ----------
+    likelihoods : npt.ArrayLike[float]
+        2-D array of probabilities of data given a hypothesis
+    axis : int
+        the axis along which the probability distribution should be defined, e.g.,
+        `axis=0` if `likelihoods` is 1-D
+    prior : Optional[Union[Sequence[float], npt.ArrayLike[float]]], optional
+        a probability distribution over the `axis` of `likelihoods`, by default None
+    normalize : Union[bool, Sequence[bool]], optional
+        whether or not to return a normalized probability distribtution for each row, by
+        default True (normalize all rows)
+    check_prior : bool, optional
+        whether or not to check that the `prior` is indeed a probability distribution,
+        by default True
+
+    Returns
+    -------
+    posterior_probs : npt.NDArray[np.floating]
+        2-D array of probabilities of a hypothesis given data. Its shape is the same as
+        `likelihood.shape`
+
+    Raises
+    ------
+    ValueError
+        if `normalize` is a sequence whose length is different than that of
+        `likelihoods`
     """
     ## Input checks and preprocessing
     likelihoods = np.array(likelihoods)  ## it should not be jagged/inhomogenous
@@ -119,7 +180,7 @@ def posterior_prob(
         )
     normalize = np.array(normalize, dtype=bool)
     if prior is not None and check_prior:
-        check.prior(prior)
+        _check.prior(prior)
 
     ## Apply Bayes' rule, w/ optional normalization per row
     if prior is None:
@@ -140,13 +201,21 @@ def _predict_proba(conditional_func):
     def wrapper(
         prompts: Sequence[str], completions: Sequence[str], *args, **kwargs
     ) -> npt.NDArray[np.floating]:
+        ## Before hitting any APIs ($$), let's check the prior
+        prior = kwargs.get("prior", None)
+        _check.prior(prior)
+        if prior is not None and len(completions) != len(prior):
+            raise ValueError(
+                "completions and prior are different lengths: "
+                f"{len(completions)}, {len(prior)}."
+            )
+
         log_probs_completions = conditional_func(prompts, completions, *args, **kwargs)
         likelihoods = agg_log_probs_from_constant_completions(log_probs_completions)
         ## If there's only 1 completion, normalizing will cause the probability to
         ## trivially be 1! So let's not normalize in that case, and hope the user knows
         ## what they're doing
         normalize = len(completions) > 1
-        prior = kwargs.get("prior", None)
         return posterior_prob(likelihoods, axis=1, prior=prior, normalize=normalize)
 
     return wrapper
@@ -177,7 +246,7 @@ def _predict_proba_examples(conditional_examples_func):
                     axis=0,
                     prior=example.prior,
                     normalize=normalize_ex,
-                    check_prior=False,  ## already checked when constructing each example
+                    check_prior=False,  ## already checked during example construction
                 )
                 for likelihoods_ex, example, normalize_ex in zip(
                     likelihoods, examples, normalize
@@ -202,7 +271,7 @@ def _predict_proba_examples(conditional_examples_func):
             axis=1,
             prior=prior,
             normalize=normalize,
-            check_prior=False,  ## already checked when constructing each example
+            check_prior=False,  ## ## already checked during example construction
         )
 
     return wrapper

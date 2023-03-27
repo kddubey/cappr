@@ -1,7 +1,15 @@
 """
 Perform prompt-completion classification using a ``transformers.AutoModelForCausalLM``.
-
 Currently, only PyTorch models are supported.
+
+In the implementation, attention block keys and values for prompts are cached and shared
+across completions. See the computational performance `here`_.
+
+.. _here: https://cappr.readthedocs.io/en/latest/6_computational_performance.html
+
+You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
+
+.. warning:: This module currently requires that ``end_of_prompt`` is a whitespace.
 """
 from __future__ import annotations
 from typing import Mapping, Optional, Sequence, Union
@@ -11,7 +19,7 @@ import numpy.typing as npt
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BatchEncoding
 
-from cappr._utils import batch, classify
+from cappr.utils import _batch, classify
 from cappr import Example
 from cappr import huggingface as hf
 
@@ -95,14 +103,14 @@ def _keys_values_prompts(
         num_repeats_per_prompt, torch.Tensor
     ):
         num_repeats_per_prompt = torch.tensor(
-            num_repeats_per_prompt, device=hf._utils.DEVICE
+            num_repeats_per_prompt, device=model.device
         )
 
     ## Batch inference prompts
     prompts = list(prompts)  ## 0-index in case it's a Series or something
     # fmt: off
     encodings: BatchEncoding = (tokenizer(prompts, return_tensors="pt", padding=True)
-                                .to(hf._utils.DEVICE))
+                                .to(model.device))
     # fmt: on
     with torch.no_grad():
         out = model(**encodings)
@@ -188,7 +196,7 @@ def _blessed_helper(
     completions = list(completions)  ## 0-index in case it's a Series or somethin
     # fmt: off
     completions_encoding = (tokenizer(completions, return_tensors="pt", padding=True)
-                            .to(hf._utils.DEVICE))
+                            .to(model.device))
     completions_input_ids = (completions_encoding
                              .input_ids
                              .repeat(completions_repeats, 1))
@@ -200,7 +208,7 @@ def _blessed_helper(
     ## right-padding (right b/c GPT-2 uses absolute position ids)
     _num_completion_tokens = completions_encoding.input_ids.shape[1]
     completions_position_ids = (
-        torch.arange(_num_completion_tokens, device=hf._utils.DEVICE) + offsets[:, None]
+        torch.arange(_num_completion_tokens, device=model.device) + offsets[:, None]
     )
     ## Need attention_mask to include the prompt since it prolly has padding
     attention_mask = torch.cat(
@@ -215,8 +223,9 @@ def _blessed_helper(
             past_key_values=past_key_values,
             position_ids=completions_position_ids,
         )
+    ## 😎
 
-    ## You need to be able to ignore pad tokens, so need this data as well
+    ## You need to be able to ignore pad tokens, so you need this data as well
     encodings = BatchEncoding(
         {
             "input_ids": completions_input_ids,
@@ -228,7 +237,7 @@ def _blessed_helper(
     ## Let's drop the next-token logits for the last completion token b/c they're not
     ## useful for our purposes. Moreover, dropping ensures
     ## logits.shape[:2] == encodings['input_ids'].shape, as one expects.
-    ## The user just needs to keep in mind that `logits` are shifted behind.
+    ## Just keep in mind that `logits` are shifted behind.
     logits = torch.cat(
         [prompts_last_nonpad_token_logits, completions_out.logits[:, :-1, :]], dim=1
     )
@@ -377,7 +386,11 @@ def log_probs_conditional(
     Log-probabilities of each completion token conditional on each prompt and previous
     completion tokens.
 
-    **Either model or model_and_tokenizer must be inputted.**
+    Note
+    ----
+    Either `model` or `model_and_tokenizer` must be inputted. It's usually better to
+    instantiate/pre-load a model and tokenizer and pass them to `model_and_tokenizer`.
+    See the Example.
 
     Parameters
     ----------
@@ -403,13 +416,51 @@ def log_probs_conditional(
         log-probability of the completion token in `completions[completion_idx]`,
         conditional on `prompts[prompt_idx] + end_of_prompt` and previous
         completion tokens.
+
+    Note
+    ----
+    To efficiently aggregate `log_probs_completions`, use
+    :func:`cappr.utils.classify.agg_log_probs_from_constant_completions`.
+
+    Example
+    -------
+    Here we'll use single characters (which are of course single tokens) to more clearly
+    demonstrate what this function does::
+
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from cappr.huggingface.classify import log_probs_conditional
+
+        # Load model and tokenizer
+        model = AutoModelForCausalLM.from_pretrained('gpt2')
+        tokenizer = AutoTokenizer.from_pretrained('gpt2')
+
+        # Create data
+        prompts = ['x y', 'a b c']
+        completions = ['z', 'd e']
+
+        # Compute
+        log_probs_completions = log_probs_conditional(
+                                    prompts,
+                                    completions,
+                                    model_and_tokenizer=(model, tokenizer)
+                                )
+
+        # Outputs (rounded) next to their symbolic representation
+
+        log_probs_completions[0]
+        # [[-4.5],        [[log Pr(z | x, y)],
+        #  [-5.6, -3.2]]   [log Pr(d | x, y),    log Pr(e | x, y, d)]]
+
+        log_probs_completions[1]
+        # [[-9.7],        [[log Pr(z | a, b, c)],
+        #  [-0.2, -0.03]]  [log Pr(d | a, b, c), log Pr(e | a, b, c)]]
     """
     model, tokenizer = hf._utils.load_model_and_tokenizer(
         model=model, model_and_tokenizer=model_and_tokenizer
     )
 
-    @batch.flatten
-    @batch.batchify(batchable_arg="prompts", progress_bar_desc="log-probs")
+    @_batch.flatten
+    @_batch.batchify(batchable_arg="prompts", progress_bar_desc="log-probs")
     def log_probs_completions_batch(prompts, batch_size=batch_size):
         logits, encodings = _logits_completions_given_prompts(
             model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
@@ -417,7 +468,7 @@ def log_probs_conditional(
         return _logits_to_log_probs_completions(logits, encodings)
 
     log_probs_completions = log_probs_completions_batch(prompts)
-    return list(batch.constant(log_probs_completions, size=len(completions)))
+    return list(_batch.constant(log_probs_completions, size=len(completions)))
 
 
 def log_probs_conditional_examples(
@@ -430,7 +481,11 @@ def log_probs_conditional_examples(
     Log-probabilities of each completion token conditional on each prompt and previous
     completion tokens.
 
-    **Either model or model_and_tokenizer must be inputted.**
+    Note
+    ----
+    Either `model` or `model_and_tokenizer` must be inputted. It's usually better to
+    instantiate/pre-load a model and tokenizer and pass them to `model_and_tokenizer`.
+    See the Example.
 
     Parameters
     ----------
@@ -453,13 +508,54 @@ def log_probs_conditional_examples(
         `examples[example_idx].completions[completion_idx]`, conditional on
         `examples[example_idx].prompt + examples[example_idx].end_of_prompt` and
         previous completion tokens.
+
+    Note
+    ----
+    To aggregate `log_probs_completions`, use
+    :func:`cappr.utils.classify.agg_log_probs`.
+
+    Note
+    ----
+    The attribute :attr:`cappr.Example.prior` is unused.
+
+    Example
+    -------
+    Here we'll use single characters (which are of course single tokens) to more clearly
+    demonstrate what this function does::
+
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from cappr import Example
+        from cappr.huggingface.classify import log_probs_conditional_examples
+
+        # Load model and tokenizer
+        model = AutoModelForCausalLM.from_pretrained('gpt2')
+        tokenizer = AutoTokenizer.from_pretrained('gpt2')
+
+        # Create data
+        examples = [Example(prompt='x y',   completions=('z', 'd e')),
+                    Example(prompt='a b c', completions=('1 2',))]
+
+        # Compute
+        log_probs_completions = log_probs_conditional_examples(
+                                    examples,
+                                    model_and_tokenizer=(model, tokenizer)
+                                )
+
+        # Outputs (rounded) next to their symbolic representation
+
+        log_probs_completions[0] # corresponds to examples[0]
+        # [[-4.5],        [[log Pr(z | x, y)],
+        #  [-5.6, -3.2]]   [log Pr(d | x, y),    log Pr(e | x, y, d)]]
+
+        log_probs_completions[1] # corresponds to examples[1]
+        # [[-5.0, -1.7]]  [[log Pr(1 | a, b, c)], log Pr(2 | a, b, c, 1)]]
     """
     model, tokenizer = hf._utils.load_model_and_tokenizer(
         model=model, model_and_tokenizer=model_and_tokenizer
     )
 
-    @batch.flatten
-    @batch.batchify(batchable_arg="examples", progress_bar_desc="log-probs")
+    @_batch.flatten
+    @_batch.batchify(batchable_arg="examples", progress_bar_desc="log-probs")
     def log_probs_completions_batch(examples, batch_size=batch_size):
         logits, encodings = _logits_completions_given_prompts_examples(
             model, tokenizer, examples
@@ -468,7 +564,9 @@ def log_probs_conditional_examples(
 
     log_probs_completions = log_probs_completions_batch(examples)
     num_completions_per_prompt = [len(example.completions) for example in examples]
-    return list(batch.variable(log_probs_completions, sizes=num_completions_per_prompt))
+    return list(
+        _batch.variable(log_probs_completions, sizes=num_completions_per_prompt)
+    )
 
 
 @classify._predict_proba
@@ -484,12 +582,18 @@ def predict_proba(
     """
     Predict probabilities of each completion coming after each prompt.
 
-    **Either model or model_and_tokenizer must be inputted.**
+    Note
+    ----
+    Either `model` or `model_and_tokenizer` must be inputted. It's usually better to
+    instantiate/pre-load a model and tokenizer and pass them to `model_and_tokenizer`.
+    See the Example.
 
-    Here, the set of possible completions which could follow each prompt is the same for
-    every prompt. If instead, each prompt could be followed by a *different* set of
-    completions, then construct a sequence of :class:`cappr.Example` objects and pass
-    them to :func:`predict_proba_examples`.
+    Note
+    ----
+    In this function, the set of possible completions which could follow each prompt is
+    the same for every prompt. If instead, each prompt could be followed by a
+    *different* set of completions, then construct a sequence of :class:`cappr.Example`
+    objects and pass them to :func:`predict_proba_examples`.
 
     Parameters
     ----------
@@ -519,6 +623,43 @@ def predict_proba(
         `pred_probs[prompt_idx, completion_idx]` is the model's estimate of the
         probability that `completions[completion_idx]` comes after
         `prompts[prompt_idx] + end_of_prompt`.
+
+    Example
+    -------
+    Let's have GPT-2 (small) predict where stuff is in the kitchen. This example also
+    conveys that it's not the greatest model out there::
+
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from cappr.huggingface.classify import predict_proba
+
+        # Load model and tokenizer
+        model = AutoModelForCausalLM.from_pretrained('gpt2')
+        tokenizer = AutoTokenizer.from_pretrained('gpt2')
+
+        # Define a classification task
+        prompts = ['The tacos are cooking',
+                   'Ice cream is']
+        class_names = ('on the stove', 'in the freezer', 'in the fridge')
+        prior       = (     1/5      ,       2/5       ,       2/5      )
+
+        pred_probs = predict_proba(prompts,
+                                   completions=class_names,
+                                   model_and_tokenizer=(model, tokenizer),
+                                   prior=prior)
+
+        pred_probs = pred_probs.round(1) # just for cleaner output
+
+        # predicted probability that tacos cook on the stove
+        pred_probs[0,0]
+        # 0.4
+
+        # predicted probability that ice cream is in the freezer
+        pred_probs[1,1]
+        # 0.5
+
+        # predicted probability that ice cream is in the fridge
+        pred_probs[1,2]
+        # 0.4
     """
     return log_probs_conditional(
         prompts,
@@ -540,7 +681,11 @@ def predict_proba_examples(
     """
     Predict probabilities of each completion coming after each prompt.
 
-    **Either model or model_and_tokenizer must be inputted.**
+    Note
+    ----
+    Either `model` or `model_and_tokenizer` must be inputted. It's usually better to
+    instantiate/pre-load a model and tokenizer and pass them to `model_and_tokenizer`.
+    See the Example.
 
     Parameters
     ----------
@@ -564,6 +709,38 @@ def predict_proba_examples(
 
         If the number of completions per example is a constant `k`, then an array with
         shape `(len(examples), k)` is returned instead of a nested/2-D list.
+
+    Example
+    -------
+    GPT-2 (small) doing media trivia::
+
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from cappr import Example
+        from cappr.huggingface.classify import predict_proba_examples
+
+        # Load model and tokenizer
+        model = AutoModelForCausalLM.from_pretrained('gpt2')
+        tokenizer = AutoTokenizer.from_pretrained('gpt2')
+
+        # Create data
+        examples = [
+            Example(prompt='Jodie Foster played',
+                    completions=('Clarice Starling', 'Trinity in The Matrix')),
+            Example(prompt='Batman, from Batman: The Animated Series, was played by',
+                    completions=('Kevin Conroy', 'Pete Holmes', 'Spongebob!'),
+                    prior=      (     2/3      ,      1/3     ,      0      ))
+        ]
+
+        pred_probs = predict_proba_examples(examples,
+                                            model_and_tokenizer=(model, tokenizer))
+
+        # predicted probability that Jodie Foster played Clarice Starling, not Trinity
+        pred_probs[0][0]
+        # 0.7
+
+        # predicted probability that Batman was played by Kevin Conroy
+        pred_probs[0][1]
+        # 0.97
     """
     return log_probs_conditional_examples(
         examples,
@@ -586,12 +763,18 @@ def predict(
     """
     Predict which completion is most likely to follow each prompt.
 
-    **Either model or model_and_tokenizer must be inputted.**
+    Note
+    ----
+    Either `model` or `model_and_tokenizer` must be inputted. It's usually better to
+    instantiate/pre-load a model and tokenizer and pass them to `model_and_tokenizer`.
+    See the Example.
 
-    Here, the set of possible completions which could follow each prompt is the same for
-    every prompt. If instead, each prompt could be followed by a *different* set of
-    completions, then construct a sequence of :class:`cappr.Example` objects and pass
-    them to :func:`predict_examples`.
+    Note
+    ----
+    In this function, the set of possible completions which could follow each prompt is
+    the same for every prompt. If instead, each prompt could be followed by a
+    *different* set of completions, then construct a sequence of :class:`cappr.Example`
+    objects and pass them to :func:`predict_examples`.
 
     Parameters
     ----------
@@ -620,6 +803,30 @@ def predict(
         List with length `len(prompts)`.
         `preds[prompt_idx]` is the completion in `completions` which is predicted to
         follow `prompts[prompt_idx] + end_of_prompt`.
+
+    Example
+    -------
+    Let's have GPT-2 (small) predict where stuff is in the kitchen::
+
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from cappr.huggingface.classify import predict
+
+        # Load model and tokenizer
+        model = AutoModelForCausalLM.from_pretrained('gpt2')
+        tokenizer = AutoTokenizer.from_pretrained('gpt2')
+
+        # Define a classification task
+        prompts = ['The tacos are cooking', 'Ice cream is']
+        class_names = ('on the stove', 'in the freezer', 'in the fridge')
+        prior       = (     1/5      ,       2/5       ,       2/5      )
+
+        preds = predict(prompts,
+                        completions=class_names,
+                        model_and_tokenizer=(model, tokenizer),
+                        prior=prior)
+        preds
+        # ['on the stove',
+        #  'in the freezer']
     """
     return predict_proba(
         prompts,
@@ -642,7 +849,11 @@ def predict_examples(
     """
     Predict which completion is most likely to follow each prompt.
 
-    **Either `model` or `model_and_tokenizer` must be inputted.**
+    Note
+    ----
+    Either `model` or `model_and_tokenizer` must be inputted. It's usually better to
+    instantiate/pre-load a model and tokenizer and pass them to `model_and_tokenizer`.
+    See the Example.
 
     Parameters
     ----------
@@ -664,6 +875,32 @@ def predict_examples(
         `preds[example_idx]` is the completion in `examples[example_idx].completions`
         which is predicted to follow
         `examples[example_idx].prompt + examples[example_idx].end_of_prompt`.
+
+    Example
+    -------
+    GPT-2 (small) doing media trivia::
+
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from cappr import Example
+        from cappr.huggingface.classify import predict_examples
+
+        # Load model and tokenizer
+        model = AutoModelForCausalLM.from_pretrained('gpt2')
+        tokenizer = AutoTokenizer.from_pretrained('gpt2')
+
+        # Create data
+        examples = [
+            Example(prompt='Jodie Foster played',
+                    completions=('Clarice Starling', 'Trinity in The Matrix')),
+            Example(prompt='Batman, from Batman: The Animated Series, was played by',
+                    completions=('Kevin Conroy', 'Pete Holmes', 'Spongebob!'),
+                    prior=      (     2/3      ,      1/3     ,      0      ))
+        ]
+
+        preds = predict_examples(examples, model_and_tokenizer=(model, tokenizer))
+        preds
+        # ['Clarice Starling',
+        #  'Kevin Conroy']
     """
     return predict_proba_examples(
         examples,

@@ -122,6 +122,25 @@ def test_log_probs_conditional_examples(examples, model):
 def test_predict_proba(prompts, completions, model):
     _test.predict_proba(classify.predict_proba, prompts, completions, model)
 
+    ## test bad prior input. TODO: standardize for other inputs
+    prior = [1 / len(completions)] * len(completions)
+    prior_bad = prior + [0]
+    expected_error_msg = (
+        "completions and prior are different lengths: "
+        f"{len(completions)}, {len(prior_bad)}."
+    )
+    with pytest.raises(ValueError, match=expected_error_msg):
+        _test.predict_proba(
+            classify.predict_proba, prompts, completions, model, prior=prior_bad
+        )
+
+    prior_bad = prior[:-1] + [0]
+    expected_error_msg = "prior must sum to 1."
+    with pytest.raises(ValueError, match=expected_error_msg):
+        _test.predict_proba(
+            classify.predict_proba, prompts, completions, model, prior=prior_bad
+        )
+
 
 def test_predict_proba_examples(examples: list[Ex], model):
     _test.predict_proba_examples(classify.predict_proba_examples, examples, model)

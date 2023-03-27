@@ -11,7 +11,7 @@ import openai
 import tiktoken
 from tqdm.auto import tqdm
 
-from cappr._utils import batch
+from cappr.utils import _batch
 
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ def openai_method_retry(
     openai_method: Callable,
     max_num_tries: int = 5,
     sleep_sec: float = 10,
-    retry_if_error_is: tuple = (
+    retry_errors: tuple = (
         openai.error.ServiceUnavailableError,
         openai.error.RateLimitError,
     ),
@@ -62,14 +62,15 @@ def openai_method_retry(
     openai_method : Callable
         a function or method whose inputs are `openai_method_kwargs`
     max_num_tries : int, optional
-        maximum number of times to retry the request until raising the exception, by
+        maximum number of times to retry the request before raising the exception, by
         default 5
     sleep_sec : float, optional
-        number of seconds to sleep after a failed request, by default 10
-    retry_if_error_is : tuple[Exception], optional
-        if one of these exceptions is raised by the request, then retry, else raise the
-        exception immediately. By default: (openai.error.ServiceUnavailableError,
-        openai.error.RateLimitError)
+        number of seconds to sleep before re-submitting the request, by default 10
+    retry_errors : tuple[Exception], optional
+        if one of these exceptions is raised by the request, then retry, else the
+        exception is immediately raised.
+        By default
+        ``(openai.error.ServiceUnavailableError, openai.error.RateLimitError)``
 
     Returns
     -------
@@ -79,14 +80,13 @@ def openai_method_retry(
     Raises
     ------
     Exception
-        if the `max_num_tries` is exceeded or an exception not in `retry_if_error_is`
-        is raised
+        if `max_num_tries` is exceeded or an exception not in `retry_errors` is raised
     """
     num_tries = 0
     while num_tries < max_num_tries:
         try:
             return openai_method(**openai_method_kwargs)
-        except retry_if_error_is as e:
+        except retry_errors as e:
             num_tries += 1
             logger.info(f"openai error: {e}")
             logger.info(f"Try {num_tries}. Sleeping for {sleep_sec} sec.")
@@ -162,12 +162,15 @@ def gpt_complete(
 ) -> list[Mapping[str, Any]]:
     """
     Wrapper around the OpenAI text completion endpoint which automatically batches
-    texts into requests for greater efficiency, retries requests that fail, and displays
-    a progress bar.
+    texts for greater efficiency, retries requests that fail, and displays a progress
+    bar.
 
-    **By default, no tokens will be generated.**
+    OpenAI API text completion reference:
+    https://platform.openai.com/docs/api-reference/completions
 
-    OpenAI API text completion reference: https://platform.openai.com/docs/api-reference/completions
+    Warning
+    -------
+    By default, no tokens will be generated/sampled.
 
     Parameters
     ----------
@@ -201,7 +204,7 @@ def gpt_complete(
         _openai_api_call_is_ok(model, texts, max_tokens=max_tokens)
     choices = []
     with tqdm(total=len(texts), desc=progress_bar_desc) as progress_bar:
-        for texts_batch in batch.constant(texts, _batch_size):
+        for texts_batch in _batch.constant(texts, _batch_size):
             response = openai_method_retry(
                 openai.Completion.create,
                 prompt=texts_batch,
@@ -224,12 +227,14 @@ def gpt_chat_complete(
 ) -> list[Mapping[str, Any]]:
     """
     Wrapper around the OpenAI chat completion endpoint which retries requests that fail
-    and displays a progress bar. It does **not** yet batch `texts` for greater
-    efficiency, so this may take a while.
+    and displays a progress bar. It does not batch inputs, so this may take a while.
 
-    **By default, the system_msg asks ChatGPT to perform text classification.**
+    OpenAI API chat completion reference:
+    https://platform.openai.com/docs/api-reference/chat
 
-    OpenAI API chat completion reference: https://platform.openai.com/docs/api-reference/chat
+    Warning
+    -------
+    By default, the `system_msg` asks ChatGPT to perform text classification.
 
     Parameters
     ----------
@@ -245,7 +250,7 @@ def gpt_chat_complete(
     max_tokens : int, optional
         maximum number of tokens to generate, by default 5
     system_msg : str, optional
-        text which is passed in `-by-1 immediately before every piece of
+        text which is passed in 1-by-1 immediately before every piece of
         user content in `texts` as ``{"role": "system", "content": system_msg}``. By
         default ``"You are an assistant which classifies text."``
     **openai_chat_kwargs

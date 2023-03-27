@@ -1,11 +1,11 @@
 """
-Unit tests `cappr._utils.batch`.
+Unit tests `cappr.utils.batch`.
 """
 from __future__ import annotations
 
 import pytest
 
-from cappr._utils import batch
+from cappr.utils import _batch
 
 
 def _test_partition_and_order(batches: list[list], source_lst: list):
@@ -24,7 +24,7 @@ def lst():
 
 @pytest.mark.parametrize("size", (2, 3))
 def test_constant(lst, size: int):
-    batches = list(batch.constant(lst, size))
+    batches = list(_batch.constant(lst, size))
 
     _test_partition_and_order(batches, lst)
 
@@ -38,7 +38,7 @@ def test_constant(lst, size: int):
 
 @pytest.mark.parametrize("sizes", ([2, 4, 3, 1], [10]))
 def test_variable(lst, sizes):
-    batches = list(batch.variable(lst, sizes))
+    batches = list(_batch.variable(lst, sizes))
 
     _test_partition_and_order(batches, lst)
 
@@ -51,9 +51,9 @@ def test_variable(lst, sizes):
 
 @pytest.mark.parametrize("batch_size", (2, 3))
 def test_batchify(lst, batch_size):
-    @batch.batchify(batchable_arg="lst")
+    @_batch.batchify(batchable_arg="lst")
     def func(dummy_arg, lst, batch_size=100, dummy_kwarg="dummy", **kwargs):
         return lst
 
     out = func("dummy", lst, batch_size=batch_size)
-    assert out == list(batch.constant(lst, size=batch_size))
+    assert out == list(_batch.constant(lst, size=batch_size))

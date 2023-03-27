@@ -12,7 +12,7 @@ import numpy.typing as npt
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, BatchEncoding
 
-from cappr._utils import batch, classify
+from cappr.utils import _batch, classify
 from cappr import Example
 from cappr import huggingface as hf
 
@@ -45,7 +45,7 @@ def _keys_values_prompts(
     # fmt: off
     encodings: BatchEncoding = (tokenizer(prompts_repeated, return_tensors="pt",
                                           padding=True)
-                                .to(hf._utils.DEVICE))
+                                .to(model.device))
     # fmt: on
     with torch.no_grad():
         out = model(**encodings)
@@ -67,7 +67,7 @@ def _logits_texts(
     tokenizer: AutoTokenizer,
     texts: Sequence[str],
 ) -> tuple[torch.Tensor, BatchEncoding]:
-    encodings = tokenizer(texts, return_tensors="pt", padding=True).to(hf._utils.DEVICE)
+    encodings = tokenizer(texts, return_tensors="pt", padding=True).to(model.device)
     with torch.no_grad():
         out = model(**encodings)
     return out.logits, encodings
@@ -86,7 +86,6 @@ def _prompts_offsets(
         tokenizer(prompts, return_tensors="pt", padding=True)
         .attention_mask.repeat_interleave(num_completions_per_prompt, dim=0)
         .sum(dim=1)
-        .to(hf._utils.DEVICE)
     )
 
 
@@ -110,7 +109,7 @@ def _logits_completions_given_prompts(
     ## Need these indices to slice completion tokens
     encodings["offsets"] = _prompts_offsets(
         tokenizer, prompts, num_completions_per_prompt=len(completions)
-    )
+    ).to(model.device)
     return logits, encodings
 
 
@@ -162,8 +161,8 @@ def log_probs_conditional(
         model=model, model_and_tokenizer=model_and_tokenizer
     )
 
-    @batch.flatten
-    @batch.batchify(batchable_arg="prompts", progress_bar_desc="log-probs (slow)")
+    @_batch.flatten
+    @_batch.batchify(batchable_arg="prompts", progress_bar_desc="log-probs (slow)")
     def log_probs_completions_batch(prompts, batch_size=batch_size):
         logits, encodings = _logits_completions_given_prompts(
             model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
@@ -171,7 +170,7 @@ def log_probs_conditional(
         return _logits_to_log_probs_completions(logits, encodings)
 
     log_probs_completions = log_probs_completions_batch(prompts)
-    return list(batch.constant(log_probs_completions, size=len(completions)))
+    return list(_batch.constant(log_probs_completions, size=len(completions)))
 
 
 def log_probs_conditional_examples(
@@ -184,8 +183,8 @@ def log_probs_conditional_examples(
         model=model, model_and_tokenizer=model_and_tokenizer
     )
 
-    @batch.flatten
-    @batch.batchify(batchable_arg="examples", progress_bar_desc="log-probs (slow)")
+    @_batch.flatten
+    @_batch.batchify(batchable_arg="examples", progress_bar_desc="log-probs (slow)")
     def log_probs_completions_batch(examples, batch_size=batch_size):
         logits, encodings = _logits_completions_given_prompts_examples(
             model, tokenizer, examples
@@ -194,7 +193,9 @@ def log_probs_conditional_examples(
 
     log_probs_completions = log_probs_completions_batch(examples)
     num_completions_per_prompt = [len(example.completions) for example in examples]
-    return list(batch.variable(log_probs_completions, sizes=num_completions_per_prompt))
+    return list(
+        _batch.variable(log_probs_completions, sizes=num_completions_per_prompt)
+    )
 
 
 @classify._predict_proba

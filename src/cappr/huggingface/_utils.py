@@ -13,10 +13,6 @@ from transformers import (
 )
 
 
-DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
-## TODO: don't do this.
-
-
 def logits_to_log_probs(
     logits: torch.Tensor,
     input_ids: torch.Tensor,
@@ -68,14 +64,17 @@ def load_model_and_tokenizer(
         raise ValueError(
             "One of model and model_and_tokenizer must be None, and the other not None."
         )
-    if model is not None:
-        model_ = AutoModelForCausalLM.from_pretrained(model)
+    from_str = model is not None
+    if from_str:
+        model_: torch.nn.Module = AutoModelForCausalLM.from_pretrained(model)
         tokenizer = AutoTokenizer.from_pretrained(model)
     else:
         model_, tokenizer = model_and_tokenizer
     ## Prepare model
-    model_.to(DEVICE)
     model_.eval()
+    if from_str:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        model_.to(device)
     ## Prepare tokenizer
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token_id = tokenizer.eos_token_id

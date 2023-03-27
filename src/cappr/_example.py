@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Optional, Sequence
 
 
-from cappr._utils import check
+from cappr.utils import _check
 
 
 @dataclass(frozen=True)
@@ -57,7 +57,7 @@ class Example:
             self.completions, Sequence
         ):
             raise TypeError("completions must be a Sequence of strings.")
-        check.prior(self.prior)
+        _check.prior(self.prior)
         if self.prior is not None and len(self.completions) != len(self.prior):
             raise ValueError(
                 "completions and prior are different lengths: "
