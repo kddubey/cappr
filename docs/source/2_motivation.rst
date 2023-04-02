@@ -1,8 +1,6 @@
 Motivation
 ==========
 
-.. note:: You don't need to read this page to get started with CAPPr.
-
 Why does this package exist? The short answer is to create a more usable zero-shot text
 classification interface than `classification via sampling`_.
 
@@ -58,7 +56,7 @@ example, to classify a product review, CVS code looks like this:
    # '\nThe product is difficult to use'
    # correct!
 
-This usually works well. But if you've every run CVS on a slightly larger scale, then
+This usually works well. But if you've ever run CVS on a slightly larger scale, then
 you'll know that there are a considerable fraction of cases where the ``completion`` is
 not actually in ``class_names``. To address these cases, you add:
 
@@ -69,9 +67,10 @@ not actually in ``class_names``. To address these cases, you add:
 
    assert completion in class_names
 
-If you've made it this far, then I'm sure you know that implementing ``post_process``
-can be challenging, as the ``completion`` is sampled from the space of all possible
-sequences of tokens. This means you'll likely have to deal with the cases where:
+Herein lies the problem. Because if you've made it this far, then I'm sure you know that
+implementing ``post_process`` can be challenging, as the ``completion`` is sampled from
+the space of all possible sequences of tokens. This means you'll likely have to deal
+with the cases where:
 
 - The ``completion`` includes multiple plausible classes from ``class_names``
 
