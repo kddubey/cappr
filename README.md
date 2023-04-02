@@ -284,12 +284,12 @@ the implementation. Note that this caching is not implemented for OpenAI models,
 can't control their backend. **This means that when running `cappr.openai` functions,
 you'll be on the *cappr (slow)* line** :-(
 
-![](/docs/source/_static/scaling_classes.png)
+![](/docs/source/_static/scaling_classes/batch_size_32.png)
 
 *Figure 1: [COPA](https://people.ict.usc.edu/~gordon/copa.html) dataset, repeating the
 choices to simulate multi-class classification tasks. [GPT-2
 (small)](https://huggingface.co/gpt2) was run on a Tesla K80 GPU (whatever was free in
-Google Colab in March 2023, I'm not hardware savvy). 160 classification inputs were
+Google Colab in March 2023, I'm not hardware savvy). 96 classification inputs were
 processed in batches of size 32. Each point in the graph is a median of 5 runs. For
 classification via sampling (CVS), exactly 4 tokens were generated for each prompt,
 which is the number of tokens in `'\n\nAnswer A'`. 1-token times are also shown. But for
@@ -379,9 +379,15 @@ Dumping VS code extensions for development:
 - [x] De-automate overzealous auto-docstring stuff :-(
 - [ ] HuggingFace `transformers.AutoModelForCausalLM`
   - [x] Optimize backend to enable greater scaling wrt # completions/classes
-  - [x] Get it working on single-GPU, check that it's faster than sampling
+  - [x] Get it working on single-GPU, check that it's faster than sampling assuming
+  batching
+    - [ ] Get to the bottom of why it's slower w/o batching
   - [ ] Allow non-`' '` `end_of_prompt`! I'll have to go back to the drawing board I
   think
+  - [ ] Consider batchifying the completions again, since they technically don't go in
+  batches of `batch_size`; the actual batch size is the sum of the number of completions
+  corresponding to the batch of prompts! Not a huge memory issue I think b/c completions
+  are usually half as long. But it should be configurable at the very least.
   - [ ] Factor out repeated code b/t `classify` and `classify_no_cache`
   - [ ] Support [Inference
     Endpoints](https://huggingface.co/docs/inference-endpoints/index)?

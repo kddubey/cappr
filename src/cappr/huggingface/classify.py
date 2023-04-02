@@ -127,8 +127,7 @@ def _keys_values_prompts(
         ## (# layers=12 for gpt2,
         ##  2 (for key and value),
         ##  and then the rest as before)
-        ## Repeat along batch size dim so that it aligns
-        ## downstream w/ completions
+        ## Repeat along batch size dim so that it aligns downstream w/ completions
         .repeat_interleave(num_repeats_per_prompt, dim=2)
     )
     ## Re-format this tensor to the nested tuple format we'd get if we passed multiple
