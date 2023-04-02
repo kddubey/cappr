@@ -59,7 +59,7 @@ Short answer: try out both.
 
 Currently, OpenAI models perform better. But I'll try to document competitive,
 instruction-trained LMs which are hosted on HuggingFace as more are released. For now,
-you'll need access to beefier hardware to run them, as :mod:`cappr.huggingface.classify`
+you'll need access to beefier hardware to run them, as :mod:`cappr.huggingface`
 currently locally loads HuggingFace models.
 
 .. warning:: Some of OpenAI's `GPT-3.5+ models`_ currently don't return token

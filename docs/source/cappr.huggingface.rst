@@ -12,3 +12,4 @@ cappr.huggingface
    :maxdepth: 4
 
    cappr.huggingface.classify
+   cappr.huggingface.classify_no_cache

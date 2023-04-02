@@ -382,6 +382,7 @@ Dumping VS code extensions for development:
   - [x] Get it working on single-GPU, check that it's faster than sampling
   - [ ] Allow non-`' '` `end_of_prompt`! I'll have to go back to the drawing board I
   think
+  - [ ] Factor out repeated code b/t `classify` and `classify_no_cache`
   - [ ] Support [Inference
     Endpoints](https://huggingface.co/docs/inference-endpoints/index)?
   - [ ] Support TensorFlow models if it's easy
@@ -401,6 +402,7 @@ Evaluate on more datasets, and understand its relative advantages and disadvanta
 other classification methods.
 
 - [ ] More real world or harder datasets (**)
+  - [ ] See [this benchmark](https://arxiv.org/abs/2209.11055)
   - [ ] Probably no good way to check train-test dependence unfortunately. Do I have to
   buy datasets lol
   - [ ] Mutli-class, multi-token labels, non-uniform prior

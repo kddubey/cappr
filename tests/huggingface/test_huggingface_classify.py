@@ -1,6 +1,6 @@
 """
 Unit tests `cappr.huggingface.classify` by comparing its functions' outputs to those
-from `cappr.huggingface._classify_slow`, which is assumed to be correct (TODO: yeah I
+from `cappr.huggingface.classify_no_cache`, which is assumed to be correct (TODO: yeah I
 really should test that).
 """
 from __future__ import annotations
@@ -15,7 +15,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from cappr import Example as Ex
 from cappr.huggingface import classify as fast
-from cappr.huggingface import _classify_slow as slow
+from cappr.huggingface import classify_no_cache as slow
 
 ## sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
