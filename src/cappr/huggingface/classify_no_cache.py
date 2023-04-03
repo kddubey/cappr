@@ -428,13 +428,6 @@ def predict_proba(
     instantiate/pre-load a model and tokenizer and pass them to `model_and_tokenizer`.
     See the Example.
 
-    Note
-    ----
-    In this function, the set of possible completions which could follow each prompt is
-    the same for every prompt. If instead, each prompt could be followed by a
-    *different* set of completions, then construct a sequence of :class:`cappr.Example`
-    objects and pass them to :func:`predict_proba_examples`.
-
     Parameters
     ----------
     prompts : Sequence[str]
@@ -463,6 +456,13 @@ def predict_proba(
         `pred_probs[prompt_idx, completion_idx]` is the model's estimate of the
         probability that `completions[completion_idx]` comes after
         `prompts[prompt_idx] + end_of_prompt`.
+
+    Note
+    ----
+    In this function, the set of possible completions which could follow each prompt is
+    the same for every prompt. If instead, each prompt could be followed by a
+    *different* set of completions, then construct a sequence of :class:`cappr.Example`
+    objects and pass them to :func:`predict_proba_examples`.
 
     Example
     -------
@@ -609,13 +609,6 @@ def predict(
     instantiate/pre-load a model and tokenizer and pass them to `model_and_tokenizer`.
     See the Example.
 
-    Note
-    ----
-    In this function, the set of possible completions which could follow each prompt is
-    the same for every prompt. If instead, each prompt could be followed by a
-    *different* set of completions, then construct a sequence of :class:`cappr.Example`
-    objects and pass them to :func:`predict_examples`.
-
     Parameters
     ----------
     prompts : Sequence[str]
@@ -643,6 +636,13 @@ def predict(
         List with length `len(prompts)`.
         `preds[prompt_idx]` is the completion in `completions` which is predicted to
         follow `prompts[prompt_idx] + end_of_prompt`.
+
+    Note
+    ----
+    In this function, the set of possible completions which could follow each prompt is
+    the same for every prompt. If instead, each prompt could be followed by a
+    *different* set of completions, then construct a sequence of :class:`cappr.Example`
+    objects and pass them to :func:`predict_examples`.
 
     Example
     -------
