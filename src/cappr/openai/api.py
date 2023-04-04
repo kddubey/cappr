@@ -149,7 +149,7 @@ def _openai_api_call_is_ok(
             f"({num_tokens:_} tokens). Proceed? (y/n): "
         )
     if output == "n":
-        raise _UserCanceled("smell ya later")
+        raise _UserCanceled("No API requests will be submitted.")
 
 
 def gpt_complete(

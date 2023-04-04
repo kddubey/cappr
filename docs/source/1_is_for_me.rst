@@ -29,6 +29,11 @@ models. These methods include:
 #. `Plain old BERT embeddings
    <https://huggingface.co/transformers/v3.3.1/training.html>`_.
 
+You should also consider how "subtle" the association is between your input texts and
+their labels. Few-shot methods may be able to pick up more subtle or internally
+specified associations between texts and their labels. Zero-shot methods using LLMs may
+be better at tasks which require less-subtle and more factual knowledge.\ [#]_
+
 
 Footnotes
 ~~~~~~~~~
@@ -40,3 +45,7 @@ Footnotes
    so labeled examples. I like to separate labeled examples into a set of 50 for
    training and 150 for test. Those 50 are used to estimate a prior, select a prompt
    format, and select an LM. The other 150 are only used for evaluation.
+
+.. [#] You may be interested in the Real-World Few-Shot Text Classification (RAFT)
+   benchmark. See the leaderboard `here
+   <https://huggingface.co/spaces/ought/raft-leaderboard>`_.

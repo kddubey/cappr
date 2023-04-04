@@ -119,7 +119,7 @@ With CAPPr's ``predict`` interface, you no longer have to:
 #. Figure out how to transform or point multi-token class names to single tokens,
    ignoring their semantics if they were transformed
 
-#. Ignore your prior over multi-token labels.
+#. Ignore your prior over multi-token class names.
 
 Your job starts and stops at writing up your classification task as a
 ``{prompt}{end_of_prompt}{completion}`` string.

@@ -394,6 +394,7 @@ Dumping VS code extensions for development:
   - [ ] Support [Inference
     Endpoints](https://huggingface.co/docs/inference-endpoints/index)?
   - [ ] Support TensorFlow models if it's easy
+  - [ ] Support priming, as in: cache it
 - [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
 - [ ] Allow for multi-label classification
   - [ ] Pass `normalize` as an argument to predict_proba functions
@@ -409,19 +410,15 @@ Dumping VS code extensions for development:
 Evaluate on more datasets, and understand its relative advantages and disadvantages vs
 other classification methods.
 
-- [ ] More real world or harder datasets (**)
-  - [ ] See [this benchmark](https://arxiv.org/abs/2209.11055)
-  - [ ] Probably no good way to check train-test dependence unfortunately. Do I have to
-  buy datasets lol
-  - [ ] Mutli-class, multi-token labels, non-uniform prior
-- [ ] Re-run COPA demo w/ left-stripped completions (there are a few which aren't)
-- [ ] Create a user guide, build a table of results comparing competing
-  approaches on statistical performance, cost, and computation
+- [ ] RAFT benchmark (**)
+- [ ] Create a user guide, build a table of results comparing competing approaches on
+statistical performance, cost, and computation
 - [ ] Make a computational comparison to sampling (**)
   - [x] Assume I have full freedom to decide how inference works. Demo w/
   GPT-2. Process inputs in batches.
   - [ ] Process inputs 1-by-1
 - [ ] More SuperGLUE tasks?
+  - [ ] Re-run COPA demo w/ left-stripped completions (there are a few which aren't)
 - [ ] Calibration
   - [ ] Is the prior actually effective? Downsample and see
   - [ ] curves

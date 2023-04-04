@@ -11,7 +11,7 @@ def prior(prior: Optional[Sequence[float]] = None):
     """
     if prior is None:  ## it's a uniform prior, no need to check anything
         return None
-    if not isinstance(prior, Sequence):
+    if not (isinstance(prior, Sequence) or isinstance(prior, np.ndarray)):
         raise TypeError("prior must be None or a Sequence.")
     if len(np.shape(prior)) != 1:
         raise ValueError("prior must be 1-D.")

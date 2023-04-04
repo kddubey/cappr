@@ -2,11 +2,10 @@ Future research
 ===============
 
 I have a somewhat unjustified hypothesis that CAPPr squeezes more out of smaller or
-less-heavily trained LMs. This hypothesis is based on just 2 experiments, one of which
-was unfortunately done on a private dataset. The public experiment is the `COPA demo`_.
-It demonstrates that classification-via-sampling using ``text-curie-001`` (a smaller
-GPT-3 model) performs worse than random guessing, while CAPPr using ``text-curie-001``
-is 80% accurate.
+less-heavily trained LMs. This hypothesis is based on just 1 experiment and a handful of
+examples. The experiment is the `COPA demo`_. It demonstrates that
+classification-via-sampling using ``text-curie-001`` (a smaller GPT-3 model) performs
+worse than random guessing, while CAPPr using ``text-curie-001`` is 80% accurate.
 
 .. _COPA demo: <https://github.com/kddubey/cappr/blob/main/demos/copa.ipynb>`__.
 
