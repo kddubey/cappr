@@ -8,9 +8,11 @@ benchmark](https://github.com/oughtinc/raft-baselines/tree/master/example_prompt
 The only difference is that I do not include training examples (for now), i.e., there's
 no "priming" or in-context learning. It's zero-shot.
 
-Contamination notice: I don't think `text-davinci-003` was trained on this data, as the
-data seems to have been uploaded after [June
-2021](https://platform.openai.com/docs/models/gpt-3-5).
+Contamination notice: I don't know whether `text-davinci-003` trained on this data. That
+model was trained on data until [June
+2021](https://platform.openai.com/docs/models/gpt-3-5). The RAFT datasets were uploaded
+together shortly after that, but they may have been aggregated from public data before
+that.
 
 Regardless, you have to take these F1-scores on the training set w/ a grain of salt b/c:
   1. Sometimes I messed w/ including or excluding the prior
