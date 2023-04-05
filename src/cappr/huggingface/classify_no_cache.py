@@ -9,6 +9,10 @@ performance `here`_.
 
 .. _here: https://cappr.readthedocs.io/en/latest/6_computational_performance.html
 
+This module may happen to be compatible with a slightly broader class of language
+models, as the model's forward method is only assumed to input tokenization stuff and
+output next-token logits.
+
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 """
 from __future__ import annotations
