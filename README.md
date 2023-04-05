@@ -176,7 +176,8 @@ print([example.completions[pred_class_idx]
 More examples are linked [here in the
 documentation](https://cappr.readthedocs.io/en/latest/5_examples.html).
 
-See [`demos/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/copa.ipynb)
+See
+[`demos/superglue/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb)
 for a demonstration of a slightly harder classification task.
 
 
@@ -244,8 +245,8 @@ documentation](https://cappr.readthedocs.io/en/latest/2_motivation.html).
 <details>
 <summary>Unstudied</summary>
 
-I'm curious to see how much easier estimation/discrimination is than generation.
-In [`demos/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/copa.ipynb),
+I'm curious to see how much easier estimation/discrimination is than generation. In
+[`demos/superglue/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb),
 CVS using OpenAI's `text-curie-001` is less than 50% accurate, while CAPPr is 80%
 accurate.
 
@@ -268,8 +269,8 @@ Statistical performance
 Performs ok based on 2 datasets, when compared to classification via sampling (CVS).
 I need to run it on more ofc. Will update
 
-  * [`demos/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/copa.ipynb)
-  * [`demos/wsc.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/wsc.ipynb)
+  * [`demos/superglue/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb)
+  * [`demos/superglue/wsc.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/superglue/wsc.ipynb)
 </details>
 
 
@@ -307,9 +308,9 @@ notebook](https://github.com/kddubey/cappr/blob/main/demos/computational_analysi
 ## Related work
 
 While [benchmarking this
-method](https://github.com/kddubey/cappr/blob/main/demos/wsc.ipynb) on the Winograd
-Schema Challenge, I found that [this paper](https://arxiv.org/abs/1806.02847) is very
-similar:
+method](https://github.com/kddubey/cappr/blob/main/demos/superglue/wsc.ipynb) on the
+Winograd Schema Challenge, I found that [this paper](https://arxiv.org/abs/1806.02847)
+is very similar:
 
 > Trinh, Trieu H., and Quoc V. Le. "A simple method for commonsense reasoning." arXiv preprint arXiv:1806.02847 (2018).
 

@@ -93,7 +93,7 @@ modify your code in at least 1 of 2 ways:
 
 .. _they suggest: https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit
 
-.. _COPA demo: https://github.com/kddubey/cappr/blob/main/demos/copa.ipynb
+.. _COPA demo: https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb
 
 These are nontrivial modifications. The single-token transformation could sacrifice
 meaningful semantics in multi-token class names. And in my experience, single-token

@@ -4,7 +4,7 @@ Related work
 While `benchmarking this method`_ on the Winograd Schema Challenge, I found that
 `this paper`_\ [#]_ is very similar.
 
-.. _benchmarking this method: https://github.com/kddubey/cappr/blob/main/demos/wsc.ipynb
+.. _benchmarking this method: https://github.com/kddubey/cappr/blob/main/demos/superglue/wsc.ipynb
 
 .. _this paper: https://arxiv.org/abs/1806.02847
 

@@ -21,7 +21,7 @@ but rather guidelines. For example, the `demo for the Winograd Schema Challenge`
 the roles of the ``prompt`` and ``completion``. (Just don't use the prior keyword
 argument in that case.)
 
-.. _demo for the Winograd Schema Challenge: https://github.com/kddubey/cappr/blob/main/demos/wsc.ipynb
+.. _demo for the Winograd Schema Challenge: https://github.com/kddubey/cappr/blob/main/demos/superglue/wsc.ipynb
 
 One rule is that the ``completion`` text should flow naturally after
 ``{prompt}{end_of_prompt}``. So pay close attention to the use of white spaces,
