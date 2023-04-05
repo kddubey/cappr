@@ -1,13 +1,23 @@
 from __future__ import annotations
+from typing import Optional, Union
+
 from IPython.display import display
 import pandas as pd
 
 
-def display_df(df: pd.DataFrame, columns: list[str], num_rows: int = 3):
+def display_df(
+    df: pd.DataFrame,
+    columns: Optional[list[str]] = None,
+    num_rows: Union[int, None] = 3,
+):
     """
     Displays `df.head(num_rows)[columns]` without truncating columns. If
     possible, render any newlines.
     """
+    if columns is None:
+        columns = df.columns
+    if num_rows is None:
+        num_rows = len(df)
     df_head_styled = df.head(num_rows)[columns].style
     with pd.option_context("max_colwidth", -1):
         ## I'm not sure why try-except doesn't work w/ display(), so instead

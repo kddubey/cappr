@@ -411,6 +411,10 @@ Evaluate on more datasets, and understand its relative advantages and disadvanta
 other classification methods.
 
 - [ ] RAFT benchmark (**)
+  - [x] Zero-shot training scores
+  - [ ] Submit zero-shot test predictions
+  - [ ] Few-shot (priming) training scores
+  - [ ] Submit few-shot test predictions
 - [ ] Create a user guide, build a table of results comparing competing approaches on
 statistical performance, cost, and computation
 - [ ] Make a computational comparison to sampling (**)

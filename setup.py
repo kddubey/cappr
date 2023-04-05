@@ -28,6 +28,7 @@ requirements_dev = [
     "pydata-sphinx-theme>=0.13.1",
     "pytest>=7.2.1",
     "pytest-cov>=4.0.0",
+    "scikit-learn>=1.2.2",
     "sphinx>=6.1.3",
     "sphinx-togglebutton>=0.3.2",
     "sphinxcontrib-napoleon>=0.7",
