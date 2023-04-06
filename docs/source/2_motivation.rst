@@ -110,19 +110,8 @@ solution to a classification problem.
 Solution
 --------
 
-With CAPPr's ``predict`` interface, you no longer have to:
-
-#. Study sampled completion strings which aren't one of your class names
-
-#. Figure out how to map them back to one of the class names
-
-#. Figure out how to transform or point multi-token class names to single tokens,
-   ignoring their semantics if they were transformed
-
-#. Ignore your prior over multi-token class names.
-
-Your job starts and stops at writing up your classification task as a
-``{prompt}{end_of_prompt}{completion}`` string.
+With CAPPr's ``predict`` interface, your job starts and stops at writing up your
+classification task as a ``{prompt}{end_of_prompt}{completion}`` string.
 
 That being said, let's now run CAPPr on that product review classification task. Also,
 let's:
