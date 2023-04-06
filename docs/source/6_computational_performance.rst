@@ -22,26 +22,10 @@ models, as I can't control their backend. This means that when running
    (and other multiple-choice style prompts), that may result in lower zero-shot
    accuracy, as most of the sampled choices come after the first token.
 
-That result looks nice, but it doesn't seem to apply for smaller batch sizes. TBH I
-think there's a subtle bug in my code lol. This behavior is unexpected to me.
-
-.. figure:: _static/scaling_classes/batch_size_1.png
-   :align: center
-
-   `COPA`_ dataset, repeating the choices to simulate multi-class classification tasks.
-   `GPT-2 (small)`_ was run on a Tesla K80 GPU (whatever was free in Google Colab in
-   April 2023, I'm not hardware savvy). 96 classification inputs were processed 1-by-1.
-   Each point in the graph is a median of 5 runs. For classification via sampling (CVS),
-   exactly 4 tokens were generated for each prompt, which is the number of tokens in
-   ``'\n\nAnswer A'``. 1-token times are also shown. But for COPA (and other
-   multiple-choice style prompts), that may result in lower zero-shot accuracy, as most
-   of the sampled choices come after the first token.
-
-
 .. _COPA: https://people.ict.usc.edu/~gordon/copa.html
 
 .. _GPT-2 (small): https://huggingface.co/gpt2
 
-See the `this notebook`_ for the experiment code which produced the figures above.
+See the `this notebook`_ for the experiment code which produced the figure above.
 
 .. _this notebook: https://github.com/kddubey/cappr/blob/main/demos/computational_analysis.ipynb

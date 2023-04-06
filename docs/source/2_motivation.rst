@@ -48,10 +48,10 @@ example, to classify a product review, CVS code looks like this:
    '''
 
    api_resp = openai.api.gpt_complete(texts=[prompt],
-                                      model='text-curie-001',
+                                      model='text-davinci-003',
                                       max_tokens=10,
                                       temperature=0)
-   completion = api_resp[0]['choices']['text']
+   completion = api_resp[0]['text']
    completion
    # '\nThe product is difficult to use'
    # correct!
