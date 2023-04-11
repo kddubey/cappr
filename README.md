@@ -387,8 +387,7 @@ Dumping VS code extensions for development:
     - [ ] Get to the bottom of why it's slower w/o batching
   - [ ] Allow non-`' '` `end_of_prompt`! I'll have to go back to the drawing board I
   think
-  - [ ] Support few-shot prompt caching. At that point a fit-predict interface would
-  make sense.
+  - [ ] Support few-shot prompt caching. Consider a fit-predict interface (**)
   - [ ] Consider batchifying the completions again, since they technically don't go in
   batches of `batch_size`; the actual batch size is the sum of the number of completions
   corresponding to the batch of prompts! Not a huge memory issue I think b/c completions

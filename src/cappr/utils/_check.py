@@ -10,7 +10,7 @@ def prior(prior: Optional[Sequence[float]] = None):
     to 1.
     """
     if prior is None:  ## it's a uniform prior, no need to check anything
-        return None
+        return
     if not (isinstance(prior, Sequence) or isinstance(prior, np.ndarray)):
         raise TypeError("prior must be None or a Sequence.")
     if len(np.shape(prior)) != 1:

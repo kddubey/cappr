@@ -28,17 +28,16 @@ One rule is that the ``completion`` text should flow naturally after
 newlines, and word casing. :mod:`cappr.openai.classify` does not do any string
 processing for you: **it just concatenates the three strings and sends it**!
 
-.. warning:: :mod:`cappr.huggingface.classify` currently requires that ``end_of_prompt``
-             is a whitespace.
-
 And yes, you'll still have to do “prompt engineering”. It's mostly a matter of trial and
 error. Here's an `external guide`_ if you'd like to survey research in this field.\ [#]_
+
+.. warning:: :mod:`cappr.huggingface.classify` currently requires that ``end_of_prompt``
+             is a whitespace.
 
 .. warning:: Currently, :mod:`cappr.openai.classify` must repeat the ``prompt`` for
              however many completions there are. So if your prompt is long and your
              completion is only a few tokens long, you may end up spending more with
-             CAPPr. (If OpenAI had an interface like
-             ``transformers.AutoModelForCausalLM``, this wouldn't be a problem.) 
+             CAPPr.
 
 .. _external guide: https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/
 

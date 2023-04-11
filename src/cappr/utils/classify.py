@@ -12,36 +12,12 @@ import numpy.typing as npt
 from cappr.utils import _check
 
 
-def agg_log_probs(
+def _agg_log_probs(
     log_probs: Sequence[Sequence[Sequence[float]]],
     func: Callable[[Sequence[float]], float] = np.mean,
 ) -> list[list[float]]:
     """
-    Aggregate token log-probabilities along the last dimension into probabilities.
-
-    Note
-    ----
-    If `log_probs` was derived from a constant set of completions, e.g., it's the
-    output of
-    :func:`cappr.openai.classify.log_probs_conditional` or
-    :func:`cappr.huggingface.classify.log_probs_conditional`, then use the more
-    efficient :func:`agg_log_probs_from_constant_completions` function instead of this
-    one.
-
-    Parameters
-    ----------
-    log_probs : Sequence[Sequence[Sequence[float]]]
-        sequences where token log-probabilities are in the last dimension
-    func : Callable[[Sequence[float]], float], optional
-        function which aggregates a sequence of token log-probabilities into a single
-        log-probability, by default np.mean
-
-    Returns
-    -------
-    probs: list[list[float]]
-        Lists of probabilities where::
-
-            probs[i][j] = np.exp(func(log_probs[i][j]))
+    Aggregate using a nested list comprehension.
     """
     return [
         [
@@ -52,36 +28,12 @@ def agg_log_probs(
     ]
 
 
-def agg_log_probs_from_constant_completions(
+def _agg_log_probs_from_constant_completions(
     log_probs: Sequence[Sequence[Sequence[float]]],
     func: Callable[[Sequence[float]], float] = np.mean,
 ) -> npt.NDArray[np.floating]:
     """
-    Aggregate token log-probabilities along the last dimension into probabilities.
-
-    Warning
-    -------
-    If `log_probs` was NOT dervived from a constant set of completions, e.g., it's
-    the output of
-    :func:`cappr.openai.classify.log_probs_conditional_examples` or
-    :func:`cappr.huggingface.classify.log_probs_conditional_examples`, then you must use
-    :func:`agg_log_probs` function instead of this function.
-
-    Parameters
-    ----------
-    log_probs : Sequence[Sequence[Sequence[float]]]
-        sequences where token log-probabilities (from a constant set of completions) are
-        in the last dimension
-    func : Callable[[Sequence[float]], float], optional
-        function which aggregates a sequence of token log-probabilities into a single
-        log-probability **AND** takes an ``axis`` keyword argument, by default np.mean
-
-    Returns
-    -------
-    probs: npt.NDArray[np.floating]
-        Array of probabilities where::
-
-            probs[i,j] = np.exp(func(log_probs[i][j]))
+    Aggregate using a vectorized numpy function `func`.
     """
     num_completions_per_prompt = [
         len(log_probs_completions) for log_probs_completions in log_probs
@@ -126,6 +78,38 @@ def agg_log_probs_from_constant_completions(
     ##       ])
     ## Transpose it to fulfill the spec
     return likelihoods.T
+
+
+def agg_log_probs(
+    log_probs: Sequence[Sequence[Sequence[float]]],
+    func: Callable[[Sequence[float]], float] = np.mean,
+) -> list[list[float]]:
+    """
+    Aggregate token log-probabilities along the last dimension into probabilities.
+
+    Parameters
+    ----------
+    log_probs : Sequence[Sequence[Sequence[float]]]
+        sequences where token log-probabilities are in the last dimension
+    func : Callable[[Sequence[float]], float], optional
+        function which aggregates a sequence of token log-probabilities (and an ``axis``
+        argument if it's a vectorized numpy function) into a single log-probability, by
+        default `np.mean`
+
+    Returns
+    -------
+    probs: list[list[float]]
+        Lists of probabilities where::
+
+            probs[i][j] = np.exp(func(log_probs[i][j]))
+    """
+    try:
+        return _agg_log_probs_from_constant_completions(log_probs, func)
+    except (
+        ValueError,  ## log_probs is jagged
+        TypeError,   ## func doesn't take an axis argument
+    ):
+        return _agg_log_probs(log_probs, func)
 
 
 def posterior_prob(
@@ -179,7 +163,7 @@ def posterior_prob(
             f"Got {len(normalize)}, {len(likelihoods)}."
         )
     normalize = np.array(normalize, dtype=bool)
-    if prior is not None and check_prior:
+    if check_prior:
         _check.prior(prior)
 
     ## Apply Bayes' rule, w/ optional normalization per row
@@ -211,7 +195,7 @@ def _predict_proba(conditional_func):
             )
 
         log_probs_completions = conditional_func(prompts, completions, *args, **kwargs)
-        likelihoods = agg_log_probs_from_constant_completions(log_probs_completions)
+        likelihoods = agg_log_probs(log_probs_completions)
         ## If there's only 1 completion, normalizing will cause the probability to
         ## trivially be 1! So let's not normalize in that case, and hope the user knows
         ## what they're doing

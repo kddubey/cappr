@@ -103,7 +103,7 @@ def log_probs_conditional(
     Note
     ----
     To efficiently aggregate `log_probs_completions`, use
-    :func:`cappr.utils.classify.agg_log_probs_from_constant_completions`.
+    :func:`cappr.utils.classify.agg_log_probs`.
 
     Example
     -------
