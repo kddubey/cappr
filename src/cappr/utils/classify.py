@@ -107,7 +107,7 @@ def agg_log_probs(
         return _agg_log_probs_from_constant_completions(log_probs, func)
     except (
         ValueError,  ## log_probs is jagged
-        TypeError,   ## func doesn't take an axis argument
+        TypeError,  ## func doesn't take an axis argument
     ):
         return _agg_log_probs(log_probs, func)
 
@@ -152,7 +152,7 @@ def posterior_prob(
     """
     ## Input checks and preprocessing
     likelihoods = np.array(likelihoods)  ## it should not be jagged/inhomogenous
-    if not isinstance(normalize, Sequence):
+    if not isinstance(normalize, (Sequence, np.ndarray)):
         ## For code simplicity, just repeat it
         ## If likelihoods is 1-D, there's only a single probability distr to normalize
         num_repeats = 1 if len(likelihoods.shape) == 1 else likelihoods.shape[0]
