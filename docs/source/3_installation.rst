@@ -7,7 +7,7 @@ are currently ahead of others. But using them will cost ya 💰!
 
 .. _sign up: https://platform.openai.com/signup
 
-Install from source:
+Install with `pip`:
 
 ::
 
