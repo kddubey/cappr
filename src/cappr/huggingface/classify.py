@@ -10,6 +10,9 @@ across completions. See the computational performance `here`_.
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 
 .. warning:: This module currently requires that ``end_of_prompt`` is a whitespace.
+
+.. warning:: This module doesn't work with ``transformers.BartForCausalLM``, among
+             others probably.
 """
 from __future__ import annotations
 from typing import Mapping, Optional, Sequence, Union

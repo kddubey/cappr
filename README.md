@@ -396,7 +396,6 @@ Dumping VS code extensions for development:
     Endpoints](https://huggingface.co/docs/inference-endpoints/index)?
   - [ ] Support TensorFlow models if it's easy
   - [ ] Support priming, as in: cache it
-- [ ] HuggingFace `transformers.AutoModelForSeq2SeqLM`
 - [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
 - [ ] Allow for multi-label classification
   - [ ] Pass `normalize` as an argument to predict_proba functions

@@ -25,14 +25,16 @@ import _test
 @pytest.fixture(scope="module")
 def atol():
     ## Reading through some transformers tests, it looks like 1e-3 is considered
-    ## "close enough" for model outputs, including hidden states and logits. See, e.g.,
+    ## "close enough" for hidden states. See, e.g.,
     ## https://github.com/huggingface/transformers/blob/main/tests/models/gpt2/test_modeling_gpt2.py#L250
     return 1e-4
 
 
 @pytest.fixture(scope="module")
 def model_name():
-    return "sshleifer/tiny-gpt2"  ## for testing this'll do fine
+    ## There are a lot of tiny models on https://huggingface.co/sshleifer which are
+    ## useful for testing code. Weights can be random.
+    return "sshleifer/tiny-gpt2"
 
 
 @pytest.fixture(scope="module")
