@@ -90,18 +90,18 @@ def agg_log_probs(
     Parameters
     ----------
     log_probs : Sequence[Sequence[Sequence[float]]]
-        sequences where token log-probabilities are in the last dimension
+        nested sequences where token log-probabilities are in the last dimension
     func : Callable[[Sequence[float]], float], optional
-        function which aggregates a sequence of token log-probabilities (and an ``axis``
-        argument if it's a vectorized numpy function) into a single log-probability, by
-        default `np.mean`
+        function which aggregates a sequence of token log-probabilities into a single
+        log-probability. If the function is vectorized, it must take an ``axis``
+        argument. By default, `numpy.mean`
 
     Returns
     -------
     probs: list[list[float]]
         Lists of probabilities where::
 
-            probs[i][j] = np.exp(func(log_probs[i][j]))
+            probs[i][j] = numpy.exp(func(log_probs[i][j]))
     """
     try:
         return _agg_log_probs_from_constant_completions(log_probs, func)

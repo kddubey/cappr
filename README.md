@@ -376,7 +376,6 @@ Dumping VS code extensions for development:
   - [x] For constant-completions input, vectorize `agg_log_probs`
   - [x] For `examples` input, if # completions per prompt is constant, vectorize
   `posterior_prob`
-- [ ] Add getLogger, basic logging
 - [ ] Make progress bars optional, since inference often isn't batched
 - [ ] Factor out input checks (on prompts and completions)
 - [x] De-automate overzealous auto-docstring stuff :-(
@@ -397,6 +396,7 @@ Dumping VS code extensions for development:
     Endpoints](https://huggingface.co/docs/inference-endpoints/index)?
   - [ ] Support TensorFlow models if it's easy
   - [ ] Support priming, as in: cache it
+- [ ] HuggingFace `transformers.AutoModelForSeq2SeqLM`
 - [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
 - [ ] Allow for multi-label classification
   - [ ] Pass `normalize` as an argument to predict_proba functions
