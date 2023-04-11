@@ -53,7 +53,7 @@ def logits_to_log_probs(
 
 def load_model_and_tokenizer(
     model: str = None,
-    model_and_tokenizer: tuple[AutoModelForCausalLM, AutoTokenizer] = None,
+    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer] = None,
 ) -> tuple[PreTrainedModel, PreTrainedTokenizer]:
     """
     TODO: docstring
