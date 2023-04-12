@@ -3,15 +3,11 @@ Perform prompt-completion classification using a ``transformers.AutoModelForCaus
 Currently, only PyTorch models are supported.
 
 This module is a mirror of :mod:`cappr.huggingface.classify` which **does not**
-precompute attention block keys and values for prompts. Not precomputing may be faster
-if the batch size is small, as is the case during live inference. See the computational
-performance `here`_.
+precompute attention block keys and values for prompts.
 
-.. _here: https://cappr.readthedocs.io/en/latest/6_computational_performance.html
-
-This module may happen to be compatible with a slightly broader class of language
-models, as the model's forward method is only assumed to input tokenization stuff and
-output next-token logits.
+This module may happen to be compatible with a slightly broader class of
+causal/autoregressive language models, as the model's forward method is only assumed
+take input IDs and the attention mask.
 
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 """
