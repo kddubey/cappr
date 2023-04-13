@@ -36,8 +36,9 @@ error. Here's an `external guide`_ if you'd like to survey research in this fiel
 
 .. warning:: Currently, :mod:`cappr.openai.classify` must repeat the ``prompt`` for
              however many completions there are. So if your prompt is long and your
-             completion is only a few tokens long, you may end up spending more with
-             CAPPr.
+             completions, you may end up spending much more with CAPPr.
+             :mod:`cappr.huggingface.classify` does not have to repeat the prompt
+             because the HuggingFace backend is open source.
 
 .. _external guide: https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/
 
