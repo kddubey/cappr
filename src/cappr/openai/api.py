@@ -221,20 +221,22 @@ def gpt_chat_complete(
     texts: Sequence[str],
     model: str = "gpt-3.5-turbo",
     ask_if_ok: bool = False,
-    max_tokens: int = 5,
     system_msg: str = ("You are an assistant which classifies text."),
+    max_tokens: int = 5,
+    temperature: float = 0,
     **openai_chat_kwargs,
 ) -> list[Mapping[str, Any]]:
     """
-    Wrapper around the OpenAI chat completion endpoint which retries requests that fail
-    and displays a progress bar. It does not batch inputs, so this may take a while.
+    Wrapper around the OpenAI chat completion endpoint which performs text
+    classification 1-by-1. It retries requests that fail and displays a progress bar.
 
     OpenAI API chat completion reference:
     https://platform.openai.com/docs/api-reference/chat
 
     Warning
     -------
-    By default, the `system_msg` asks ChatGPT to perform text classification.
+    By default, the `system_msg` asks ChatGPT to perform text classification. And the
+    `temperature` is set to 0.
 
     Parameters
     ----------
@@ -247,14 +249,16 @@ def gpt_chat_complete(
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default
         False
-    max_tokens : int, optional
-        maximum number of tokens to generate, by default 5
     system_msg : str, optional
         text which is passed in 1-by-1 immediately before every piece of
         user content in `texts` as ``{"role": "system", "content": system_msg}``. By
         default ``"You are an assistant which classifies text."``
+    max_tokens : int, optional
+        maximum number of tokens to generate, by default 5
+    temperature : float, optional
+        probability re-scaler to apply before sampling, by default 0
     **openai_chat_kwargs
-        other arguments passed to the chat completion endpoint, e.g., `temperature=0.8`
+        other arguments passed to the chat completion endpoint
 
     Returns
     -------
@@ -279,7 +283,7 @@ def gpt_chat_complete(
             model=model,
             messages=messages,
             max_tokens=max_tokens,
-            temperature=0,
+            temperature=temperature,
             **openai_chat_kwargs,
         )
         choices.extend(response["choices"])
