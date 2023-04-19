@@ -122,6 +122,11 @@ def test_log_probs_conditional_examples(examples, model):
 def test_predict_proba(prompts, completions, model):
     _test.predict_proba(classify.predict_proba, prompts, completions, model)
 
+    ## test discount_completions > 0.0
+    _test.predict_proba(
+        classify.predict_proba, prompts, completions, model, discount_completions=1.0
+    )
+
     ## test bad prior input. TODO: standardize for other inputs
     prior = [1 / len(completions)] * len(completions)
     prior_bad = prior + [0]
@@ -148,6 +153,11 @@ def test_predict_proba_examples(examples: list[Ex], model):
 
 def test_predict(prompts, completions, model):
     _test.predict(classify.predict, prompts, completions, model)
+
+    ## test discount_completions > 0.0
+    _test.predict(
+        classify.predict, prompts, completions, model, discount_completions=1.0
+    )
 
 
 def test_predict_examples(examples: list[Ex], model):

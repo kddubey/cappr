@@ -192,9 +192,8 @@ def gpt_complete(
     Returns
     -------
     list[Mapping[str, Any]]
-        (flat) list of the `choices` mappings which the text completion endpoint
-        returns. More specifically, it's a list of
-        ``openai.openai_object.OpenAIObject``
+        list with the same length as `texts`. Each element is the ``choices`` mapping
+        which the OpenAI text completion endpoint returns.
     """
     _batch_size = 20  ## max that the API can currently handle
     if isinstance(texts, str):

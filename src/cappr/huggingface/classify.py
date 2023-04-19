@@ -91,7 +91,8 @@ def _keys_values_prompts(
     """
     if not tokenizer.padding_side == "right":
         raise ValueError(
-            "Gotta use right padding to ensure position IDs are " "correct."
+            "Gotta use right padding to ensure position IDs are correct. "
+            "Run tokenizer.padding_side = 'right' if sensible."
         )
     if isinstance(prompts, str) or not isinstance(prompts, Sequence):
         raise TypeError("prompts must be a Sequence of strings.")
@@ -180,7 +181,10 @@ def _blessed_helper(
     TODO: docstring
     """
     if not tokenizer.padding_side == "right":
-        raise ValueError("Gotta use right padding to ensure position IDs are correct.")
+        raise ValueError(
+            "Gotta use right padding to ensure position IDs are correct. "
+            "Run tokenizer.padding_side = 'right' if sensible."
+        )
     if isinstance(prompts, str) or not isinstance(prompts, Sequence):
         raise TypeError("prompts must be a Sequence of strings.")
     if isinstance(completions, str) or not isinstance(completions, Sequence):

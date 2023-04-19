@@ -20,14 +20,17 @@ def _token_logprobs(
     texts: Sequence[str], model: openai.api.Model, ask_if_ok: bool = False
 ) -> list[list[float]]:
     """
-    TODO: convert docstring to numpy style
-
-    Returns a list `log_probs` where `log_probs[i]` is the value of
-    `'log_probs' -> 'token_logprobs'` (from the OpenAI Completion endpoint) for
-    `texts[i]` using `model`.
+    Returns a list `log_probs` where `log_probs[i]` is the value of `'logprobs' ->
+    'token_logprobs'` (from the OpenAI Completion endpoint) for `texts[i]` using
+    `model`. If `texts[i]` is a single token, then `log_probs[i]` is `[None]` (because
+    there's nothing to condition on).
     """
+    ## Need to handle texts which are single tokens. Set their logprobs to [None]
+    tokenizer = tiktoken.encoding_for_model(model)
+    text_lengths = [len(tokens) for tokens in tokenizer.encode_batch(texts)]
+    idxs_multiple_tokens = [i for i, length in enumerate(text_lengths) if length > 1]
     choices = openai.api.gpt_complete(
-        texts,
+        texts=[texts[i] for i in idxs_multiple_tokens],
         ask_if_ok=ask_if_ok,
         model=model,
         ## rest must be hard-coded
@@ -35,7 +38,12 @@ def _token_logprobs(
         logprobs=1,
         echo=True,
     )
-    return [choice["logprobs"]["token_logprobs"] for choice in choices]
+    ## Interleave
+    log_probs_texts = [choice["logprobs"]["token_logprobs"] for choice in choices]
+    log_probs = [[None]] * len(texts)
+    for i, log_probs_text in zip(idxs_multiple_tokens, log_probs_texts):
+        log_probs[i] = log_probs_text
+    return log_probs
 
 
 def _slice_completions(
@@ -246,6 +254,7 @@ def predict_proba(
     model: openai.api.Model,
     prior: Optional[Sequence[float]] = None,
     end_of_prompt: str = " ",
+    discount_completions: float = 0.0,
     ask_if_ok: bool = False,
 ) -> npt.NDArray[np.floating]:
     """
@@ -268,6 +277,11 @@ def predict_proba(
         `completions` is assumed to be equally likely
     end_of_prompt : str, optional
         the string to tack on at the end of every prompt, by default " "
+    discount_completions : float, optional
+        experimental feature: set it to >0.0 (e.g., 1.0 may work well) if a completion
+        is consistently getting too high predicted probabilities. You could instead
+        fudge the `prior`, but this hyperparameter may be easier to tune than the
+        `prior`. By default 0.0
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default
@@ -335,13 +349,35 @@ def predict_proba(
         pred_probs[1,0]
         # 0.1
     """
-    return log_probs_conditional(
+    if discount_completions < 0.0:
+        raise ValueError(
+            f"discount_completions must be >= 0.0. Got {discount_completions}"
+        )
+    log_probs_completions = log_probs_conditional(
         prompts,
         completions,
         model,
         end_of_prompt=end_of_prompt,
         ask_if_ok=ask_if_ok,
     )
+    if discount_completions == 0.0:
+        return log_probs_completions
+    log_marginal_probs_completions = _token_logprobs(
+        completions, model, ask_if_ok=ask_if_ok
+    )
+    for x in log_marginal_probs_completions:
+        x[0] = 0  ## set it from None to 0, i.e., no discount for the first token
+    return [
+        [
+            np.array(log_probs_prompt_completions[completion_idx])
+            + (
+                discount_completions
+                * np.array(log_marginal_probs_completions[completion_idx])
+            )
+            for completion_idx in range(len(completions))
+        ]
+        for log_probs_prompt_completions in log_probs_completions
+    ]
 
 
 @classify._predict_proba_examples
@@ -416,6 +452,7 @@ def predict(
     model: openai.api.Model,
     prior: Optional[Sequence[float]] = None,
     end_of_prompt: str = " ",
+    discount_completions: float = 0.0,
     ask_if_ok: bool = False,
 ) -> list[str]:
     """
@@ -438,6 +475,10 @@ def predict(
         `completions` is assumed to be equally likely
     end_of_prompt : str, optional
         the string to tack on at the end of every prompt, by default " "
+    discount_completions : float, optional
+        experimental feature: set it to >0.0 (e.g., 1.0 may work well) if a completion
+        is consistently getting over-predicted. You could instead fudge the `prior`, but
+        this hyperparameter may be easier to tune than the `prior`. By default 0.0
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default
@@ -499,6 +540,7 @@ def predict(
         model,
         prior=prior,
         end_of_prompt=end_of_prompt,
+        discount_completions=discount_completions,
         ask_if_ok=ask_if_ok,
     )
 

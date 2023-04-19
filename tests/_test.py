@@ -20,7 +20,12 @@ def predict_proba(
     *args,
     **kwargs,
 ):
+    """
+    Tests that `predict_proba_func(prompts, completions, *args, **kwargs)` returns a
+    numpy array with the correct shape, and that each row is a probability distribution.
+    """
     pred_probs = predict_proba_func(prompts, completions, *args, **kwargs)
+    assert isinstance(pred_probs, np.ndarray)
     assert pred_probs.shape == (len(prompts), len(completions))
     if pred_probs.shape[1] > 1:  ## we don't normalize if there's one completion
         assert np.allclose(pred_probs.sum(axis=1), 1)
@@ -34,6 +39,10 @@ def predict_proba_examples(
     *args,
     **kwargs,
 ):
+    """
+    Tests that `predict_proba_examples_func(examples, *args, **kwargs)` returns a
+    list with the correct shape, and that each element is a probability distribution.
+    """
     pred_probs = predict_proba_examples_func(examples, *args, **kwargs)
     assert len(pred_probs) == len(examples)
     for pred_prob_example, example in zip(pred_probs, examples):
@@ -49,6 +58,10 @@ def predict(
     *args,
     **kwargs,
 ):
+    """
+    Tests that `predict_func(prompts, completions, *args, **kwargs)` returns an array
+    with length `len(prompts)`, and that each element is in `completions`.
+    """
     preds = predict_func(prompts, completions, *args, **kwargs)
     assert len(preds) == len(prompts)
     assert all([pred in completions for pred in preds])
@@ -60,6 +73,11 @@ def predict_examples(
     *args,
     **kwargs,
 ):
+    """
+    Tests that `predict_examples_func(examples, *args, **kwargs)` returns an array
+    with length `len(examples)`, and that each element is one of the example's
+    completions.
+    """
     preds = predict_examples_func(examples, *args, **kwargs)
     assert len(preds) == len(examples)
     for pred, example in zip(preds, examples):

@@ -1,4 +1,12 @@
+import os
 from setuptools import setup, find_packages
+
+
+with open(os.path.join("src", "cappr", "__init__.py")) as f:
+    for line in f:
+        if line.startswith("__version__ = "):
+            version = str(line.split()[-1].strip('"'))
+            break
 
 
 requirements_base = [
@@ -20,6 +28,7 @@ requirements_demos = [
     "datasets>=2.10.0",
     "jupyter>=1.0.0",
     "pandas>=1.5.3",
+    "scikit-learn>=1.2.2",
 ]
 
 requirements_dev = [
@@ -28,7 +37,6 @@ requirements_dev = [
     "pydata-sphinx-theme>=0.13.1",
     "pytest>=7.2.1",
     "pytest-cov>=4.0.0",
-    "scikit-learn>=1.2.2",
     "sphinx>=6.1.3",
     "sphinx-togglebutton>=0.3.2",
     "sphinxcontrib-napoleon>=0.7",
@@ -42,7 +50,7 @@ with open("README.md", mode="r", encoding="utf-8") as f:
 
 setup(
     name="cappr",
-    version="0.2.1",
+    version=version,
     description="Zero-shot text classification using autoregressive language models.",
     long_description=readme,
     long_description_content_type="text/markdown",
