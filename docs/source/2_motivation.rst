@@ -14,7 +14,7 @@ Problem
 
 There are many ways to do zero-shot text classification. The one that this package is
 competing against is what I'll call **classification via sampling (CVS)**. This method
-is pretty common for large language models (LLMs) like GPT-2+, PaLM, etc. CVS is
+is pretty common for large language models (LLMs) like GPT-3+, PaLM, etc. CVS is
 motiviated by the fact that LLMs are great at generating text. It's currently the method
 which the `OpenAI guide on classification`_ covers.
 
@@ -74,33 +74,28 @@ with the cases where:
 
 - The ``completion`` includes multiple plausible classes from ``class_names``
 
-- The ``completion`` starts with a bit of fluff before giving an answer in
-  ``class_names``
+- The ``completion`` includes a bit of fluff
 
 - The ``completion``\ 's word casing is different than the one used in ``class_names``,
   or it's spelled or phrased slightly differently. (These discrepancies typically only
   occur for domain-specific text.)
 
-- GPT phrases its uncertainty in three different ways.
+- The LM phrases its uncertainty in three different ways.
 
 The OpenAI community knows that this can be challenging, so `they suggest`_ that you
 modify your code in at least 1 of 2 ways:
 
-#. Transform multi-token class names into a single token. Or, if it works, (as done in
-   CAPPr's `COPA demo`_) point to multi-token class names using a single token.
+#. Point to multi-token class names using a single token—like a multiple choice question
 
-#. Finetune a model so that it learns the mapping to the single tokens.
+#. Transform multi-token class names into a single token, and finetune a model so that
+   it learns the mapping to the single tokens.
 
 .. _they suggest: https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit
 
-.. _COPA demo: https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb
-
-These are nontrivial modifications. The single-token transformation could sacrifice
-meaningful semantics in multi-token class names. And in my experience, single-token
-references sacrifice performance when you have quite a few classes, or some
-``class_names`` start with numbers. Finetuning is expensive, requires that you spend
-much of your dataset just to learn the mapping to classes, and goes against the spirit
-of GPT being great at zero-shot tasks.
+These can be nontrivial modifications. Single-token references can sacrifice performance
+when you have quite a few classes, as it's not a typical instruction format.
+Single-token transformations sacrifice useful semantics, and finetuning usually requires
+spending too much money and too much of your data.
 
 **The fact is: you can endlessley accomodate CVS, but you'll still have to write custom
 code to post-process its arbitrary outputs.** Fundamentally, sampling is not a clean
@@ -116,9 +111,9 @@ classification task as a ``{prompt}{end_of_prompt}{completion}`` string.
 That being said, let's now run CAPPr on that product review classification task. Also,
 let's:
 
-- trivially incorporate a prior (this is optional)
+- trivially incorporate a prior (optional)
 
-- predict a probability distribution over classes, not just the class (also optional)
+- predict a probability distribution over classes (optional)
 
 - replace the expensive ``text-davinci-003`` model call with a ``text-curie-001`` one
 

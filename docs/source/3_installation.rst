@@ -19,7 +19,7 @@ Install with ``pip``:
 
    python -m pip install cappr[hf]
 
-(Optional) Set up to run demos:
+(Optional) Install requirements for running demos:
 
 ::
 

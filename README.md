@@ -18,6 +18,7 @@ completion comes after an inputted prompt. Hence the name:
 
 The method is fleshed out in my [question on CrossValidated](https://stats.stackexchange.com/q/601159/337906).
 
+
 ## Usage
 
 <details>
@@ -211,7 +212,7 @@ python -m pip install cappr[hf]
 </details>
 
 <details>
-<summary>(Optional) Set up to run demos</summary>
+<summary>(Optional) Install requirements for running demos</summary>
 
 ```
 python -m pip install cappr[demos]
@@ -266,11 +267,13 @@ Keep myself busy
 <summary>
 Statistical performance
 </summary>
-Performs ok based on 2 datasets, when compared to classification via sampling (CVS).
-I need to run it on more ofc. Will update
 
-  * [`demos/superglue/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb)
-  * [`demos/superglue/wsc.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/superglue/wsc.ipynb)
+Not too shabby. TODO: summary table comparing CVS vs. CAPPr vs. few-shot methods like
+SetFit and PET.
+
+[2 SuperGLUE datasets](https://github.com/kddubey/cappr/blob/main/demos/superglue)
+
+[RAFT zero-shot training sets](https://github.com/kddubey/cappr/blob/main/demos/raft)
 </details>
 
 
@@ -312,13 +315,15 @@ method](https://github.com/kddubey/cappr/blob/main/demos/superglue/wsc.ipynb) on
 Winograd Schema Challenge, I found that [this paper](https://arxiv.org/abs/1806.02847)
 is very similar:
 
-> Trinh, Trieu H., and Quoc V. Le. "A simple method for commonsense reasoning." arXiv preprint arXiv:1806.02847 (2018).
+> Trinh, Trieu H., and Quoc V. Le. "A simple method for commonsense reasoning." arXiv
+> preprint arXiv:1806.02847 (2018).
 
 [PET with multiple masks](https://arxiv.org/abs/2009.07118) also aggregates token
 probabilities to do prompt-completion classification, but these probabilities are
 assumed to come from masked language models like BERT.
 
-> Schick, Timo, and Hinrich Schütze. "It's not just size that matters: Small language models are also few-shot learners." arXiv preprint arXiv:2009.07118 (2020).
+> Schick, Timo, and Hinrich Schütze. "It's not just size that matters: Small language
+> models are also few-shot learners." arXiv preprint arXiv:2009.07118 (2020).
 
 
 ## Contributing
@@ -386,7 +391,6 @@ Dumping VS code extensions for development:
     - [ ] Get to the bottom of why it's slower w/o batching
   - [ ] Allow non-`' '` `end_of_prompt`! I'll have to go back to the drawing board I
   think
-  - [ ] Support few-shot prompt caching. Consider a fit-predict interface (**)
   - [ ] Consider batchifying the completions again, since they technically don't go in
   batches of `batch_size`; the actual batch size is the sum of the number of completions
   corresponding to the batch of prompts! Not a huge memory issue I think b/c completions

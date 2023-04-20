@@ -32,7 +32,7 @@ models. These methods include:
 You should also consider how "subtle" the association is between your input texts and
 their labels. Few-shot methods may be able to pick up more subtle or internally
 specified associations between texts and their labels. Zero-shot methods using LLMs may
-be better at tasks which require less-subtle and more factual knowledge.\ [#]_
+be better at tasks which require more factual knowledge.\ [#]_
 
 
 Footnotes
@@ -48,4 +48,6 @@ Footnotes
 
 .. [#] You may be interested in the Real-World Few-Shot Text Classification (RAFT)
    benchmark. See the leaderboard `here
-   <https://huggingface.co/spaces/ought/raft-leaderboard>`_.
+   <https://huggingface.co/spaces/ought/raft-leaderboard>`_, and CAPPr's zero-shot
+   performance on the RAFT training set `here
+   <https://github.com/kddubey/cappr/blob/main/demos/raft>`_.
