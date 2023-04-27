@@ -95,9 +95,9 @@ def examples():
     ]
 
 
-def test__token_logprobs(model):
+def test_token_logprobs(model):
     texts = ["a b c", "d e"]
-    log_probs = classify._token_logprobs(texts, model)
+    log_probs = classify.token_logprobs(texts, model)
     assert log_probs == [[0, 1, 2], [0, 1]]
 
 

@@ -16,14 +16,33 @@ from cappr import Example
 from cappr import openai
 
 
-def _token_logprobs(
+def token_logprobs(
     texts: Sequence[str], model: openai.api.Model, ask_if_ok: bool = False
 ) -> list[list[float]]:
     """
-    Returns a list `log_probs` where `log_probs[i]` is the value of `'logprobs' ->
-    'token_logprobs'` (from the OpenAI Completion endpoint) for `texts[i]` using
-    `model`. If `texts[i]` is a single token, then `log_probs[i]` is `[None]` (because
-    there's nothing to condition on).
+    For each text, compute each token's log-probability conditional on all previous
+    tokens in the text.
+
+    Parameters
+    ----------
+    texts : Sequence[str]
+
+    model : cappr.openai.api.Model
+        string for the name of an OpenAI text-completion model, specifically one from
+        the ``/v1/completions`` endpoint:
+        https://platform.openai.com/docs/models/model-endpoint-compatibility
+    ask_if_ok : bool, optional
+        whether or not to prompt you to manually give the go-ahead to run this function,
+        after notifying you of the approximate cost of the OpenAI API calls. By default
+        False
+
+    Returns
+    -------
+    log_probs : list[list[float]]
+        `log_probs[text_idx][token_idx]` is the log-probability of the token at
+        `token_idx` of `texts[text_idx]` conditional on all previous tokens in
+        `texts[text_idx]`. If `texts[text_idx]` is a single token, then
+        `log_probs[text_idx]` is `[None]`.
     """
     ## Need to handle texts which are single tokens. Set their logprobs to [None]
     tokenizer = tiktoken.encoding_for_model(model)
@@ -152,7 +171,7 @@ def log_probs_conditional(
         for prompt in prompts
         for completion in completions
     ]
-    log_probs = _token_logprobs(texts, model=model, ask_if_ok=ask_if_ok)
+    log_probs = token_logprobs(texts, model=model, ask_if_ok=ask_if_ok)
     ## Since log_probs is a flat list, we'll need to batch them by the size and order of
     ## completions to fulfill the spec.
     return [
@@ -232,7 +251,7 @@ def log_probs_conditional_examples(
         for example in examples
         for completion in example.completions
     ]
-    log_probs_all = _token_logprobs(texts, model=model, ask_if_ok=ask_if_ok)
+    log_probs_all = token_logprobs(texts, model=model, ask_if_ok=ask_if_ok)
     ## Flatten completions in same order as examples were flattened
     completions_all = [
         completion for example in examples for completion in example.completions
@@ -255,6 +274,7 @@ def predict_proba(
     prior: Optional[Sequence[float]] = None,
     end_of_prompt: str = " ",
     discount_completions: float = 0.0,
+    log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
     ask_if_ok: bool = False,
 ) -> npt.NDArray[np.floating]:
     """
@@ -278,10 +298,15 @@ def predict_proba(
     end_of_prompt : str, optional
         the string to tack on at the end of every prompt, by default " "
     discount_completions : float, optional
-        experimental feature: set it to >0.0 (e.g., 1.0 may work well) if a completion
-        is consistently getting too high predicted probabilities. You could instead
-        fudge the `prior`, but this hyperparameter may be easier to tune than the
-        `prior`. By default 0.0
+        experimental feature: set it (e.g., 1.0 may work well) if a completion is
+        consistently getting too high predicted probabilities. You could instead fudge
+        the `prior`, but this hyperparameter may be easier to tune than the `prior`. By
+        default 0.0
+    log_marginal_probs_completions : Sequence[Sequence[float]] , optional
+        experimental feature: pre-computed log probabilities of completion tokens
+        conditional on previous completion tokens (not prompt tokens). Only used if `not
+        discount_completions`. Compute them by passing `completions` and `model` to
+        :func:`cappr.openai.classify.token_logprobs`. By default, None
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default
@@ -349,9 +374,10 @@ def predict_proba(
         pred_probs[1,0]
         # 0.1
     """
-    if discount_completions < 0.0:
+    if not discount_completions and (log_marginal_probs_completions is not None):
         raise ValueError(
-            f"discount_completions must be >= 0.0. Got {discount_completions}"
+            "log_marginal_probs_completions is set, but they will not be used because "
+            "discount_completions was not set."
         )
     log_probs_completions = log_probs_conditional(
         prompts,
@@ -360,20 +386,24 @@ def predict_proba(
         end_of_prompt=end_of_prompt,
         ask_if_ok=ask_if_ok,
     )
-    if discount_completions == 0.0:
+    if not discount_completions:
         return log_probs_completions
-    log_marginal_probs_completions = _token_logprobs(
-        completions, model, ask_if_ok=ask_if_ok
-    )
+    ## log Pr(completion token i | completion token :i) for each completion
+    if log_marginal_probs_completions is None:
+        log_marginal_probs_completions = token_logprobs(
+            completions, model, ask_if_ok=ask_if_ok
+        )
     for x in log_marginal_probs_completions:
         x[0] = 0  ## set it from None to 0, i.e., no discount for the first token
+    ## pre-multiply by the discount amount
+    log_marginal_probs_completions_discounted = [
+        discount_completions * np.array(log_marginal_probs_completion)
+        for log_marginal_probs_completion in log_marginal_probs_completions
+    ]
     return [
         [
             np.array(log_probs_prompt_completions[completion_idx])
-            + (
-                discount_completions
-                * np.array(log_marginal_probs_completions[completion_idx])
-            )
+            + (np.array(log_marginal_probs_completions_discounted[completion_idx]))
             for completion_idx in range(len(completions))
         ]
         for log_probs_prompt_completions in log_probs_completions
@@ -453,6 +483,7 @@ def predict(
     prior: Optional[Sequence[float]] = None,
     end_of_prompt: str = " ",
     discount_completions: float = 0.0,
+    log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
     ask_if_ok: bool = False,
 ) -> list[str]:
     """
@@ -479,6 +510,11 @@ def predict(
         experimental feature: set it to >0.0 (e.g., 1.0 may work well) if a completion
         is consistently getting over-predicted. You could instead fudge the `prior`, but
         this hyperparameter may be easier to tune than the `prior`. By default 0.0
+    log_marginal_probs_completions : Sequence[Sequence[float]] , optional
+        experimental feature: pre-computed log probabilities of completion tokens
+        conditional on previous completion tokens (not prompt tokens). Only used if `not
+        discount_completions`. Compute them by passing `completions` and `model` to
+        :func:`cappr.openai.classify.token_logprobs`. By default, None
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default

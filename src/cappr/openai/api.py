@@ -26,17 +26,13 @@ end_of_prompt = "\n\n###\n\n"
 
 Model = Literal[
     "text-ada-001",
-    "ada",
     "text-babbage-001",
-    "babbage",
     "text-curie-001",
-    "curie",
-    "text-davinci-003",
     "text-davinci-002",
-    "davinci",
+    "text-davinci-003",
 ]
 ## https://platform.openai.com/docs/models/model-endpoint-compatibility
-_costs = [0.0004, 0.0004, 0.0005, 0.0005, 0.002, 0.002, 0.02, 0.02, 0.02]
+_costs = [0.0004, 0.0005, 0.002, 0.02, 0.02]
 ## https://openai.com/api/pricing/
 ## TODO: figure out how to get this automatically from openai, if possible
 model_to_cost_per_1k: dict[Model, float] = dict(zip(get_args(Model), _costs))
@@ -195,7 +191,7 @@ def gpt_complete(
         list with the same length as `texts`. Each element is the ``choices`` mapping
         which the OpenAI text completion endpoint returns.
     """
-    _batch_size = 20  ## max that the API can currently handle
+    _batch_size = 32  ## max that the API can currently handle
     if isinstance(texts, str):
         ## Passing in a string will silently but majorly fail. Handle it
         texts = [texts]
@@ -270,7 +266,9 @@ def gpt_chat_complete(
     if isinstance(texts, str):
         texts = [texts]
     if ask_if_ok:
-        _openai_api_call_is_ok(model=model, texts=texts, max_tokens=max_tokens)
+        _openai_api_call_is_ok(
+            model=model, texts=texts, max_tokens=max_tokens, cost_per_1k_tokens=0.002
+        )
     choices = []
     for text in tqdm(texts, total=len(texts), desc="Completing chats"):
         messages = [
