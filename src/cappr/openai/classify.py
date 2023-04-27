@@ -26,7 +26,7 @@ def token_logprobs(
     Parameters
     ----------
     texts : Sequence[str]
-
+        input texts
     model : cappr.openai.api.Model
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
