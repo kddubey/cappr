@@ -67,15 +67,16 @@ def token_logprobs(
 
 def _slice_completions(
     completions: Sequence[str],
+    end_of_prompt: str,
     log_probs: Sequence[Sequence[float]],
     model: openai.api.Model,
 ) -> list[list[float]]:
     """
-    TODO: convert docstring to numpy style
+    TODO: convert docstring to numpy style, expose
 
     Returns a list `log_probs_completions` where `log_probs_completions[i]` is a list of
-    conditional log-probablities for each token in `completions[i]`, extracted by
-    slicing `log_probs[i]`.
+    conditional log-probablities for each token in `end_of_prompt + completions[i]`,
+    extracted by slicing `log_probs[i]`.
     """
     if len(completions) != len(log_probs):
         raise ValueError(
@@ -83,6 +84,7 @@ def _slice_completions(
             f"{len(completions)}, {len(log_probs)}."
         )
     tokenizer = tiktoken.encoding_for_model(model)
+    completions = [end_of_prompt + completion for completion in completions]
     completion_lengths = [len(tokens) for tokens in tokenizer.encode_batch(completions)]
     return [
         log_probs_text[-num_completion_tokens:]
@@ -175,7 +177,7 @@ def log_probs_conditional(
     ## Since log_probs is a flat list, we'll need to batch them by the size and order of
     ## completions to fulfill the spec.
     return [
-        _slice_completions(completions, log_probs_batch, model)
+        _slice_completions(completions, end_of_prompt, log_probs_batch, model)
         for log_probs_batch in _batch.constant(log_probs, size=len(completions))
     ]
 
@@ -254,10 +256,12 @@ def log_probs_conditional_examples(
     log_probs_all = token_logprobs(texts, model=model, ask_if_ok=ask_if_ok)
     ## Flatten completions in same order as examples were flattened
     completions_all = [
-        completion for example in examples for completion in example.completions
+        example.end_of_prompt + completion
+        for example in examples
+        for completion in example.completions
     ]
     log_probs_completions_all = _slice_completions(
-        completions_all, log_probs_all, model
+        completions_all, "", log_probs_all, model
     )
     ## Batch by completions to fulfill the spec
     num_completions_per_prompt = [len(example.completions) for example in examples]
