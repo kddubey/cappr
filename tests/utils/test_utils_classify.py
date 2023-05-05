@@ -32,10 +32,11 @@ def test__agg_log_probs_from_constant_completions():
 @pytest.mark.parametrize("prior", (None, [1 / 2, 1 / 2], [1 / 3, 2 / 3]))
 @pytest.mark.parametrize("normalize", (True, False))
 def test_posterior_prob_2d(likelihoods, prior, normalize):
+    ## TODO: clean this up
     posteriors = classify.posterior_prob(
         likelihoods, axis=1, prior=prior, normalize=normalize
     )
-    if prior == [1 / 2, 1 / 2]:  ## hard-coded b/c idk how to engineer tests
+    if prior == [1 / 2, 1 / 2]:
         if normalize:
             assert np.all(np.isclose(posteriors, [[4 / 5, 1 / 5], [1 / 5, 4 / 5]]))
         else:

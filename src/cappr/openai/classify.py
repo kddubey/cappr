@@ -474,7 +474,7 @@ def predict_proba_examples(
         # predicted probability that 'the liquid in the bottle poured out' is the
         # alternative implied by the 2nd premise: 'I tipped the bottle'
         pred_probs[1,1]
-        # 0.66
+        # 0.75
     """
     return log_probs_conditional_examples(examples, model, ask_if_ok=ask_if_ok)
 

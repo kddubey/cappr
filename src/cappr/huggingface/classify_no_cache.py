@@ -416,6 +416,7 @@ def predict_proba(
     completions: Sequence[str],
     model: str = None,
     model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer] = None,
+    prior: Optional[Sequence[float]] = None,
     end_of_prompt: str = " ",
     batch_size: int = 32,
 ) -> npt.NDArray[np.floating]:

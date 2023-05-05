@@ -42,8 +42,7 @@ def _agg_log_probs_from_constant_completions(
     if not len(num_completions_per_prompt_set) == 1:
         raise ValueError(
             "log_probs does not have a constant number of completions, i.e., there are "
-            "indices i, j such that len(log_probs[i]) != len(log_probs[j]). Please use "
-            "the slower function, agg_log_probs, instead."
+            "indices i, j such that len(log_probs[i]) != len(log_probs[j])."
         )
     ## Say, e.g., we have 2 completions, ['a b', 'c d e'], and 2 prompts.
     ## Then log_probs looks like:
@@ -176,12 +175,14 @@ def posterior_prob(
     return posteriors_unnorm / marginals
 
 
-def _predict_proba(conditional_func):
+def _predict_proba(log_probs_conditional):
     """
-    TODO: docstring
+    Decorator which converts a `log_probs_condtional` function call into a
+    `predict_proba` call. The decorated `predict_proba` function should take a `prior`
+    keyword argument.
     """
 
-    @wraps(conditional_func)
+    @wraps(log_probs_conditional)
     def wrapper(
         prompts: Sequence[str], completions: Sequence[str], *args, **kwargs
     ) -> npt.NDArray[np.floating]:
@@ -194,7 +195,9 @@ def _predict_proba(conditional_func):
                 f"{len(completions)}, {len(prior)}."
             )
 
-        log_probs_completions = conditional_func(prompts, completions, *args, **kwargs)
+        log_probs_completions = log_probs_conditional(
+            prompts, completions, *args, **kwargs
+        )
         likelihoods = agg_log_probs(log_probs_completions)
         ## If there's only 1 completion, normalizing will cause the probability to
         ## trivially be 1! So let's not normalize in that case, and hope the user knows
@@ -205,16 +208,19 @@ def _predict_proba(conditional_func):
     return wrapper
 
 
-def _predict_proba_examples(conditional_examples_func):
+def _predict_proba_examples(log_probs_conditional_examples):
     """
-    TODO: docstring
+    Decorator which converts a `log_probs_conditional_examples` function call into a
+    `predict_proba_examples` call.
     """
 
-    @wraps(conditional_examples_func)
+    @wraps(log_probs_conditional_examples)
     def wrapper(
         examples, *args, **kwargs
     ) -> Union[list[list[float]], npt.NDArray[np.floating]]:
-        log_probs_completions = conditional_examples_func(examples, *args, **kwargs)
+        log_probs_completions = log_probs_conditional_examples(
+            examples, *args, **kwargs
+        )
         likelihoods = agg_log_probs(log_probs_completions)
         ## If an example has just 1 completion, normalizing will cause the probability
         ## to trivially be 1! So let's not normalize in that case, and hope the user
@@ -263,7 +269,7 @@ def _predict_proba_examples(conditional_examples_func):
 
 def _predict(predict_proba_func):
     """
-    TODO: docstring
+    Decorator which converts a `predict_proba` function call into a `predict` call.
     """
 
     @wraps(predict_proba_func)
@@ -281,7 +287,8 @@ def _predict(predict_proba_func):
 
 def _predict_examples(predict_proba_examples_func):
     """
-    TODO: docstring
+    Decorator which converts a `predict_proba_examples` function call into a
+    `predict_examples` call.
     """
 
     @wraps(predict_proba_examples_func)

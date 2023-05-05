@@ -22,8 +22,8 @@ def patch_openai_method_retry(monkeypatch):
     ## an OpenAI endpoint!
     def _log_probs(texts: list[str]) -> list[list[float]]:
         """
-        Returns a list `log_probs` where `log_probs[i]` is `list(range(size))` where `size`
-        is the number of tokens in `texts[i]`.
+        Returns a list `log_probs` where `log_probs[i]` is `list(range(size))` where
+        `size` is the number of tokens in `texts[i]`.
         """
         tokenizer = tiktoken.get_encoding("gpt2")
         return [list(range(len(tokens))) for tokens in tokenizer.encode_batch(texts)]

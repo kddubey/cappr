@@ -1,6 +1,6 @@
 """
-Helper functions to test that predict_proba and predict function outputs have the
-correct form, but not necessarily the correct content.
+Helper functions to test that `predict_proba` and `predict` function outputs have the
+correct form.
 """
 from __future__ import annotations
 from typing import Any, Callable, Sequence, Union
@@ -27,7 +27,12 @@ def predict_proba(
     pred_probs = predict_proba_func(prompts, completions, *args, **kwargs)
     assert isinstance(pred_probs, np.ndarray)
     assert pred_probs.shape == (len(prompts), len(completions))
-    if pred_probs.shape[1] > 1:  ## we don't normalize if there's one completion
+    assert np.all(pred_probs >= 0)
+    if pred_probs.shape[1] == 1:
+        ## We don't normalize if there's one completion. It's almost definitely the case
+        ## that the predicted probability is < 1 by a decent amount.
+        assert not any(np.isclose(pred_probs[:, 0], 1))
+    else:
         assert np.allclose(pred_probs.sum(axis=1), 1)
 
 
@@ -47,7 +52,12 @@ def predict_proba_examples(
     assert len(pred_probs) == len(examples)
     for pred_prob_example, example in zip(pred_probs, examples):
         assert len(pred_prob_example) == len(example.completions)
-        if len(pred_prob_example) > 1:  ## we don't normalize if there's one completion
+        assert np.all(np.array(pred_prob_example) >= 0)
+        if len(pred_prob_example) == 1:
+            ## We don't normalize if there's one completion. It's almost definitely the
+            ## case that the predicted probability is < 1 by a decent amount.
+            assert not any(np.isclose(pred_prob_example, 1))
+        else:
             assert np.isclose(sum(pred_prob_example), 1)
 
 
