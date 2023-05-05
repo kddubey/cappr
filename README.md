@@ -16,7 +16,7 @@ completion comes after an inputted prompt. Hence the name:
   **P**rompt<br>
   **Pr**obability<br>
 
-The method is fleshed out in my [question on CrossValidated](https://stats.stackexchange.com/q/601159/337906).
+The method is fleshed out in my [question on Cross Validated](https://stats.stackexchange.com/q/601159/337906).
 
 
 ## Usage
@@ -184,10 +184,7 @@ for a demonstration of a slightly harder classification task.
 
 ## Documentation
 
-https://cappr.readthedocs.io/en/latest/
-
-Please let me know if you find the writing too dense. The main motivation behind this
-project is simplicity :-)
+https://cappr.readthedocs.io
 
 
 ## Setup
@@ -228,10 +225,10 @@ Create a more usable zero-shot text classification interface than
 <details>
 <summary>Short</summary>
 
-In CVS, your job is to write up your classification task in a `prompt` string, and then
-write custom code to post-process arbitrary `completion`/output strings.
+With CVS, your job is to write up your classification task in a `prompt` string, and
+then write custom code to post-process arbitrary `completion`/output strings.
 
-In CAPPr, your job starts and stops at writing up your classification task as a
+With CAPPr, your job starts and stops at writing up your classification task as a
 `{prompt}{end_of_prompt}{completion}` string.
 </details>
 
@@ -295,12 +292,12 @@ you'll be on the *cappr (slow)* line** :-(
 *Figure 1: [COPA](https://people.ict.usc.edu/~gordon/copa.html) dataset, repeating the
 choices to simulate multi-class classification tasks. [GPT-2
 (small)](https://huggingface.co/gpt2) was run on a Tesla K80 GPU (whatever was free in
-Google Colab in March 2023, I'm not hardware savvy). 96 classification inputs were
-processed in batches of size 32. Each point in the graph is a median of 5 runs. For
-classification via sampling (CVS), exactly 4 tokens were generated for each prompt,
-which is the number of tokens in `'\n\nAnswer A'`. 1-token times are also shown. But for
-COPA (and other multiple-choice style prompts), that may result in lower zero-shot
-accuracy, as most of the sampled choices come after the first token.*
+Google Colab in March 2023). 96 classification inputs were processed in batches of size
+32. Each point in the graph is a median of 5 runs. For classification via sampling
+(CVS), exactly 4 tokens were generated for each prompt, which is the number of tokens in
+`'\n\nAnswer A'`. 1-token times are also shown. But for COPA (and other multiple-choice
+style prompts), that may result in lower zero-shot accuracy, as most of the sampled
+choices come after the first token.*
 
 See the [`demos/computational_analysis.ipynb`
 notebook](https://github.com/kddubey/cappr/blob/main/demos/computational_analysis.ipynb).
@@ -415,14 +412,14 @@ Dumping VS code extensions for development:
 Evaluate on more datasets, and understand its relative advantages and disadvantages vs
 other classification methods.
 
-- [ ] RAFT benchmark (**)
+- [ ] RAFT benchmark
   - [x] Zero-shot training scores
   - [ ] Submit zero-shot test predictions
   - [ ] Few-shot (priming) training scores
   - [ ] Submit few-shot test predictions
 - [ ] Create a user guide, build a table of results comparing competing approaches on
 statistical performance, cost, and computation
-- [ ] Make a computational comparison to sampling (**)
+- [ ] Make a computational comparison to sampling
   - [x] Assume I have full freedom to decide how inference works. Demo w/
   GPT-2. Process inputs in batches.
   - [ ] Process inputs 1-by-1

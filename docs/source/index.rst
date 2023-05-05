@@ -1,4 +1,4 @@
-Welcome to CAPPr's documentation
+CAPPr Docs
 ================================
 
 |gittycat| `GitHub <https://github.com/kddubey/cappr>`_

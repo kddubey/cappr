@@ -15,12 +15,12 @@ models, as I can't control their backend. This means that when running
 
    `COPA`_ dataset, repeating the choices to simulate multi-class classification tasks.
    `GPT-2 (small)`_ was run on a Tesla K80 GPU (whatever was free in Google Colab in
-   March 2023, I'm not hardware savvy). 96 classification inputs were processed in
-   batches of size 32. Each point in the graph is a median of 5 runs. For classification
-   via sampling (CVS), exactly 4 tokens were generated for each prompt, which is the
-   number of tokens in ``'\n\nAnswer A'``. 1-token times are also shown. But for COPA
-   (and other multiple-choice style prompts), that may result in lower zero-shot
-   accuracy, as most of the sampled choices come after the first token.
+   March 2023). 96 classification inputs were processed in batches of size 32. Each
+   point in the graph is a median of 5 runs. For classification via sampling (CVS),
+   exactly 4 tokens were generated for each prompt, which is the number of tokens in
+   ``'\n\nAnswer A'``. 1-token times are also shown. But for COPA (and other
+   multiple-choice style prompts), that may result in lower zero-shot accuracy, as most
+   of the sampled choices come after the first token.
 
 .. _COPA: https://people.ict.usc.edu/~gordon/copa.html
 
