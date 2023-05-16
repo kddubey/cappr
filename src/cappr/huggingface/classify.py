@@ -459,7 +459,7 @@ def log_probs_conditional(
 
         log_probs_completions[1]
         # [[-9.7],        [[log Pr(z | a, b, c)],
-        #  [-0.2, -0.03]]  [log Pr(d | a, b, c), log Pr(e | a, b, c)]]
+        #  [-0.2, -0.03]]  [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
     model, tokenizer = hf._utils.load_model_and_tokenizer(
         model=model, model_and_tokenizer=model_and_tokenizer

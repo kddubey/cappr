@@ -160,7 +160,7 @@ def log_probs_conditional(
 
         log_probs_completions[1]
         # [[-11.6],       [[log Pr(z | a, b, c)],
-        #  [-0.3, -1.2]]   [log Pr(d | a, b, c), log Pr(e | a, b, c)]]
+        #  [-0.3, -1.2]]   [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
     ## str / non-Sequence[str] inputs silently, wastefully, and irreparably fail
     if isinstance(prompts, str) or not isinstance(prompts, Sequence):
