@@ -217,7 +217,7 @@ def _predict_proba_examples(log_probs_conditional_examples):
     @wraps(log_probs_conditional_examples)
     def wrapper(
         examples, *args, **kwargs
-    ) -> Union[list[list[float]], npt.NDArray[np.floating]]:
+    ) -> Union[list[npt.NDArray[np.floating]], npt.NDArray[np.floating]]:
         log_probs_completions = log_probs_conditional_examples(
             examples, *args, **kwargs
         )
@@ -261,7 +261,7 @@ def _predict_proba_examples(log_probs_conditional_examples):
             axis=1,
             prior=prior,
             normalize=normalize,
-            check_prior=False,  ## ## already checked during example construction
+            check_prior=False,  ## already checked during example construction
         )
 
     return wrapper

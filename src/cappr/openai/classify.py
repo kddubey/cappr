@@ -417,7 +417,7 @@ def predict_proba(
 @classify._predict_proba_examples
 def predict_proba_examples(
     examples: Sequence[Example], model: openai.api.Model, ask_if_ok: bool = False
-) -> Union[list[list[float]], npt.NDArray[np.floating]]:
+) -> Union[list[npt.NDArray[np.floating]], npt.NDArray[np.floating]]:
     """
     Predict probabilities of each completion coming after each prompt.
 
@@ -437,13 +437,13 @@ def predict_proba_examples(
 
     Returns
     -------
-    pred_probs : list[list[float]] | npt.NDArray[np.floating]
+    pred_probs : list[npt.NDArray[np.floating]] | npt.NDArray[np.floating]
         `pred_probs[example_idx][completion_idx]` is the model's estimate of the
         probability that `examples[example_idx].completions[completion_idx]` comes after
         `examples[example_idx].prompt + examples[example_idx].end_of_prompt`.
 
         If the number of completions per example is a constant `k`, then an array with
-        shape `(len(examples), k)` is returned instead of a nested/2-D list.
+        shape `(len(examples), k)` is returned instead of a list of 1-D arrays.
 
     Example
     -------

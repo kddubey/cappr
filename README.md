@@ -387,27 +387,22 @@ Dumping VS code extensions for development:
 - [ ] Factor out input checks (on prompts and completions)
 - [x] De-automate overzealous auto-docstring stuff :-(
 - [ ] HuggingFace `transformers.AutoModelForCausalLM`
+  - [ ] Support as many of them as possible, regardless of way positions are encoded
   - [x] Optimize backend to enable greater scaling wrt # completions/classes
-  - [x] Get it working on single-GPU, check that it's faster than sampling assuming
-  batching
+  - [x] Get it working on GPU, check that it's faster than sampling
     - [ ] Get to the bottom of why it's slower w/o batching
   - [ ] Allow non-`' '` `end_of_prompt`! I'll have to go back to the drawing board I
   think
-  - [ ] Consider batchifying the completions again, since they technically don't go in
-  batches of `batch_size`; the actual batch size is the sum of the number of completions
-  corresponding to the batch of prompts! Not a huge memory issue I think b/c completions
-  are usually half as long. But it should be configurable at the very least.
   - [ ] Factor out repeated code b/t `classify` and `classify_no_cache`
   - [ ] Support [Inference
     Endpoints](https://huggingface.co/docs/inference-endpoints/index)?
-  - [ ] Support TensorFlow models if it's easy
+  - [ ] Support TensorFlow models
   - [ ] Support priming, as in: cache it
 - [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
 - [ ] Allow for multi-label classification
   - [ ] Pass `normalize` as an argument to predict_proba functions
   - [ ] For `huggingface`, add note that you'll get faster results by passing all
   labels at once (assuming prompt is identical for each label)
-- [ ] Create a notebook template
 - [ ] Fill in missing or non-numpy docstrings
 </details>
 
@@ -425,21 +420,15 @@ other classification methods.
 - [ ] Create a user guide, build a table of results comparing competing approaches on
 statistical performance, cost, and computation
 - [ ] Make a computational comparison to sampling
-  - [x] Assume I have full freedom to decide how inference works. Demo w/
-  GPT-2. Process inputs in batches.
+  - [x] Assume I have full freedom to decide how inference works. Demo w/ GPT-2. Process
+  inputs in batches.
   - [ ] Process inputs 1-by-1
 - [ ] More SuperGLUE tasks?
-  - [ ] Re-run COPA demo w/ left-stripped completions (there are a few which aren't)
 - [ ] Calibration
   - [ ] Is the prior actually effective? Downsample and see
   - [ ] curves
-- [ ] Compare against few-shot embeddings
 - [ ] Finetune smaller, cheaper model and compare against zero-shot w/ davinci
   - [ ] e.g., GPT-2 from huggingface, `text-ada-001`
   - [ ] Again, compare against sampling
 - [ ] Evaluate a bigger model like GPT-J
-- [ ] Evaluate different aggregation functions. Currently taking mean, but
-there was no good theory for that
-- [ ] A bit ambitious: support insertion and backwards-completion. Quite ambitious b/c
-manipulating position IDs isn't sufficient (I think).
 </details>

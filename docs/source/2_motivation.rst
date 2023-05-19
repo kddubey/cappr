@@ -6,7 +6,7 @@ classification interface than `classification via sampling`_.
 
 .. _classification via sampling: https://platform.openai.com/docs/guides/completion/classification
 
-Now for a longer answer, which takes a deep dive into what's meant by *usable*.
+Now for a longer answer, which expands on what's meant by *usable*.
 
 
 Problem
@@ -56,9 +56,9 @@ example, to classify a product review, CVS code looks like this:
    # '\nThe product is difficult to use'
    # correct!
 
-This usually works well. But if you've ever run CVS on a slightly larger scale, then
-you'll know that there are a considerable fraction of cases where the ``completion`` is
-not actually in ``class_names``. To address these cases, you add:
+This usually works well. But if you've ever run CVS on a slightly larger scale, then you
+know that there may be a considerable fraction of cases where the ``completion`` is not
+actually in ``class_names``. To address these cases, you add:
 
 .. code:: python
 
@@ -67,8 +67,7 @@ not actually in ``class_names``. To address these cases, you add:
 
    assert completion in class_names
 
-Herein lies the problem. Because if you've made it this far, then I'm sure you know that
-implementing ``post_process`` can be challenging, as the ``completion`` is sampled from
+Implementing ``post_process`` can be challenging, as the ``completion`` is sampled from
 the space of all possible sequences of tokens. This means you'll likely have to deal
 with the cases where:
 
@@ -108,8 +107,7 @@ Solution
 With CAPPr's ``predict`` interface, your job starts and stops at writing up your
 classification task as a ``{prompt}{end_of_prompt}{completion}`` string.
 
-That being said, let's now run CAPPr on that product review classification task. Also,
-let's:
+Let's now run CAPPr on that product review classification task. Also, let's:
 
 - trivially incorporate a prior (optional)
 
