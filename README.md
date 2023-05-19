@@ -376,9 +376,10 @@ Dumping VS code extensions for development:
 
 - [ ] Testing
   - [ ] Increase test cases
-  - [ ] Some more standardization b/t openai and huggingface tests
-  - [x] Add code coverage badge to look cool
   - [ ] Test input checks
+  - [ ] Test `cappr.openai.api`
+- [ ] Factor out the discount feature in `cappr.openai.classify.predict_proba` into
+`cappr.utils.classify._predict_proba`
 - [x] Small CPU speed-ups
   - [x] For constant-completions input, vectorize `agg_log_probs`
   - [x] For `examples` input, if # completions per prompt is constant, vectorize
