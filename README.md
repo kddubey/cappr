@@ -55,11 +55,10 @@ preds
 <summary>Use a model from the HuggingFace model hub</summary>
 
 Specifically, this model must be able to be loaded using
-`transformers.AutoModelForCausalLM.from_pretrained(model)`.
-
-Smaller LMs may not work well. But there will likely be better ones in the hub soon.
+`transformers.AutoModelForCausalLM.from_pretrained`.
 
 ```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from cappr.huggingface.classify import predict
 
 prompt = 'Which planet is closer to the Sun: Mercury or Earth?'
@@ -67,9 +66,14 @@ prompt = 'Which planet is closer to the Sun: Mercury or Earth?'
 class_names = ('Mercury', 'Earth')
 prior = None  # uniform prior
 
+# load model and tokenizer
+model_name = 'gpt2'
+model = AutoModelForCausalLM.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
 preds = predict(prompts=[prompt],
                 completions=class_names,
-                model='gpt2',
+                model_and_tokenizer=(model, tokenizer),
                 prior=prior)
 preds
 # ['Mercury']
@@ -83,6 +87,7 @@ Let's use `huggingface` for this example cuz it's free. And let's predict probab
 instead of the class.
 
 ```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from cappr.huggingface.classify import predict_proba
 
 prompts = [
@@ -105,9 +110,15 @@ prior = (
     2/3   # there are more
 )
 
+
+# load model and tokenizer
+model_name = 'gpt2'
+model = AutoModelForCausalLM.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
 pred_probs = predict_proba(prompts=prompts,
                            completions=class_names,
-                           model='gpt2',
+                           model_and_tokenizer=(model, tokenizer),
                            batch_size=32,  # whatever fits on your CPU/GPU
                            prior=prior)
 
@@ -132,9 +143,7 @@ print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
 <summary>Run in batches, where each prompt has a different set of possible completions
 </summary>
 
-Again, let's use `huggingface` to predict probabilities. And this time, let's pass in an 
-instantiated model and tokenizer instead of its name. That way, the model isn't
-re-loaded every time you wanna use it.
+Again, let's use `huggingface` to predict probabilities.
 
 ```python
 import numpy as np
@@ -200,21 +209,17 @@ Install with `pip`:
 python -m pip install cappr
 ```
 
-<details>
-<summary>(Optional) Install requirements for HuggingFace models</summary>
+(Optional) Install requirements for HuggingFace models
 
 ```
 python -m pip install cappr[hf]
 ```
-</details>
 
-<details>
-<summary>(Optional) Install requirements for running demos</summary>
+(Optional) Install requirements for running demos
 
 ```
 python -m pip install cappr[demos]
 ```
-</details>
 
 
 ## Motivation

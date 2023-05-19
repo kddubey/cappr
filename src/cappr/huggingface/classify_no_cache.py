@@ -218,20 +218,13 @@ def _logits_to_log_probs_completions(
 def log_probs_conditional(
     prompts: Sequence[str],
     completions: Sequence[str],
-    model: str = None,
-    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer] = None,
+    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
     end_of_prompt: str = " ",
     batch_size: int = 32,
 ) -> list[list[list[float]]]:
     """
     Log-probabilities of each completion token conditional on each prompt and previous
     completion tokens.
-
-    Note
-    ----
-    Either `model` or `model_and_tokenizer` must be inputted. It's usually better to
-    instantiate/pre-load a model and tokenizer and pass them to `model_and_tokenizer`.
-    See the Example.
 
     Parameters
     ----------
@@ -240,10 +233,8 @@ def log_probs_conditional(
     completions : Sequence[str]
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
-    model : str, optional
-        the name of an `AutoModelForCausalLM`, by default None
-    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer], optional
-        an instantiated model and its corresponding tokenizer, by default None
+    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
+        an instantiated model and its corresponding tokenizer
     end_of_prompt : str, optional
         the string to tack on at the end of every prompt, by default " "
     batch_size : int, optional
@@ -296,9 +287,7 @@ def log_probs_conditional(
         # [[-9.7],        [[log Pr(z | a, b, c)],
         #  [-0.2, -0.03]]  [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
-    model, tokenizer = hf._utils.load_model_and_tokenizer(
-        model=model, model_and_tokenizer=model_and_tokenizer
-    )
+    model, tokenizer = hf._utils.load_model_and_tokenizer(model_and_tokenizer)
 
     @_batch.flatten
     @_batch.batchify(batchable_arg="prompts", progress_bar_desc="log-probs (no cache)")
@@ -314,29 +303,20 @@ def log_probs_conditional(
 
 def log_probs_conditional_examples(
     examples: Sequence[Example],
-    model: str = None,
-    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer] = None,
+    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
     batch_size: int = 32,
 ) -> list[list[list[float]]]:
     """
     Log-probabilities of each completion token conditional on each prompt and previous
     completion tokens.
 
-    Note
-    ----
-    Either `model` or `model_and_tokenizer` must be inputted. It's usually better to
-    instantiate/pre-load a model and tokenizer and pass them to `model_and_tokenizer`.
-    See the Example.
-
     Parameters
     ----------
     examples : Sequence[Example]
         `Example` objects, where each contains a prompt and its set of possible
         completions
-    model : str, optional
-        the name of an `AutoModelForCausalLM`, by default None
-    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer], optional
-        an instantiated model and its corresponding tokenizer, by default None
+    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
+        an instantiated model and its corresponding tokenizer
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -391,9 +371,7 @@ def log_probs_conditional_examples(
         log_probs_completions[1] # corresponds to examples[1]
         # [[-5.0, -1.7]]  [[log Pr(1 | a, b, c)], log Pr(2 | a, b, c, 1)]]
     """
-    model, tokenizer = hf._utils.load_model_and_tokenizer(
-        model=model, model_and_tokenizer=model_and_tokenizer
-    )
+    model, tokenizer = hf._utils.load_model_and_tokenizer(model_and_tokenizer)
 
     @_batch.flatten
     @_batch.batchify(batchable_arg="examples", progress_bar_desc="log-probs (no cache)")
@@ -414,20 +392,13 @@ def log_probs_conditional_examples(
 def predict_proba(
     prompts: Sequence[str],
     completions: Sequence[str],
-    model: str = None,
-    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer] = None,
+    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
     prior: Optional[Sequence[float]] = None,
     end_of_prompt: str = " ",
     batch_size: int = 32,
 ) -> npt.NDArray[np.floating]:
     """
     Predict probabilities of each completion coming after each prompt.
-
-    Note
-    ----
-    Either `model` or `model_and_tokenizer` must be inputted. It's usually better to
-    instantiate/pre-load a model and tokenizer and pass them to `model_and_tokenizer`.
-    See the Example.
 
     Parameters
     ----------
@@ -436,10 +407,8 @@ def predict_proba(
     completions : Sequence[str]
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
-    model : str, optional
-        the name of an `AutoModelForCausalLM`, by default None
-    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer], optional
-        an instantiated model and its corresponding tokenizer, by default None
+    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
+        an instantiated model and its corresponding tokenizer
     prior : Sequence[float], optional
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
@@ -505,8 +474,7 @@ def predict_proba(
     return log_probs_conditional(
         prompts,
         completions,
-        model=model,
-        model_and_tokenizer=model_and_tokenizer,
+        model_and_tokenizer,
         end_of_prompt=end_of_prompt,
         batch_size=batch_size,
     )
@@ -515,28 +483,19 @@ def predict_proba(
 @classify._predict_proba_examples
 def predict_proba_examples(
     examples: Sequence[Example],
-    model: str = None,
-    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer] = None,
+    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
     batch_size: int = 32,
 ) -> Union[list[list[float]], npt.NDArray[np.floating]]:
     """
     Predict probabilities of each completion coming after each prompt.
-
-    Note
-    ----
-    Either `model` or `model_and_tokenizer` must be inputted. It's usually better to
-    instantiate/pre-load a model and tokenizer and pass them to `model_and_tokenizer`.
-    See the Example.
 
     Parameters
     ----------
     examples : Sequence[Example]
         `Example` objects, where each contains a prompt and its set of possible
         completions
-    model : str, optional
-        the name of an `AutoModelForCausalLM`, by default None
-    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer], optional
-        an instantiated model and its corresponding tokenizer, by default None
+    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
+        an instantiated model and its corresponding tokenizer
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -585,8 +544,7 @@ def predict_proba_examples(
     """
     return log_probs_conditional_examples(
         examples,
-        model=model,
-        model_and_tokenizer=model_and_tokenizer,
+        model_and_tokenizer,
         batch_size=batch_size,
     )
 
@@ -595,20 +553,13 @@ def predict_proba_examples(
 def predict(
     prompts: Sequence[str],
     completions: Sequence[str],
-    model: str = None,
-    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer] = None,
+    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
     prior: Optional[Sequence[float]] = None,
     end_of_prompt: str = " ",
     batch_size: int = 32,
 ) -> list[str]:
     """
     Predict which completion is most likely to follow each prompt.
-
-    Note
-    ----
-    Either `model` or `model_and_tokenizer` must be inputted. It's usually better to
-    instantiate/pre-load a model and tokenizer and pass them to `model_and_tokenizer`.
-    See the Example.
 
     Parameters
     ----------
@@ -617,10 +568,8 @@ def predict(
     completions : Sequence[str]
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
-    model : str, optional
-        the name of an `AutoModelForCausalLM`, by default None
-    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer], optional
-        an instantiated model and its corresponding tokenizer, by default None
+    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
+        an instantiated model and its corresponding tokenizer
     prior : Sequence[float], optional
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
@@ -672,8 +621,7 @@ def predict(
     return predict_proba(
         prompts,
         completions,
-        model=model,
-        model_and_tokenizer=model_and_tokenizer,
+        model_and_tokenizer,
         prior=prior,
         end_of_prompt=end_of_prompt,
         batch_size=batch_size,
@@ -683,28 +631,19 @@ def predict(
 @classify._predict_examples
 def predict_examples(
     examples: Sequence[Example],
-    model: str = None,
-    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer] = None,
+    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
     batch_size: int = 32,
 ) -> list[str]:
     """
     Predict which completion is most likely to follow each prompt.
-
-    Note
-    ----
-    Either `model` or `model_and_tokenizer` must be inputted. It's usually better to
-    instantiate/pre-load a model and tokenizer and pass them to `model_and_tokenizer`.
-    See the Example.
 
     Parameters
     ----------
     examples : Sequence[Example]
         `Example` objects, where each contains a prompt and its set of possible
         completions
-    model : str, optional
-        the name of an `AutoModelForCausalLM`, by default None
-    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer], optional
-        an instantiated model and its corresponding tokenizer, by default None
+    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
+        an instantiated model and its corresponding tokenizer
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -745,7 +684,6 @@ def predict_examples(
     """
     return predict_proba_examples(
         examples,
-        model=model,
-        model_and_tokenizer=model_and_tokenizer,
+        model_and_tokenizer,
         batch_size=batch_size,
     )
