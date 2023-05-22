@@ -1,8 +1,8 @@
 User Guide
 ==========
 
-There are three major factors which influence the performance of CAPPr: the
-prompt-completion format, the language model, and the prior.
+There are three factors which influence the performance of CAPPr: the prompt-completion
+format, the language model, and the prior.
 
 
 Select a prompt-completion format
@@ -27,14 +27,21 @@ One rule is that the ``completion`` text should flow naturally after
 newlines, and word casing. :mod:`cappr.openai.classify` does not do any string
 processing for you: **it just concatenates the three strings and sends it**!
 
-And yes, you'll still have to do "prompt engineering". It's mostly a matter of trial and
-error. Here's an `external guide`_ if you'd like to survey research in this field.\ [#]_
-
 .. warning:: Currently, :mod:`cappr.openai.classify` must repeat the ``prompt`` for
              however many completions there are. So if your prompt is long and your
              completions are short, you may end up spending much more with CAPPr.
              (:mod:`cappr.huggingface.classify` does not have to repeat the prompt
-             because it caches it.)
+             because it caches its representation.)
+
+And yes, you'll still have to do prompt engineering. It's mostly a matter of trial and
+error. Here's an `external guide`_ if you'd like to survey research in this field.\ [#]_
+Step-by-step\ [#]_ and chain-of-thought prompting\ [#]_ are highly effective for slighly
+more complex classification tasks. While CAPPr is not immediately well-suited to these
+sorts of prompts, it may be applied to post-process completions:
+
+1. Get the completion from the step-by-step / chain-of-thought prompt
+
+2. Pass this completion in a second prompt, and have CAPPr classify the answer.
 
 .. _external guide: https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/
 
@@ -97,3 +104,9 @@ References
 
 .. [#] Weng, Lilian. (Mar 2023). Prompt Engineering. Lil'Log.
    https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/.
+
+.. [#] Kojima, Takeshi, et al. "Large language models are zero-shot reasoners." arXiv
+    preprint arXiv:2205.11916 (2022).
+
+.. [#] Wei, Jason, et al. "Chain of thought prompting elicits reasoning in large
+    language models." arXiv preprint arXiv:2201.11903 (2022).
