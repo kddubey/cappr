@@ -38,7 +38,8 @@ def predict_proba(
 
 def predict_proba_examples(
     predict_proba_examples_func: Callable[
-        [Sequence[Example], Any], Union[list[list[float]], npt.NDArray[np.floating]]
+        [Sequence[Example], Any],
+        Union[list[npt.NDArray[np.floating]], npt.NDArray[np.floating]],
     ],
     examples: Sequence[Example],
     *args,
