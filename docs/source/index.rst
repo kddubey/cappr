@@ -14,9 +14,9 @@ completion comes after an inputted prompt. Hence the name:
    | **P**\rompt
    | **Pr**\obability
 
-The method is fleshed out in my `question on CrossValidated`_.
+The method is fleshed out in my `question on Cross Validated`_.
 
-.. _question on CrossValidated: https://stats.stackexchange.com/q/601159/337906
+.. _question on Cross Validated: https://stats.stackexchange.com/q/601159/337906
 
 .. note:: This package is in early stages, and the method needs to be evaluated on more
           datasets.
