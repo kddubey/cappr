@@ -33,7 +33,7 @@ processing for you: **it just concatenates the three strings and sends it**!
              (:mod:`cappr.huggingface.classify` does not have to repeat the prompt
              because it caches its representation.)
 
-And yes, you'll still have to do prompt engineering. It's mostly a matter of trial and
+And yes, you'll likely need to do prompt engineering. It's mostly a matter of trial and
 error. Here's an `external guide`_ if you'd like to survey research in this field.\ [#]_
 Step-by-step\ [#]_ and chain-of-thought prompting\ [#]_ are highly effective for slighly
 more complex classification tasks. While CAPPr is not immediately well-suited to these
@@ -41,7 +41,9 @@ sorts of prompts, it may be applied to post-process completions:
 
 1. Get the completion from the step-by-step / chain-of-thought prompt
 
-2. Pass this completion in a second prompt, and have CAPPr classify the answer.
+2. Pass this completion in a second prompt, and have CAPPr classify the answer. You can
+   probably get away with using a less expensive model for this task, as it just takes a
+   bit of semantic parsing.
 
 .. _external guide: https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/
 

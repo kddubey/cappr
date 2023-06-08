@@ -6,7 +6,7 @@ classification interface than `classification via sampling`_.
 
 .. _classification via sampling: https://platform.openai.com/docs/guides/completion/classification
 
-Now for a longer answer, which expands on what's meant by *usable*.
+Now for the long answer, which expands on the meaning of *usable*.
 
 
 Problem
@@ -58,7 +58,8 @@ example, to classify a product review, CVS code looks like this:
 
 This usually works well. But if you've ever run CVS on a slightly larger scale, then you
 know that there may be a considerable fraction of cases where the ``completion`` is not
-actually in ``class_names``. To address these cases, you add:
+actually in ``class_names``. For your LLM application to work well, you need to handle
+these cases. So you add:
 
 .. code:: python
 
@@ -84,7 +85,8 @@ with the cases where:
 The OpenAI community knows that this can be challenging, so `they suggest`_ that you
 modify your code in at least 1 of 2 ways:
 
-#. Point to multi-token class names using a single token—like a multiple choice question
+#. Point to multi-token class names using a single token—as in a multiple choice
+   question
 
 #. Transform multi-token class names into a single token, and finetune a model so that
    it learns the mapping to the single tokens.
@@ -92,9 +94,9 @@ modify your code in at least 1 of 2 ways:
 .. _they suggest: https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit
 
 These can be nontrivial modifications. Single-token references can sacrifice performance
-when you have quite a few classes, as it's not a typical instruction format.
-Single-token transformations sacrifice useful semantics, and finetuning usually requires
-spending too much money and too much of your data.
+when you have quite a few classes, as it's not a typical instruction format. On the
+other hand, single-token transformations sacrifice useful semantics. And finetuning
+usually requires spending too much of your money and data.
 
 **The fact is: you can endlessley accomodate CVS, but you'll still have to write custom
 code to post-process its arbitrary outputs.** Fundamentally, sampling is not a clean
@@ -109,7 +111,7 @@ classification task as a ``{prompt}{end_of_prompt}{completion}`` string.
 
 Let's now run CAPPr on that product review classification task. Also, let's:
 
-- trivially incorporate a prior (optional)
+- supply a prior (optional)
 
 - predict a probability distribution over classes (optional)
 
@@ -128,8 +130,8 @@ Let's now run CAPPr on that product review classification task. Also, let's:
                   "The product isn't working",
                   "The product doesn't look good",
                   'The product is great')
-   prior = (2/7, 1/7, 1/7, 1/7, 1/7, 1/7)
-   # perhaps we already expect customers to say it's expensive
+   prior = (2/7, 1/7, 1/7, 1/7, 1/7, 1/7)  # set to None if you don't have a prior
+   # the 2/7 reflects that we already expect customers to say it's expensive
 
    product_review = "I can't figure out how to integrate it into my setup."
    prompt = f'''
