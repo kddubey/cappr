@@ -1,5 +1,5 @@
 """
-Transform completion token log-probabilites to a probability distribution over
+Transform completion token log-probabilites into a probability distribution over
 completions.
 """
 from __future__ import annotations
@@ -44,6 +44,7 @@ def _agg_log_probs_from_constant_completions(
             "log_probs does not have a constant number of completions, i.e., there are "
             "indices i, j such that len(log_probs[i]) != len(log_probs[j])."
         )
+    ## At this point, we've verified that the number of completions is constant.
     ## Say, e.g., we have 2 completions, ['a b', 'c d e'], and 2 prompts.
     ## Then log_probs looks like:
     ## [ [ [a1, b1],      (token log-probs for completion 1 | prompt 1)
@@ -67,15 +68,15 @@ def _agg_log_probs_from_constant_completions(
         )
         for completion_idx in range(num_completions_per_prompt)
     ]
-    ## Now we can apply the vectorized function to each array in the list
+    ## Now apply the vectorized function to each array in the list
     likelihoods: npt.NDArray[np.floating] = np.exp(
-        np.array([func(array, axis=1) for array in array_list])
+        [func(array, axis=1) for array in array_list]
     )
     ## likelihoods looks like:
     ## array([[likelihood_a1b1,   likelihood_a2b2  ],
     ##        [likelihood_c1d1e1, likelihood_c2d2e2]
     ##       ])
-    ## Transpose it to fulfill the spec
+    ## Transpose it to satisfy likelihoods[i][j] = exp(func(log_probs[i][j]))
     return likelihoods.T
 
 
@@ -100,7 +101,7 @@ def agg_log_probs(
     probs: list[list[float]]
         Lists of probabilities where::
 
-            probs[i][j] = numpy.exp(func(log_probs[i][j]))
+            probs[i][j] = exp(func(log_probs[i][j]))
     """
     try:
         return _agg_log_probs_from_constant_completions(log_probs, func)
@@ -229,7 +230,7 @@ def _predict_proba_examples(log_probs_conditional_examples):
         normalize = [num > 1 for num in num_completions_per_prompt]
         num_completions_per_prompt_set = set(num_completions_per_prompt)
         if len(num_completions_per_prompt_set) != 1:
-            ## Can't be vectorized :-(
+            ## Can't be easily vectorized :-(
             return [
                 posterior_prob(
                     likelihoods_ex,
@@ -248,13 +249,11 @@ def _predict_proba_examples(log_probs_conditional_examples):
         else:
             ## For coding simplicity, just supply a prior which is non-None *everywhere*
             ## It's the same shape as likelihoods
-            prior = np.array(
-                [
-                    example.prior
-                    or [1 / len(example.completions)] * len(example.completions)
-                    for example in examples
-                ]
-            )
+            num_completions_per_prompt = list(num_completions_per_prompt_set)[0]
+            uniform_prior = [
+                1 / num_completions_per_prompt
+            ] * num_completions_per_prompt
+            prior = np.array([example.prior or uniform_prior for example in examples])
         ## prior cannot be jagged b/c every example has the same # of completions
         return posterior_prob(
             likelihoods,
