@@ -293,7 +293,7 @@ def _predict_examples(predict_proba_examples_func):
     @wraps(predict_proba_examples_func)
     def wrapper(examples, *args, **kwargs) -> list[str]:
         pred_probs: Union[
-            list[list[float]], npt.NDArray[np.floating]
+            list[npt.NDArray[np.floating]], npt.NDArray[np.floating]
         ] = predict_proba_examples_func(examples, *args, **kwargs)
         ## If it's an array, we can call .argmax, which is faster
         try:
