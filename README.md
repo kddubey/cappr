@@ -28,24 +28,21 @@ Specifically, this model must be compatible with the
 [/v1/completions](https://platform.openai.com/docs/models/model-endpoint-compatibility)
 endpoint.
 
-Let's classify
-[this sentiment example](https://platform.openai.com/docs/guides/completion/classification)
-from the OpenAI text completion docs.
-
 ```python
 from cappr.openai.classify import predict
 
-tweet = 'I loved the new Batman movie!'
-prompt = f'Tweet: {tweet}\nSentiment:'
+prompt = """
+Tweet: I loved the new Batman movie!
+Sentiment:
+""".strip("\n")
 
-class_names = ('positive', 'neutral', 'negative')
-# optional: let's supply a prior distribution over the classes
-prior       = (   1/8    ,    1/8   ,     3/4   )
+class_names = ("positive", "neutral", "negative")
 
-preds = predict(prompts=[prompt],
-                completions=class_names,
-                model='text-ada-001',
-                prior=prior)
+preds = predict(
+    prompts=[prompt],
+    completions=class_names,
+    model="text-ada-001",
+)
 preds
 # ['positive']
 ```
@@ -61,20 +58,19 @@ Specifically, this model must be able to be loaded using
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from cappr.huggingface.classify import predict
 
-prompt = 'Which planet is closer to the Sun: Mercury or Earth?'
-
-class_names = ('Mercury', 'Earth')
-prior = None  # uniform prior
+prompt = "Which planet is closer to the Sun: Mercury or Earth?"
+class_names = ("Mercury", "Earth")
 
 # load model and tokenizer
-model_name = 'gpt2'
+model_name = "gpt2"
 model = AutoModelForCausalLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-preds = predict(prompts=[prompt],
-                completions=class_names,
-                model_and_tokenizer=(model, tokenizer),
-                prior=prior)
+preds = predict(
+    prompts=[prompt],
+    completions=class_names,
+    model_and_tokenizer=(model, tokenizer),
+)
 preds
 # ['Mercury']
 ```
@@ -91,36 +87,29 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from cappr.huggingface.classify import predict_proba
 
 prompts = [
-    'Stephen Curry is a',
-    'Martina Navratilova was a',
+    "Stephen Curry is a",
+    "Martina Navratilova was a",
     "Dexter, from the TV Series Dexter's Laboratory, is a",
-    'LeBron James is a',    
+    "LeBron James is a",
 ]
 
 # each of the prompts could be completed with one of these:
-class_names = (
-    'basketball player',
-    'tennis player',
-    'scientist'
-)
-
-prior = (
-    1/6,  # few
-    1/6,  # few
-    2/3   # there are more
-)
-
+class_names = ("basketball player", "tennis player", "scientist")
+prior =       (      1/6,                1/6,            2/3    )
+# say I expect most of my data to have scientists
 
 # load model and tokenizer
-model_name = 'gpt2'
+model_name = "gpt2"
 model = AutoModelForCausalLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-pred_probs = predict_proba(prompts=prompts,
-                           completions=class_names,
-                           model_and_tokenizer=(model, tokenizer),
-                           batch_size=32,  # whatever fits on your CPU/GPU
-                           prior=prior)
+pred_probs = predict_proba(
+    prompts=prompts,
+    completions=class_names,
+    model_and_tokenizer=(model, tokenizer),
+    batch_size=32,  # whatever fits on your CPU/GPU
+    prior=prior,
+)
 
 # pred_probs[i,j] = probability that prompts[i] is classified as class_names[j]
 print(pred_probs.round(1))
@@ -153,31 +142,36 @@ from cappr import Example
 from cappr.huggingface.classify import predict_proba_examples
 
 examples = [
-    Example(prompt='Jodie Foster played',
-            completions=('Clarice Starling', 'Trinity in The Matrix')),
-    Example(prompt='Batman, from Batman: The Animated Series, was played by',
-            completions=('Pete Holmes', 'Kevin Conroy', 'Spongebob!'),
-            prior=      (     1/3      ,      2/3     ,      0      ))
+    Example(
+        prompt="Jodie Foster played",
+        completions=("Clarice Starling", "Trinity in The Matrix"),
+    ),
+    Example(
+        prompt="Batman, from Batman: The Animated Series, was played by",
+        completions=("Pete Holmes", "Kevin Conroy", "Spongebob!"),
+        prior=      (     1/3      ,      2/3     ,      0      ),
+    ),
 ]
 
-model_name = 'gpt2'
+model_name = "gpt2"
 model = AutoModelForCausalLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-pred_probs = predict_proba_examples(examples,
-                                    model_and_tokenizer=(model, tokenizer))
+pred_probs = predict_proba_examples(examples, model_and_tokenizer=(model, tokenizer))
 
 # pred_probs[i][j] = probability that examples[i].prompt is classified as
 # examples[i].completions[j]
-print([example_pred_probs.round(2)
-       for example_pred_probs in pred_probs])
+print([example_pred_probs.round(2) for example_pred_probs in pred_probs])
 # [array([0.7, 0.3]),
 #  array([0.03, 0.97, 0.  ])]
 
 # for each example, which completion is most likely?
-pred_class_idxs = [np.argmax(example_pred_probs)
-                   for example_pred_probs in pred_probs]
-print([example.completions[pred_class_idx]
-       for example, pred_class_idx in zip(examples, pred_class_idxs)])
+pred_class_idxs = [np.argmax(example_pred_probs) for example_pred_probs in pred_probs]
+print(
+    [
+        example.completions[pred_class_idx]
+        for example, pred_class_idx in zip(examples, pred_class_idxs)
+    ]
+)
 # ['Clarice Starling',
 #  'Kevin Conroy']
 ```
@@ -290,7 +284,7 @@ prompts. This feature is already supported by `AutoModelForCausalLM`s. See [this
 code](https://github.com/kddubey/cappr/blob/main/src/cappr/huggingface/classify.py) for
 the implementation. Note that this caching is not implemented for OpenAI models, as I
 can't control their backend. **This means that when running `cappr.openai` functions,
-you'll be on the *cappr (slow)* line** :-(
+you'll be on the *cappr (no cache)* line** :-(
 
 ![](/docs/source/_static/scaling_classes/batch_size_32.png)
 
@@ -311,6 +305,8 @@ notebook](https://github.com/kddubey/cappr/blob/main/demos/computational_analysi
 
 
 ## Related work
+
+There are many papers where averaging token log-probabilities is a useful subroutine.
 
 While [benchmarking this
 method](https://github.com/kddubey/cappr/blob/main/demos/superglue/wsc.ipynb) on the
@@ -337,7 +333,7 @@ TODO
 
 ### Setup
 
-1. Clone the repo
+1. Clone the repo (or fork it and clone that)
 
    ```
    git clone https://github.com/kddubey/cappr.git
@@ -357,7 +353,19 @@ TODO
 pytest
 ```
 
-Dumping VS code extensions for development:
+Note that a small, dummy model will be downloaded to your computer if you don't have it
+already.
+
+### Release
+
+[Bump the
+version](https://github.com/kddubey/cappr/commit/d1f7dd51fa702c123bdfb0bcb97535995641c224),
+and then create a new release on GitHub. A new version of the package will then be
+automatically published on PyPI.
+
+
+### Dumping VS code extensions for development
+
   * [autoDocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring).
   Use the numpy format.
   * [Set Python formatting to
@@ -420,6 +428,7 @@ other classification methods.
   - [ ] Submit few-shot test predictions
 - [ ] Create a user guide, build a table of results comparing competing approaches on
 statistical performance, cost, and computation
+- [ ] Evaluate a CoT/SbS prompt -> CAPPr to pull out the answer
 - [ ] Make a computational comparison to sampling
   - [x] Assume I have full freedom to decide how inference works. Demo w/ GPT-2. Process
   inputs in batches.

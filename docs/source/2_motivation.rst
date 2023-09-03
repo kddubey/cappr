@@ -29,29 +29,30 @@ example, to classify a product review, CVS code looks like this:
 
    from cappr import openai
 
-   class_names = ('The product is too expensive',
-                  'The product uses low quality materials',
-                  'The product is difficult to use',
-                  "The product isn't working",
-                  "The product doesn't look good",
-                  'The product is great')
-   class_names_str = '\n'.join(class_names)
+   class_names = (
+      "The product is too expensive",
+      "The product uses low quality materials",
+      "The product is difficult to use",
+      "The product isn't working",
+      "The product doesn't look good",
+      "The product is great",
+   )
+   class_names_str = "\n".join(class_names)
 
    product_review = "I can't figure out how to integrate it into my setup."
-   prompt = f'''
+   prompt = f"""
    A customer left this product review: {product_review}
 
    Every product review belongs to exactly one of these categories:
    {class_names_str}
 
    Pick exactly one category which the product review belongs to.
-   '''
+   """
 
-   api_resp = openai.api.gpt_complete(texts=[prompt],
-                                      model='text-davinci-003',
-                                      max_tokens=10,
-                                      temperature=0)
-   completion = api_resp[0]['text']
+   api_resp = openai.api.gpt_complete(
+      texts=[prompt], model="text-davinci-003", max_tokens=10, temperature=0
+   )
+   completion = api_resp[0]["text"]
    completion
    # '\nThe product is difficult to use'
    # correct!
@@ -124,27 +125,35 @@ Let's now run CAPPr on that product review classification task. Also, let's:
 
    from cappr.openai.classify import predict_proba
 
-   class_names = ('The product is too expensive',
-                  'The product uses low quality materials',
-                  'The product is difficult to use',
-                  "The product isn't working",
-                  "The product doesn't look good",
-                  'The product is great')
-   prior = (2/7, 1/7, 1/7, 1/7, 1/7, 1/7)  # set to None if you don't have a prior
+   class_names = (
+      "The product is too expensive",
+      "The product uses low quality materials",
+      "The product is difficult to use",
+      "The product isn't working",
+      "The product doesn't look good",
+      "The product is great",
+   )
+   prior = (
+      2 / 7,
+      1 / 7,
+      1 / 7,
+      1 / 7,
+      1 / 7,
+      1 / 7,
+   )  # set to None if you don't have a prior
    # the 2/7 reflects that we already expect customers to say it's expensive
 
    product_review = "I can't figure out how to integrate it into my setup."
-   prompt = f'''
+   prompt = f"""
    This product review: {product_review}
 
-   is best summarized as:'''
+   is best summarized as:"""
 
    completions = [class_name.lower() for class_name in class_names]
 
-   pred_probs = predict_proba(prompts=[prompt],
-                              completions=completions,
-                              model='text-curie-001',
-                              prior=prior)
+   pred_probs = predict_proba(
+      prompts=[prompt], completions=completions, model="text-curie-001", prior=prior
+   )
 
    pred_probs.round(2)
    # array([[0.08, 0.  , 0.74, 0.11, 0.02, 0.05]])
