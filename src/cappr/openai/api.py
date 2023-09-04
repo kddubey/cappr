@@ -216,7 +216,7 @@ def gpt_chat_complete(
     texts: Sequence[str],
     model: str = "gpt-3.5-turbo",
     ask_if_ok: bool = False,
-    system_msg: str = ("You are an assistant which classifies text."),
+    system_msg: str = "You are an assistant which classifies text.",
     max_tokens: int = 5,
     temperature: float = 0,
     **openai_chat_kwargs,
@@ -258,16 +258,17 @@ def gpt_chat_complete(
     Returns
     -------
     list[Mapping[str, Any]]
-        (flat) list of the `choices` mappings which the chat completion endpoint
-        returns. More specifically, it's a list of
-        ``openai.openai_object.OpenAIObject``
+        (flat) list of the JSONs which the chat completion endpoint returns. More
+        specifically, it's a list of ``openai.openai_object.OpenAIObject``
     """
     ## TODO: batch, if possible
     if isinstance(texts, str):
         texts = [texts]
     if ask_if_ok:
         _openai_api_call_is_ok(
-            model=model, texts=texts, max_tokens=max_tokens, cost_per_1k_tokens=0.002
+            model=model,
+            texts=texts,
+            max_tokens=max_tokens,
         )
     choices = []
     for text in tqdm(texts, total=len(texts), desc="Completing chats"):

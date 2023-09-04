@@ -18,7 +18,8 @@ components:
 The text you want to classify should appear in the ``prompt``. One of the classes which
 the text could belong to should appear in the ``completion``. These are not hard rules.
 For example, the `demo for the Winograd Schema Challenge`_ flips the roles of the
-``prompt`` and ``completion``. (Just don't use the prior keyword argument in that case.)
+``prompt`` and ``completion``. (Just don't use the ``prior`` keyword argument in that
+case.)
 
 .. _demo for the Winograd Schema Challenge: https://github.com/kddubey/cappr/blob/main/demos/superglue/wsc.ipynb
 
@@ -26,12 +27,6 @@ One rule is that the ``completion`` text should flow naturally after
 ``{prompt}{end_of_prompt}``. So pay close attention to the use of white spaces,
 newlines, and word casing. :mod:`cappr.openai.classify` does not do any string
 processing for you: **it just concatenates the three strings and sends it**!
-
-.. warning:: Currently, :mod:`cappr.openai.classify` must repeat the ``prompt`` for
-             however many completions there are. So if your prompt is long and your
-             completions are short, you may end up spending much more with CAPPr.
-             (:mod:`cappr.huggingface.classify` does not have to repeat the prompt
-             because it caches its representation.)
 
 And yes, you'll likely need to do prompt engineering. It's mostly a matter of trial and
 error. Here's an `external guide`_ if you'd like to survey research in this field.\ [#]_
@@ -46,6 +41,81 @@ sorts of prompts, it may be applied to post-process completions:
    bit of semantic parsing.
 
 .. _external guide: https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/
+
+Here's an example of these two steps:
+
+.. code:: python
+
+   from cappr.openai.api import gpt_chat_complete
+   from cappr.openai.classify import predict
+
+   prompt_raw = """
+   Hi Professor. I'm interested in taking ML-101, but I'm struggling to decide which
+   course I need to take before that. I've already taken CS-101 and MATH-101. Which
+   course should I take next?
+
+   Here's a list of courses and their prerequisites which I pulled from the course
+   catalog.
+
+   CS-101: no prerequisites
+   CS-102: CS-101, MATH-101
+   MATH-101: no prerequisites
+   MATH-102: MATH-101
+   ML-101: CS-101, MATH-102, STAT-101
+   STAT-101: MATH-101
+   STAT-102: STAT-101, MATH-102
+   """
+
+   prompt_step_by_step = prompt_raw + "\n" + "Let's think step by step."
+
+   chat_api_response = gpt_chat_complete(
+      texts=[prompt_step_by_step],
+      model="gpt-4",
+      system_msg="You are a computer scientist mentoring a student.",
+      max_tokens=1_000,
+      temperature=0,
+   )
+
+   step_by_step_answer = chat_api_response[0]["message"]["content"]
+
+   prompt_answer = f'''
+   Here is an answer about which course a student needs to take:
+
+   """
+   {step_by_step_answer}
+   """
+
+   According to this answer, the next course that the student should take is
+   '''
+
+   class_names = (
+      "CS-101",
+      "CS-102",
+      "MATH-101",
+      "MATH-102",
+      "ML-101",
+      "STAT-101",
+      "STAT-102",
+   )
+
+   answer = predict(
+      prompts=[prompt_answer],
+      completions=class_names,
+      model="text-babbage-001",
+   )
+
+   print(answer[0])
+   # 'MATH-102' or 'STAT-101' are the only valid answers
+
+.. warning:: Currently, :mod:`cappr.openai.classify` must repeat the ``prompt`` for
+             however many completions there are. So if your prompt is long and your
+             completions are short, you may end up spending much more with CAPPr.
+             (:mod:`cappr.huggingface.classify` does not have to repeat the prompt
+             because it caches its representation.)
+
+Note that while all of the examples in the documentation are zero-shot prompts, nothing
+about CAPPr prevents you from using few-shot prompts. Just make sure you're not paying
+too much for a small benefit.
 
 
 Select a language model

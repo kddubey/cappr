@@ -11,16 +11,18 @@ Install with ``pip``:
 
 ::
 
-   python -m pip install cappr
+   pip install cappr
 
 (Optional) Install requirements for HuggingFace models:
 
 ::
 
-   python -m pip install cappr[hf]
+   pip install cappr[hf]
 
-(Optional) Install requirements for running demos:
+(Optional) Install requirements for running `demos`_:
 
 ::
 
-   python -m pip install cappr[demos]
+   pip install cappr[demos]
+
+.. _demos: https://github.com/kddubey/cappr/tree/main/demos

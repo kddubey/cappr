@@ -3,7 +3,8 @@ Is this for me?
 
 CAPPr is for you if you:
 
-#. Want to do *zero-shot* text classification
+#. Want to do text classification without any labeled examples, i.e., "zero-shot"
+   classification
 
 #. Can pay to use OpenAI models, or you can locally load HuggingFace models (`Inference
    Endpoints`_ are not yet supported by this package).
@@ -11,8 +12,8 @@ CAPPr is for you if you:
 .. _Inference Endpoints: https://huggingface.co/docs/inference-endpoints/index
 
 
-Is zero-shot for me?
---------------------
+Is zero-shot classification for me?
+-----------------------------------
 
 Yes if you only have a few, e.g., 200, labeled examples for a text classification task,
 and it's difficult to label more. In such a setting, you should only be using those

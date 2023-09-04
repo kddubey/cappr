@@ -32,20 +32,36 @@ endpoint.
 from cappr.openai.classify import predict
 
 prompt = """
-Tweet: I loved the new Batman movie!
-Sentiment:
+Tweet about a movie: "Oppenheimer was pretty good. But 3 hrs...cmon Nolan."
+
+This tweet contains the following criticism:
 """.strip("\n")
 
-class_names = ("positive", "neutral", "negative")
+class_names = ("bad message", "too long", "unfunny")
 
 preds = predict(
     prompts=[prompt],
     completions=class_names,
     model="text-ada-001",
 )
-preds
-# ['positive']
+print(preds)
+# ['too long']
 ```
+
+Notice that the completions can contain many tokens.
+</details>
+
+<details>
+<summary>Extract the final answer from a step-by-step completion</summary>
+
+Step-by-step and chain-of-thought prompts are highly effective ways to get an LLM to
+"reason" about more complex tasks. But if you need a structured output, a step-by-step
+completion is unwieldy. Use CAPPr to extract the final answer from these types of
+completions, given a list of possible answers.
+
+See this idea in action [here in the
+docs](https://cappr.readthedocs.io/en/latest/4_user_guide.html#select-a-prompt-completion-format).
+CAPPr is **100% guaranteed** to return an output from the list of answers.
 </details>
 
 <details>
@@ -71,7 +87,7 @@ preds = predict(
     completions=class_names,
     model_and_tokenizer=(model, tokenizer),
 )
-preds
+print(preds)
 # ['Mercury']
 ```
 </details>
@@ -200,19 +216,20 @@ others. But using them will cost ya 💰!
 Install with `pip`:
 
 ```
-python -m pip install cappr
+pip install cappr
 ```
 
 (Optional) Install requirements for HuggingFace models
 
 ```
-python -m pip install cappr[hf]
+pip install cappr[hf]
 ```
 
-(Optional) Install requirements for running demos
+(Optional) Install requirements for running
+[`demos`](https://github.com/kddubey/cappr/tree/main/demos)
 
 ```
-python -m pip install cappr[demos]
+pip install cappr[demos]
 ```
 
 
@@ -329,7 +346,7 @@ assumed to come from masked language models like BERT.
 TODO
 
 
-## Testing
+## Local development
 
 ### Setup
 
@@ -341,13 +358,14 @@ TODO
 
 2. Create a new Python 3.8+ environment
 
-3. Install this package in editable mode, along with development requirements
+3. cd to the repo and install this package in editable mode, along with development
+   requirements
 
    ```
    python -m pip install -e .[dev]
    ```
 
-### Run tests
+### Testing
 
 ```
 pytest
@@ -355,6 +373,20 @@ pytest
 
 Note that a small, dummy model will be downloaded to your computer if you don't have it
 already.
+
+### Docs
+
+To locally build docs (I'm on Windows), run
+
+```
+cd docs
+
+make.bat html
+```
+
+To preview these docs, open `docs/build/html/index.html`.
+
+Docs are automatically built when code is merged to main.
 
 ### Release
 
@@ -382,21 +414,15 @@ automatically published on PyPI.
 <details>
 <summary>Code</summary>
 
-- [ ] Testing
-  - [ ] Increase test cases
-  - [ ] Test input checks
-  - [ ] Test `cappr.openai.api`
 - [ ] Factor out the discount feature in `cappr.openai.classify.predict_proba` into
 `cappr.utils.classify._predict_proba`
 - [x] Small CPU speed-ups
   - [x] For constant-completions input, vectorize `agg_log_probs`
   - [x] For `examples` input, if # completions per prompt is constant, vectorize
   `posterior_prob`
-- [ ] Make progress bars optional, since inference often isn't batched
-- [ ] Factor out input checks (on prompts and completions)
-- [x] De-automate overzealous auto-docstring stuff :-(
 - [ ] HuggingFace `transformers.AutoModelForCausalLM`
   - [ ] Support as many of them as possible, regardless of way positions are encoded
+  - [ ] If all completions are single-tokens, just run inference once
   - [x] Optimize backend to enable greater scaling wrt # completions/classes
   - [x] Get it working on GPU, check that it's faster than sampling
     - [ ] Get to the bottom of why it's slower w/o batching
@@ -407,12 +433,18 @@ automatically published on PyPI.
     Endpoints](https://huggingface.co/docs/inference-endpoints/index)?
   - [ ] Support TensorFlow models
   - [ ] Support priming, as in: cache it
+- [ ] Make progress bars optional, since inference often isn't batched
+- [ ] Factor out input checks (on prompts and completions)
 - [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
 - [ ] Allow for multi-label classification
   - [ ] Pass `normalize` as an argument to predict_proba functions
   - [ ] For `huggingface`, add note that you'll get faster results by passing all
   labels at once (assuming prompt is identical for each label)
 - [ ] Fill in missing or non-numpy docstrings
+- [ ] Testing
+  - [ ] Increase test cases
+  - [ ] Test input checks
+  - [ ] Test `cappr.openai.api`
 </details>
 
 <details>
