@@ -7,7 +7,7 @@ some of its design, and what I learned from creating it.
 The design is simple and uninteresting:
 
 ```
-├───(module) {LM-interface-name}
+├───(module) {LM interface name}
     ├───(module) classify.py
 
         └───(function) log_probs_conditional:
@@ -45,7 +45,7 @@ next-token logits, which we then log-softmax and slice to get token log-probabil
 ### How to add a new LM interface module
 
 The only work is in implementing `log_probs_conditional` for your new LM interface.
-`predict_proba` is defined by decorating `log_probs_conditional`. Finally, `predict` is
+`predict_proba` is defined by decorating `log_probs_conditional`. And `predict` is
 defined by decorating `predict_proba`.
 
 For example, say we're integrating Anthropic's
@@ -105,6 +105,7 @@ class which all LM interfaces inherit from / implement.
 ```python
 from abc import ABC, abstractmethod
 
+
 class _BaseLMClassifier(ABC):
     @classmethod
     @abstractmethod
@@ -162,12 +163,12 @@ There are a few small costs to this design. As a developer, it's a bit more anno
 debug code from ABCs. And for users, if I want the simple import interface—
 
 ```python
-from cappr.{LM-interface-name}.classify import predict_proba
+from cappr.{LM interface name}.classify import predict_proba
 ```
 
-—I'd need to add a bit of stuff to `__init__.py` and Sphinx's `docs/source/conf.py`. I
-could automate this stuff by implementing even more, slightly tricky code. But more code
-is worse than less code.
+—I'd need to add a bit of stuff to `__init__.py` and Sphinx's `docs/source/conf.py` for
+every new interface. I could automate this stuff by implementing even more, slightly
+tricky code. But more code is worse than less code.
 
 It's also a bit confusing to users (like me) who want to understand why something which
 is fundamentally a function is actually a method. Is there some obscure state that I'm
@@ -176,6 +177,23 @@ both of these questions is categorically no. I don't like when that happens.
 
 Overall, this design doesn't align with my style. It introduces complexity. I got away
 with writing decorators, and I'm pretty sure I can keep getting away with it.
+
+
+### I won't write string formatting abstractions
+
+Every other tool in this space includes some type of string formatting abstraction,
+usually based on LangChain or an internal module which processes a user-created config
+file. These string formatters abstract the process of writing a few-shot prompt, for
+example. Not to sound too dismissive, but anyone who uses Python knows how to format a
+string. And there aren't many tedious quirks in constructing an effective prompt. These
+formatters replace the question of "how do I tell the LM to do what I want?" with "how
+do I use this string formatting interface to tell the LM to do what I want?". The latter
+question takes more time to answer. And while answering that question, you may end up
+realizing that the formatter doesn't let you do what you need to do. Moreover, these
+formatters sometimes obfuscate what the prompt actually looks like, which is a risk.
+
+I want this package to do one thing well: pick a completion from a user-created prompt.
+If users want to use abstract string formatters, that's on them.
 
 
 ### A note on docstrings
@@ -198,7 +216,7 @@ what numpy, scipy, and scikit-learn do in their docstrings: repeat text.
 ## Where I struggled
 
 It's well known that attention keys and values should be cached whenever text is
-repeated for inference. Getting this feature to align with the CAPPr scheme took a bit
+repeated for inference. Getting this feature to align with the CAPPr scheme took a lot
 of nitty gritty handling of pad tokens and position IDs. The current GPTModel
 implementations in HuggingFace don't always handle them correctly (but this will change
 [soon](https://github.com/huggingface/transformers/issues/18104#issuecomment-1465629955)).
@@ -217,11 +235,11 @@ popular Llama is today, I think tabling that work may have been a mistake.
 
 The [Walkthrough in my docs](https://cappr.readthedocs.io/en/latest/walkthrough.html) is
 written for ML types, when it should be written broadly for software engineers. What's
-text classification? What does "zero-shot" mean? What are "labeled examples"? What's a
-prior? Why is a probability distribution useful? Docs for other tools answer, or
-successfully dodge, these questions much more effectively. CAPPr could be made way more
-approachable if the docs are re-worded. In the age of LLMs, text classification can be
-done by any engineer, not just ML engineers.
+text classification? What are "labeled examples"? What's a prior? Why is a probability
+distribution useful? Docs for other tools answer, or successfully dodge, these questions
+much more effectively. CAPPr could be made way more approachable if the docs are
+re-worded. In the age of LLMs, text classification can be done by any engineer, not just
+ML engineers.
 
 
 ## Pleasant surprises
@@ -232,13 +250,12 @@ accurate. See the experiment
 [here](https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb). It'd be
 cool to demonstrate that CAPPr generally works better for smaller or under-trained LMs.
 
-Besides the algorithmic stuff, I was pleasantly surprised to learn that I like
-engineering code from the ground up. Mulling over fundamental design decisions and
-vectorizing big portions of code can be fun. Writing tests was satisfying and easy using
-pytest. Writing docs was satisfying (and
-[almost](https://github.com/kddubey/dumpy/tree/main/sphinx_setup) easy) using Sphinx.
-Writing GitHub workflows made releases convenient, and it made my project feel way more
-professional lol. I discovered [ReWrap](https://stkb.github.io/Rewrap/) and
+Besides the algorithmic stuff, I was pleasantly surprised to learn that I loved
+engineering this project from the ground up. Mulling over design decisions and managing
+myself was fun. Writing tests was satisfying and easy using pytest. Writing docs was
+satisfying (and [almost](https://github.com/kddubey/dumpy/tree/main/sphinx_setup) easy)
+using Sphinx. Writing GitHub workflows made releases convenient, and it made my project
+feel way more professional lol. I found [ReWrap](https://stkb.github.io/Rewrap/) and
 [autoDocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring)
 for the first time. I'll be using them for every project from now on. Overall, as a
 result of working on this project, I appreciated open source even more.
