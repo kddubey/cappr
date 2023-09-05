@@ -469,7 +469,7 @@ def log_probs_conditional(
         # [[-9.7],        [[log Pr(z | a, b, c)],
         #  [-0.2, -0.03]]  [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
-    model, tokenizer = hf._utils.load_model_and_tokenizer(model_and_tokenizer)
+    model, tokenizer = hf._utils.set_up_model_and_tokenizer(model_and_tokenizer)
 
     @_batch.flatten
     @_batch.batchify(batchable_arg="prompts", progress_bar_desc="log-probs")
@@ -553,7 +553,7 @@ def log_probs_conditional_examples(
         log_probs_completions[1] # corresponds to examples[1]
         # [[-5.0, -1.7]]  [[log Pr(1 | a, b, c)], log Pr(2 | a, b, c, 1)]]
     """
-    model, tokenizer = hf._utils.load_model_and_tokenizer(model_and_tokenizer)
+    model, tokenizer = hf._utils.set_up_model_and_tokenizer(model_and_tokenizer)
 
     @_batch.flatten
     @_batch.batchify(batchable_arg="examples", progress_bar_desc="log-probs")

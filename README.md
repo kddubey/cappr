@@ -351,20 +351,28 @@ TODO
 
 ### Setup
 
-1. Clone the repo (or fork it and clone that)
+1. Create a new Python 3.8+ environment using venv. Activate it
+
+2. Clone the repo (or fork it and clone that)
 
    ```
    git clone https://github.com/kddubey/cappr.git
    ```
 
-2. Create a new Python 3.8+ environment using venv. Activate it
-
 3. cd to the repo and install this package in editable mode, along with development
-   requirements
+   requirements (ensure your venv is activated)
 
    ```
    python -m pip install -e .[dev]
    ```
+
+### VS code extensions for development
+
+  * [autoDocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring).
+  Use the numpy format.
+  * [Set Python formatting to
+    `black`](https://dev.to/adamlombard/how-to-use-the-black-python-code-formatter-in-vscode-3lo0).
+  * [Rewrap](https://stkb.github.io/Rewrap/). Enable Auto Wrap.
 
 ### Testing
 
@@ -372,12 +380,12 @@ TODO
 pytest
 ```
 
-Note that a small, dummy model will be downloaded to your computer if you don't have it
-already.
+Note that a few small, dummy model will be downloaded to your computer if you don't have
+them already.
 
 ### Docs
 
-To locally build docs (I'm on Windows), run
+To locally build docs (I'm on Windows lol), run
 
 ```
 cd docs
@@ -397,17 +405,6 @@ and then create a new release on GitHub. A new version of the package will then 
 automatically published on PyPI.
 
 
-### VS code extensions for development
-
-  * [autoDocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring).
-  Use the numpy format.
-  * [Set Python formatting to
-    `black`](https://dev.to/adamlombard/how-to-use-the-black-python-code-formatter-in-vscode-3lo0).
-  * [Rewrap](https://stkb.github.io/Rewrap/). Enable Auto Wrap.
-  * [TOML Language
-    Support](https://marketplace.visualstudio.com/items?itemName=be5invis.toml)
-
-
 ## Todo
 
 (**) = I'm currently working on this or will work on it really soon
@@ -423,11 +420,15 @@ automatically published on PyPI.
   `cappr.utils.classify.posterior_prob`
 - [ ] HuggingFace `transformers.AutoModelForCausalLM`
   - [ ] Support as many of them as possible
+    - [x] GPT-2
+    - [x] GPT-J
     - [x] Llama
     - [ ] Llama chat
     - [ ] Llama2
     - [ ] Llama2 chat
     - [ ] Vicuna
+    - [ ] PaLM
+    - [ ] T5
   - [ ] If all completions are single-tokens, just run inference once
   - [x] Optimize backend to enable greater scaling wrt # completions/classes
   - [x] Get it working on GPU, check that it's faster than sampling

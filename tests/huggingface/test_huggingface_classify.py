@@ -27,7 +27,7 @@ import _test
     params=[
         "sshleifer/tiny-gpt2",
         "anton-l/gpt-j-tiny-random",
-        "reciprocate/tiny-llama",
+        "Maykeye/TinyLLama-v0",
     ],
 )
 def model_name(request) -> str:
@@ -42,8 +42,8 @@ def model(model_name):
 @pytest.fixture(scope="module")
 def tokenizer(model_name):
     # Set up the tokenizer as expected.
-    # These things are done in cappr.huggingface._utils.load_model_and_tokenizer, which
-    # is always applied to the user-inputted tokenizer
+    # These things are done in cappr.huggingface._utils.set_up_model_and_tokenizer,
+    # which is always applied to the user-inputted tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     if tokenizer.pad_token_id is None:
         # allow padding -> allow batching

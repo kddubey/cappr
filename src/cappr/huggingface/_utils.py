@@ -41,7 +41,7 @@ def does_tokenizer_prepend_space_to_first_token(
     return not isinstance(tokenizer, (LlamaTokenizer, LlamaTokenizerFast))
 
 
-def load_model_and_tokenizer(
+def set_up_model_and_tokenizer(
     model_and_tokenizer: tuple[PreTrainedModel, PreTrainedTokenizer],
 ) -> tuple[PreTrainedModel, PreTrainedTokenizer]:
     """
@@ -51,9 +51,9 @@ def load_model_and_tokenizer(
     TODO: consider changing this to an (internally used) context manager so that we
     don't modify the model and tokenizer / the user doesn't have to reset attributes
     """
-    model_, tokenizer = model_and_tokenizer
+    model, tokenizer = model_and_tokenizer
     # Prepare model
-    model_.eval()
+    model.eval()
     # Prepare tokenizer
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token_id = tokenizer.eos_token_id
@@ -64,4 +64,4 @@ def load_model_and_tokenizer(
         # be False
     except AttributeError:
         pass
-    return model_, tokenizer
+    return model, tokenizer
