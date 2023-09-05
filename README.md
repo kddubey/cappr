@@ -324,6 +324,7 @@ notebook](https://github.com/kddubey/cappr/blob/main/demos/computational_analysi
 ## Related work
 
 There are many papers where averaging token log-probabilities is a useful subroutine.
+Here are some papers which focus on this idea.
 
 While [benchmarking this
 method](https://github.com/kddubey/cappr/blob/main/demos/superglue/wsc.ipynb) on the
@@ -356,7 +357,7 @@ TODO
    git clone https://github.com/kddubey/cappr.git
    ```
 
-2. Create a new Python 3.8+ environment
+2. Create a new Python 3.8+ environment using venv. Activate it
 
 3. cd to the repo and install this package in editable mode, along with development
    requirements
@@ -396,7 +397,7 @@ and then create a new release on GitHub. A new version of the package will then 
 automatically published on PyPI.
 
 
-### Dumping VS code extensions for development
+### VS code extensions for development
 
   * [autoDocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring).
   Use the numpy format.
@@ -422,10 +423,11 @@ automatically published on PyPI.
   `cappr.utils.classify.posterior_prob`
 - [ ] HuggingFace `transformers.AutoModelForCausalLM`
   - [ ] Support as many of them as possible
-    - [ ] Llama
+    - [x] Llama
+    - [ ] Llama chat
     - [ ] Llama2
+    - [ ] Llama2 chat
     - [ ] Vicuna
-    - [ ] Falcon
   - [ ] If all completions are single-tokens, just run inference once
   - [x] Optimize backend to enable greater scaling wrt # completions/classes
   - [x] Get it working on GPU, check that it's faster than sampling

@@ -121,7 +121,7 @@ def _keys_values_prompts(
 
     # We need to repeat each prompt's keys and values num_repeats_per_prompt times
     # For layer i, prompts_out.past_key_values[i] is a tuple (key, value),
-    # ach w/ shape: (batch size=len(prompts),
+    # Each w/ shape: (batch size=len(prompts),
     #                 number of attention heads=12 for gpt2,
     #                 encodings.input_ids.shape[-1],
     #                 key/value hidden dimension=64 for gpt2)
@@ -194,7 +194,7 @@ def _blessed_helper(
     # Prepare completion data
     # For Llama (and probably others) we don't want the completions to start w/ a bos
     # token <s> b/c we need to mimic sending the prompt + completion together.
-    # or example, if 'a b' is the prompt and 'c' is the completion, the encoding
+    # For example, if 'a b' is the prompt and 'c' is the completion, the encoding
     # should correspond to '<s> a b c' not '<s> a b <s> c'.
     completions = list(completions)  # 0-index in case it's a Series or something
     has_add_bos_token = hasattr(tokenizer, "add_bos_token")
