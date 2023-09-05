@@ -18,7 +18,7 @@ from typing import Mapping, Optional, Sequence, Union
 import numpy as np
 import numpy.typing as npt
 import torch
-from transformers import AutoModelForCausalLM, PreTrainedTokenizer, BatchEncoding
+from transformers import AutoModelForCausalLM, BatchEncoding, PreTrainedTokenizer
 
 from cappr.utils import _batch, classify
 from cappr import Example
@@ -87,6 +87,7 @@ def _keys_values_prompts(
         if `num_repeats_per_prompt` is a `Sequence` whose length is not the same as the
         length of `prompts`
     """
+    ## Input checks
     if not tokenizer.padding_side == "right":
         raise ValueError(
             "Gotta use right padding to ensure position IDs are correct. "
@@ -101,6 +102,8 @@ def _keys_values_prompts(
                 f"length as prompts. Got lengths {len(num_repeats_per_prompt)}, "
                 f"{len(prompts)}."
             )
+
+    ## Need to put num_repeats_per_prompt on the device
     if not isinstance(num_repeats_per_prompt, int) and not isinstance(
         num_repeats_per_prompt, torch.Tensor
     ):
@@ -110,10 +113,9 @@ def _keys_values_prompts(
 
     ## Batch inference prompts
     prompts = list(prompts)  ## 0-index in case it's a Series or something
-    # fmt: off
-    encodings: BatchEncoding = (tokenizer(prompts, return_tensors="pt", padding=True)
-                                .to(model.device))
-    # fmt: on
+    encodings: BatchEncoding = tokenizer(prompts, return_tensors="pt", padding=True).to(
+        model.device
+    )
     with torch.no_grad():
         out = model(**encodings)
 
@@ -139,15 +141,12 @@ def _keys_values_prompts(
     )
 
     ## Repeat stuff
-    # fmt: off
-    encodings["attention_mask"] = (encodings
-                                   .attention_mask
-                                   .repeat_interleave(num_repeats_per_prompt,
-                                                      dim=0))
-    encodings["input_ids"] = (encodings
-                              .input_ids
-                              .repeat_interleave(num_repeats_per_prompt, dim=0))
-    # fmt: on
+    encodings["attention_mask"] = encodings.attention_mask.repeat_interleave(
+        num_repeats_per_prompt, dim=0
+    )
+    encodings["input_ids"] = encodings.input_ids.repeat_interleave(
+        num_repeats_per_prompt, dim=0
+    )
 
     ## Need offsets so that position_ids for future tokens are set correctly
     offsets: torch.Tensor = encodings.attention_mask.sum(dim=1)
@@ -155,14 +154,9 @@ def _keys_values_prompts(
     ## Need (next-token) logits from prompts, i.e., last non-pad prompt token, since
     ## that contains the first completion token's log-probability
     _last_nonpad_token_idxs = (offsets - 1)[:, None, None]
-    # fmt: off
-    last_nonpad_token_logits: torch.Tensor = (out
-                                              .logits
-                                              .repeat_interleave(
-                                                  num_repeats_per_prompt, dim=0)
-                                              .take_along_dim(
-                                                  _last_nonpad_token_idxs, dim=1))
-    # fmt: on
+    last_nonpad_token_logits: torch.Tensor = out.logits.repeat_interleave(
+        num_repeats_per_prompt, dim=0
+    ).take_along_dim(_last_nonpad_token_idxs, dim=1)
 
     return past_key_values, encodings, offsets, last_nonpad_token_logits
 
@@ -178,6 +172,7 @@ def _blessed_helper(
     """
     TODO: docstring
     """
+    ## Input checks
     if not tokenizer.padding_side == "right":
         raise ValueError(
             "Gotta use right padding to ensure position IDs are correct. "
@@ -197,22 +192,33 @@ def _blessed_helper(
     ) = _keys_values_prompts(model, tokenizer, prompts, num_completions_per_prompt)
 
     ## Prepare completion data
-    completions = list(completions)  ## 0-index in case it's a Series or somethin
-    # fmt: off
-    completions_encoding = (tokenizer(completions, return_tensors="pt", padding=True)
-                            .to(model.device))
-    completions_input_ids = (completions_encoding
-                             .input_ids
-                             .repeat(completions_repeats, 1))
-    completions_attention_mask = (completions_encoding
-                                  .attention_mask
-                                  .repeat(completions_repeats, 1))
-    # fmt: on
+    ## For Llama (and probably others) we don't want the completions to start w/ a bos
+    ## token <s> b/c we need to mimic sending the prompt + completion together.
+    ## For example, if 'a b' is the prompt and 'c' is the completion, the encoding
+    ## should correspond to '<s> a b c' not '<s> a b <s> c'.
+    completions = list(completions)  ## 0-index in case it's a Series or something
+    has_add_bos_token = hasattr(tokenizer, "add_bos_token")
+    if has_add_bos_token:
+        _add_bos_token: bool = tokenizer.add_bos_token  ## to be reset
+        tokenizer.add_bos_token = False  ## see long comment above
+    completions_encoding = tokenizer(completions, return_tensors="pt", padding=True).to(
+        model.device
+    )
+    if has_add_bos_token:
+        tokenizer.add_bos_token = _add_bos_token  ## reset
+    completions_input_ids: torch.Tensor = completions_encoding.input_ids.repeat(
+        completions_repeats, 1
+    )
+    completions_attention_mask: torch.Tensor = (
+        completions_encoding.attention_mask.repeat(completions_repeats, 1)
+    )
+
     ## Set position_ids to what they were had we fed the prompt + completion together w/
-    ## right-padding (right b/c GPT-2 uses absolute position ids)
+    ## right padding
     _num_completion_tokens = completions_encoding.input_ids.shape[1]
     completions_position_ids = (
-        torch.arange(_num_completion_tokens, device=model.device) + offsets[:, None]
+        torch.arange(_num_completion_tokens, device=model.device)
+        + offsets[:, None]  # broadcast
     )
     ## Need attention_mask to include the prompt since it prolly has padding
     attention_mask = torch.cat(
@@ -229,7 +235,16 @@ def _blessed_helper(
         )
     ## 😎
 
-    ## You need to be able to ignore pad tokens, so you need this data as well
+    ## Let's drop the next-token logits for the last completion token b/c they're not
+    ## useful for our purposes. Moreover, dropping ensures
+    ## logits.shape[:2] == encodings['input_ids'].shape, as one expects.
+    ## Just keep in mind that `logits` are shifted behind.
+    logits = torch.cat(
+        [prompts_last_nonpad_token_logits, completions_out.logits[:, :-1, :]], dim=1
+    )
+
+    ## You need to be able to ignore pad tokens, so you need the tokenization and offset
+    ## data as well
     encodings = BatchEncoding(
         {
             "input_ids": completions_input_ids,
@@ -238,13 +253,11 @@ def _blessed_helper(
         }
     )
 
-    ## Let's drop the next-token logits for the last completion token b/c they're not
-    ## useful for our purposes. Moreover, dropping ensures
-    ## logits.shape[:2] == encodings['input_ids'].shape, as one expects.
-    ## Just keep in mind that `logits` are shifted behind.
-    logits = torch.cat(
-        [prompts_last_nonpad_token_logits, completions_out.logits[:, :-1, :]], dim=1
-    )
+    if getattr(tokenizer, "add_bos_token", False):
+        ## Drop the first <s> token after we're done encoding so that the shape is
+        ## consistent w/ other tokenizers.
+        ## Note: to modify a BatchEncoding value, you must use setitem, not setattr
+        encodings["offsets"] = encodings["offsets"] - 1
 
     return logits, encodings
 
@@ -283,6 +296,8 @@ def _logits_completions_given_prompts(
     """
     if end_of_prompt != " ":
         raise ValueError("end_of_prompt must be ' ' for now. Sorry!")
+    if not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer):
+        end_of_prompt = ""
     completions = [end_of_prompt + completion.lstrip() for completion in completions]
     ## TODO: figure out how to do this generally, not just for ' ' end_of_prompt
     return _blessed_helper(
@@ -327,8 +342,12 @@ def _logits_completions_given_prompts_examples(
     if any([example.end_of_prompt != " " for example in examples]):
         raise ValueError("Every example's end_of_prompt must be ' ' for now. Sorry!")
     prompts = [example.prompt for example in examples]
+    if not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer):
+        end_of_prompt = ""
+    else:
+        end_of_prompt = " "
     completions = [
-        example.end_of_prompt + completion.lstrip()
+        end_of_prompt + completion.lstrip()
         for example in examples
         for completion in example.completions
     ]

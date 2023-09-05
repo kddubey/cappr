@@ -20,8 +20,9 @@ requirements_openai = [
 ]
 
 requirements_huggingface = [
+    "sentencepiece>=0.1.99",
     "torch>=1.12.1",
-    "transformers>=4.26.1",
+    "transformers>=4.31.0",
 ]
 
 requirements_demos = [

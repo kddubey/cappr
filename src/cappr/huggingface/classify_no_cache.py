@@ -108,11 +108,9 @@ def _keys_values_prompts(
         for prompt, num_repeats in zip(prompts, num_completions_per_prompt)
         for _ in range(num_repeats)
     ]
-    # fmt: off
-    encodings: BatchEncoding = (tokenizer(prompts_repeated, return_tensors="pt",
-                                          padding=True)
-                                .to(model.device))
-    # fmt: on
+    encodings: BatchEncoding = tokenizer(
+        prompts_repeated, return_tensors="pt", padding=True
+    ).to(model.device)
     with torch.no_grad():
         out = model(**encodings)
 
@@ -136,7 +134,16 @@ def _logits_texts(
     encodings = tokenizer(texts, return_tensors="pt", padding=True).to(model.device)
     with torch.no_grad():
         out = model(**encodings)
-    return out.logits, encodings
+    if getattr(tokenizer, "add_bos_token", False):
+        ## Drop the first <s> token after we're done encoding so that the shape is
+        ## consistent w/ other tokenizers
+        logits = out.logits[:, 1:, :]
+        encodings = BatchEncoding(
+            {key: value[:, 1:] for key, value in encodings.items()}
+        )
+    else:
+        logits = out.logits
+    return logits, encodings
 
 
 def _prompts_offsets(
@@ -148,11 +155,16 @@ def _prompts_offsets(
         num_completions_per_prompt, torch.Tensor
     ):
         num_completions_per_prompt = torch.tensor(num_completions_per_prompt)
-    return (
+    offsets: torch.Tensor = (
         tokenizer(prompts, return_tensors="pt", padding=True)
-        .attention_mask.repeat_interleave(num_completions_per_prompt, dim=0)
-        .sum(dim=1)
+        .attention_mask.sum(dim=1)
+        .repeat_interleave(num_completions_per_prompt, dim=0)
     )
+    if getattr(tokenizer, "add_bos_token", False):
+        ## Drop the first <s> token after we're done encoding so that the shape is
+        ## consistent w/ other tokenizers
+        offsets -= 1
+    return offsets
 
 
 def _logits_completions_given_prompts(

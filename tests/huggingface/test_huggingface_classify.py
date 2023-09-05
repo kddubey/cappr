@@ -30,11 +30,12 @@ def atol():
     return 1e-4
 
 
-@pytest.fixture(scope="module")
-def model_name():
-    ## There are a lot of tiny models on https://huggingface.co/sshleifer which are
-    ## useful for testing code. Weights can be random.
-    return "sshleifer/tiny-gpt2"
+@pytest.fixture(
+    scope="module",
+    params=["sshleifer/tiny-gpt2", "anton-l/gpt-j-tiny-random", "Maykeye/TinyLLama-v0"],
+)
+def model_name(request) -> str:
+    return request.param
 
 
 @pytest.fixture(scope="module")
@@ -44,10 +45,15 @@ def model(model_name):
 
 @pytest.fixture(scope="module")
 def tokenizer(model_name):
+    ## Set up the tokenizer as expected.
+    ## These things are done in cappr.huggingface._utils.load_model_and_tokenizer, which
+    ## is always applied to the user-inputted tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     if tokenizer.pad_token_id is None:
         ## allow padding -> allow batching
         tokenizer.pad_token_id = tokenizer.eos_token_id
+    tokenizer.padding_side = "right"
+    tokenizer.add_eos_token = False
     return tokenizer
 
 

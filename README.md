@@ -417,11 +417,15 @@ automatically published on PyPI.
 - [ ] Factor out the discount feature in `cappr.openai.classify.predict_proba` into
 `cappr.utils.classify._predict_proba`
 - [x] Small CPU speed-ups
-  - [x] For constant-completions input, vectorize `agg_log_probs`
+  - [x] For constant-completions input, vectorize `cappr.utils.classify.agg_log_probs`
   - [x] For `examples` input, if # completions per prompt is constant, vectorize
-  `posterior_prob`
+  `cappr.utils.classify.posterior_prob`
 - [ ] HuggingFace `transformers.AutoModelForCausalLM`
-  - [ ] Support as many of them as possible, regardless of way positions are encoded
+  - [ ] Support as many of them as possible
+    - [ ] Llama
+    - [ ] Llama2
+    - [ ] Vicuna
+    - [ ] Falcon
   - [ ] If all completions are single-tokens, just run inference once
   - [x] Optimize backend to enable greater scaling wrt # completions/classes
   - [x] Get it working on GPU, check that it's faster than sampling
@@ -442,6 +446,7 @@ automatically published on PyPI.
   labels at once (assuming prompt is identical for each label)
 - [ ] Fill in missing or non-numpy docstrings
 - [ ] Testing
+  - [ ] Test `cappr.huggingface.classify_no_cache` by comparing to results w/o batching!
   - [ ] Increase test cases
   - [ ] Test input checks
   - [ ] Test `cappr.openai.api`
