@@ -87,7 +87,7 @@ def _keys_values_prompts(
         if `num_repeats_per_prompt` is a `Sequence` whose length is not the same as the
         length of `prompts`
     """
-    ## Input checks
+    # Input checks
     if not tokenizer.padding_side == "right":
         raise ValueError(
             "Gotta use right padding to ensure position IDs are correct. "
@@ -103,7 +103,7 @@ def _keys_values_prompts(
                 f"{len(prompts)}."
             )
 
-    ## Need to put num_repeats_per_prompt on the device
+    # Need to put num_repeats_per_prompt on the device
     if not isinstance(num_repeats_per_prompt, int) and not isinstance(
         num_repeats_per_prompt, torch.Tensor
     ):
@@ -111,36 +111,36 @@ def _keys_values_prompts(
             num_repeats_per_prompt, device=model.device
         )
 
-    ## Batch inference prompts
-    prompts = list(prompts)  ## 0-index in case it's a Series or something
+    # Batch inference prompts
+    prompts = list(prompts)  # 0-index in case it's a Series or something
     encodings: BatchEncoding = tokenizer(prompts, return_tensors="pt", padding=True).to(
         model.device
     )
     with torch.no_grad():
         out = model(**encodings)
 
-    ## We need to repeat each prompt's keys and values num_repeats_per_prompt times
-    ## For layer i, prompts_out.past_key_values[i] is a tuple (key, value),
-    ## each w/ shape: (batch size=len(prompts),
-    ##                 number of attention heads=12 for gpt2,
-    ##                 encodings.input_ids.shape[-1],
-    ##                 key/value hidden dimension=64 for gpt2)
+    # We need to repeat each prompt's keys and values num_repeats_per_prompt times
+    # For layer i, prompts_out.past_key_values[i] is a tuple (key, value),
+    # ach w/ shape: (batch size=len(prompts),
+    #                 number of attention heads=12 for gpt2,
+    #                 encodings.input_ids.shape[-1],
+    #                 key/value hidden dimension=64 for gpt2)
     past_key_values = (
         torch.stack([torch.stack(block) for block in out.past_key_values], dim=0)
-        ## The tuple is now a tensor w/ shape:
-        ## (# layers=12 for gpt2,
-        ##  2 (for key and value),
-        ##  and then the rest as before)
-        ## Repeat along batch size dim so that it aligns downstream w/ completions
+        # The tuple is now a tensor w/ shape:
+        # (# layers=12 for gpt2,
+        #  (for key and value),
+        #  and then the rest as before)
+        # Repeat along batch size dim so that it aligns downstream w/ completions
         .repeat_interleave(num_repeats_per_prompt, dim=2)
     )
-    ## Re-format this tensor to the nested tuple format we'd get if we passed multiple
-    ## copies of the prompt at the same time to the model
+    # Re-format this tensor to the nested tuple format we'd get if we passed multiple
+    # copies of the prompt at the same time to the model
     past_key_values = tuple(
-        [(layer[0], layer[1]) for layer in past_key_values]  ## keys, values
+        [(layer[0], layer[1]) for layer in past_key_values]  # keys, values
     )
 
-    ## Repeat stuff
+    # Repeat stuff
     encodings["attention_mask"] = encodings.attention_mask.repeat_interleave(
         num_repeats_per_prompt, dim=0
     )
@@ -148,11 +148,11 @@ def _keys_values_prompts(
         num_repeats_per_prompt, dim=0
     )
 
-    ## Need offsets so that position_ids for future tokens are set correctly
+    # Need offsets so that position_ids for future tokens are set correctly
     offsets: torch.Tensor = encodings.attention_mask.sum(dim=1)
 
-    ## Need (next-token) logits from prompts, i.e., last non-pad prompt token, since
-    ## that contains the first completion token's log-probability
+    # Need (next-token) logits from prompts, i.e., last non-pad prompt token, since
+    # that contains the first completion token's log-probability
     _last_nonpad_token_idxs = (offsets - 1)[:, None, None]
     last_nonpad_token_logits: torch.Tensor = out.logits.repeat_interleave(
         num_repeats_per_prompt, dim=0
@@ -172,7 +172,7 @@ def _blessed_helper(
     """
     TODO: docstring
     """
-    ## Input checks
+    # Input checks
     if not tokenizer.padding_side == "right":
         raise ValueError(
             "Gotta use right padding to ensure position IDs are correct. "
@@ -183,7 +183,7 @@ def _blessed_helper(
     if isinstance(completions, str) or not isinstance(completions, Sequence):
         raise TypeError("completions must be a Sequence of strings.")
 
-    ## Prepare prompt data
+    # Prepare prompt data
     (
         past_key_values,
         prompts_encodings,
@@ -191,21 +191,21 @@ def _blessed_helper(
         prompts_last_nonpad_token_logits,
     ) = _keys_values_prompts(model, tokenizer, prompts, num_completions_per_prompt)
 
-    ## Prepare completion data
-    ## For Llama (and probably others) we don't want the completions to start w/ a bos
-    ## token <s> b/c we need to mimic sending the prompt + completion together.
-    ## For example, if 'a b' is the prompt and 'c' is the completion, the encoding
-    ## should correspond to '<s> a b c' not '<s> a b <s> c'.
-    completions = list(completions)  ## 0-index in case it's a Series or something
+    # Prepare completion data
+    # For Llama (and probably others) we don't want the completions to start w/ a bos
+    # token <s> b/c we need to mimic sending the prompt + completion together.
+    # or example, if 'a b' is the prompt and 'c' is the completion, the encoding
+    # should correspond to '<s> a b c' not '<s> a b <s> c'.
+    completions = list(completions)  # 0-index in case it's a Series or something
     has_add_bos_token = hasattr(tokenizer, "add_bos_token")
     if has_add_bos_token:
-        _add_bos_token: bool = tokenizer.add_bos_token  ## to be reset
-        tokenizer.add_bos_token = False  ## see long comment above
+        _add_bos_token: bool = tokenizer.add_bos_token  # to be reset
+        tokenizer.add_bos_token = False  # see long comment above
     completions_encoding = tokenizer(completions, return_tensors="pt", padding=True).to(
         model.device
     )
     if has_add_bos_token:
-        tokenizer.add_bos_token = _add_bos_token  ## reset
+        tokenizer.add_bos_token = _add_bos_token  # reset
     completions_input_ids: torch.Tensor = completions_encoding.input_ids.repeat(
         completions_repeats, 1
     )
@@ -213,19 +213,19 @@ def _blessed_helper(
         completions_encoding.attention_mask.repeat(completions_repeats, 1)
     )
 
-    ## Set position_ids to what they were had we fed the prompt + completion together w/
-    ## right padding
+    # Set position_ids to what they were had we fed the prompt + completion together w/
+    # right padding
     _num_completion_tokens = completions_encoding.input_ids.shape[1]
     completions_position_ids = (
         torch.arange(_num_completion_tokens, device=model.device)
         + offsets[:, None]  # broadcast
     )
-    ## Need attention_mask to include the prompt since it prolly has padding
+    # Need attention_mask to include the prompt since it prolly has padding
     attention_mask = torch.cat(
         (prompts_encodings["attention_mask"], completions_attention_mask), dim=1
     )
 
-    ## Everything should now be aligned 🤞 🙏
+    # Everything should now be aligned 🤞 🙏
     with torch.no_grad():
         completions_out = model(
             input_ids=completions_input_ids,
@@ -233,18 +233,18 @@ def _blessed_helper(
             past_key_values=past_key_values,
             position_ids=completions_position_ids,
         )
-    ## 😎
+    # 😎
 
-    ## Let's drop the next-token logits for the last completion token b/c they're not
-    ## useful for our purposes. Moreover, dropping ensures
-    ## logits.shape[:2] == encodings['input_ids'].shape, as one expects.
-    ## Just keep in mind that `logits` are shifted behind.
+    # Let's drop the next-token logits for the last completion token b/c they're not
+    # useful for our purposes. Moreover, dropping ensures
+    # logits.shape[:2] == encodings['input_ids'].shape, as one expects.
+    # Just keep in mind that `logits` are shifted behind.
     logits = torch.cat(
         [prompts_last_nonpad_token_logits, completions_out.logits[:, :-1, :]], dim=1
     )
 
-    ## You need to be able to ignore pad tokens, so you need the tokenization and offset
-    ## data as well
+    # You need to be able to ignore pad tokens, so you need the tokenization and offset
+    # data as well
     encodings = BatchEncoding(
         {
             "input_ids": completions_input_ids,
@@ -254,9 +254,9 @@ def _blessed_helper(
     )
 
     if getattr(tokenizer, "add_bos_token", False):
-        ## Drop the first <s> token after we're done encoding so that the shape is
-        ## consistent w/ other tokenizers.
-        ## Note: to modify a BatchEncoding value, you must use setitem, not setattr
+        # Drop the first <s> token after we're done encoding so that the shape is
+        # consistent w/ other tokenizers.
+        # Note: to modify a BatchEncoding value, you must use setitem, not setattr
         encodings["offsets"] = encodings["offsets"] - 1
 
     return logits, encodings
@@ -299,7 +299,7 @@ def _logits_completions_given_prompts(
     if not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer):
         end_of_prompt = ""
     completions = [end_of_prompt + completion.lstrip() for completion in completions]
-    ## TODO: figure out how to do this generally, not just for ' ' end_of_prompt
+    # TODO: figure out how to do this generally, not just for ' ' end_of_prompt
     return _blessed_helper(
         model,
         tokenizer,
@@ -351,7 +351,7 @@ def _logits_completions_given_prompts_examples(
         for example in examples
         for completion in example.completions
     ]
-    ## TODO: figure out how to do this generally, not just for ' ' end_of_prompt
+    # TODO: figure out how to do this generally, not just for ' ' end_of_prompt
     num_completions_per_prompt = [len(example.completions) for example in examples]
     completions_repeats = 1
     return _blessed_helper(
@@ -388,7 +388,7 @@ def _logits_to_log_probs_completions(
         logits, encodings["input_ids"], input_ids_start_idx=None, logits_end_idx=None
     )
     last_idx_non_pad = encodings["attention_mask"].sum(dim=1)
-    ## i.e., # of tokens per completion
+    # i.e., # of tokens per completion
     return [
         log_probs_prompt_completion[:completion_end].tolist()
         for log_probs_prompt_completion, completion_end in zip(

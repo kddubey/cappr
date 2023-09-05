@@ -21,7 +21,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
 end_of_prompt = "\n\n###\n\n"
-## https://platform.openai.com/docs/guides/fine-tuning/data-formatting
+# https://platform.openai.com/docs/guides/fine-tuning/data-formatting
 
 
 Model = Literal[
@@ -31,10 +31,10 @@ Model = Literal[
     "text-davinci-002",
     "text-davinci-003",
 ]
-## https://platform.openai.com/docs/models/model-endpoint-compatibility
+# https://platform.openai.com/docs/models/model-endpoint-compatibility
 _costs = [0.0004, 0.0005, 0.002, 0.02, 0.02]
-## https://openai.com/api/pricing/
-## TODO: figure out how to get this automatically from openai, if possible
+# https://openai.com/api/pricing/
+# TODO: figure out how to get this automatically from openai, if possible
 model_to_cost_per_1k: dict[Model, float] = dict(zip(get_args(Model), _costs))
 
 
@@ -87,7 +87,7 @@ def openai_method_retry(
             logger.info(f"openai error: {e}")
             logger.info(f"Try {num_tries}. Sleeping for {sleep_sec} sec.")
             time.sleep(sleep_sec)
-            exception = e  ## allow it to be referenced later
+            exception = e  # allow it to be referenced later
     logger.error(f"Max retries exceeded. openai error: {exception}")
     raise exception
 
@@ -128,10 +128,10 @@ def _openai_api_call_is_ok(
     texts = list(texts)
     try:
         tokenizer = tiktoken.encoding_for_model(model)
-    except KeyError:  ## that's fine, we just need an approximation
+    except KeyError:  # that's fine, we just need an approximation
         tokenizer = tiktoken.get_encoding("gpt2")
     _num_tokens_prompts = sum(len(tokens) for tokens in tokenizer.encode_batch(texts))
-    _num_tokens_completions = len(texts) * max_tokens  ## upper bound ofc
+    _num_tokens_completions = len(texts) * max_tokens  # upper bound ofc
     num_tokens = _num_tokens_prompts + _num_tokens_completions
     cost_per_1k_tokens = cost_per_1k_tokens or model_to_cost_per_1k.get(model)
     if cost_per_1k_tokens is None:
@@ -191,9 +191,9 @@ def gpt_complete(
         list with the same length as `texts`. Each element is the ``choices`` mapping
         which the OpenAI text completion endpoint returns.
     """
-    _batch_size = 32  ## max that the API can currently handle
+    _batch_size = 32  # max that the API can currently handle
     if isinstance(texts, str):
-        ## Passing in a string will silently but majorly fail. Handle it
+        # Passing in a string will silently but majorly fail. Handle it
         texts = [texts]
     if ask_if_ok:
         _openai_api_call_is_ok(model, texts, max_tokens=max_tokens)
@@ -261,7 +261,7 @@ def gpt_chat_complete(
         (flat) list of the JSONs which the chat completion endpoint returns. More
         specifically, it's a list of ``openai.openai_object.OpenAIObject``
     """
-    ## TODO: batch, if possible
+    # TODO: batch, if possible
     if isinstance(texts, str):
         texts = [texts]
     if ask_if_ok:

@@ -50,7 +50,7 @@ class Example:
     end_of_prompt: str = " "
 
     def __post_init__(self):
-        ## Check inputs here so that fxns of Example don't need to check
+        # Check inputs here so that fxns of Example don't need to check
         if not isinstance(self.prompt, str):
             raise TypeError("prompt must be a string.")
         if isinstance(self.completions, str) or not isinstance(

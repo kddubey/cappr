@@ -28,7 +28,7 @@ def test_constant(lst, size: int):
 
     _test_partition_and_order(batches, lst)
 
-    ## Test batch sizes
+    # Test batch sizes
     for batch_ in batches[:-1]:
         assert len(batch_) == size
     remaining = len(lst) % size
@@ -44,7 +44,7 @@ def test_variable(lst, sizes):
 
     assert len(batches) == len(sizes)
 
-    ## Test batch sizes
+    # Test batch sizes
     for batch_, expected_size in zip(batches, sizes):
         assert len(batch_) == expected_size
 

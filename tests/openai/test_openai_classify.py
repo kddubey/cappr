@@ -11,15 +11,15 @@ import tiktoken
 from cappr import Example as Ex
 from cappr.openai import classify
 
-## sys hack to import from parent. If someone has a cleaner solution, lmk
+# sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
 import _test
 
 
 @pytest.fixture(autouse=True)
 def patch_openai_method_retry(monkeypatch):
-    ## During testing, there's never going to be a case where we want to actually hit
-    ## an OpenAI endpoint!
+    # During testing, there's never going to be a case where we want to actually hit
+    # an OpenAI endpoint!
     def _log_probs(texts: list[str]) -> list[list[float]]:
         """
         Returns a list `log_probs` where `log_probs[i]` is `list(range(size))` where
@@ -28,12 +28,12 @@ def patch_openai_method_retry(monkeypatch):
         tokenizer = tiktoken.get_encoding("gpt2")
         return [list(range(len(tokens))) for tokens in tokenizer.encode_batch(texts)]
 
-    ## Note that the the text completion endpoint uses a kwarg named prompt, but that's
-    ## actually set to prompt + completion in the CAPPr scheme. We input that to get
-    ## log-probs of completion tokens given prompt
+    # Note that the the text completion endpoint uses a kwarg named prompt, but that's
+    # actually set to prompt + completion in the CAPPr scheme. We input that to get
+    # log-probs of completion tokens given prompt
     def mocked(openai_method, prompt: list[str], **kwargs):
-        ## Technically, we should return a openai.openai_object.OpenAIObject
-        ## For now, just gonna return the minimum dict required
+        # Technically, we should return a openai.openai_object.OpenAIObject
+        # For now, just gonna return the minimum dict required
         token_logprobs_batch = _log_probs(prompt)
         return {
             "choices": [
@@ -78,8 +78,8 @@ def completions():
 
 @pytest.fixture(scope="module")
 def examples():
-    ## Let's make these ragged (different # completions per prompt), since
-    ## that's a use case for an Example
+    # Let's make these ragged (different # completions per prompt), since
+    # that's a use case for an Example
     return [
         Ex(prompt="lotta", completions=("media", "food"), prior=(1 / 2, 1 / 2)),
         Ex(
@@ -124,12 +124,12 @@ def test_log_probs_conditional_examples(examples, model):
 def test_predict_proba(prompts, completions, model):
     _test.predict_proba(classify.predict_proba, prompts, completions, model)
 
-    ## test discount_completions > 0.0
+    # test discount_completions > 0.0
     _test.predict_proba(
         classify.predict_proba, prompts, completions, model, discount_completions=1.0
     )
 
-    ## test bad prior input. TODO: standardize for other inputs
+    # test bad prior input. TODO: standardize for other inputs
     prior = [1 / len(completions)] * len(completions)
     prior_bad = prior + [0]
     expected_error_msg = (
@@ -156,7 +156,7 @@ def test_predict_proba_examples(examples: list[Ex], model):
 def test_predict(prompts, completions, model):
     _test.predict(classify.predict, prompts, completions, model)
 
-    ## test discount_completions > 0.0
+    # test discount_completions > 0.0
     _test.predict(
         classify.predict, prompts, completions, model, discount_completions=1.0
     )

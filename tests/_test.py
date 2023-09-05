@@ -29,8 +29,8 @@ def predict_proba(
     assert pred_probs.shape == (len(prompts), len(completions))
     assert np.all(pred_probs >= 0)
     if pred_probs.shape[1] == 1:
-        ## We don't normalize if there's one completion. It's almost definitely the case
-        ## that the predicted probability is < 1 by a decent amount.
+        # We don't normalize if there's one completion. It's almost definitely the case
+        # that the predicted probability is < 1 by a decent amount.
         assert not any(np.isclose(pred_probs[:, 0], 1))
     else:
         assert np.allclose(pred_probs.sum(axis=1), 1)
@@ -55,8 +55,8 @@ def predict_proba_examples(
         assert len(pred_prob_example) == len(example.completions)
         assert np.all(np.array(pred_prob_example) >= 0)
         if len(pred_prob_example) == 1:
-            ## We don't normalize if there's one completion. It's almost definitely the
-            ## case that the predicted probability is < 1 by a decent amount.
+            # We don't normalize if there's one completion. It's almost definitely the
+            # case that the predicted probability is < 1 by a decent amount.
             assert not any(np.isclose(pred_prob_example, 1))
         else:
             assert np.isclose(sum(pred_prob_example), 1)

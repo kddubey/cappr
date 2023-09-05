@@ -8,6 +8,6 @@ from ._example import Example
 from . import openai
 
 try:
-    from . import huggingface  ## optional
+    from . import huggingface  # optional
 except ModuleNotFoundError:
     pass

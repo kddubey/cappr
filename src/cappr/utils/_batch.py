@@ -19,7 +19,7 @@ def constant(lst: list, size: int):
     """
     if size <= 0:
         raise ValueError("size must be positive.")
-    lst = list(lst)  ## 0-index whatever was passed, or fully evaluate generator
+    lst = list(lst)  # 0-index whatever was passed, or fully evaluate generator
     n = len(lst)
     for ndx in range(0, n, size):
         yield lst[ndx : (ndx + size)]
@@ -40,9 +40,9 @@ def variable(lst: list, sizes: Sequence[int]):
     cumulative_sizes = np.cumsum(sizes)
     if cumulative_sizes[-1] != len(lst):
         raise ValueError("sizes must sum to len(lst).")
-    ## We want start and stop idxs. The first start idx must ofc be 0.
+    # We want start and stop idxs. The first start idx must ofc be 0.
     cumulative_sizes = np.insert(cumulative_sizes, 0, 0)
-    lst = list(lst)  ## 0-index and/or fully evaluate generator
+    lst = list(lst)  # 0-index and/or fully evaluate generator
     for start, stop in zip(cumulative_sizes[:-1], cumulative_sizes[1:]):
         yield lst[start:stop]
 
@@ -52,7 +52,7 @@ def _kwarg_name_to_value(func):
     Returns a dictionary mapping keyword arguments in the signature of `func`
     to their default values.
     """
-    ## ty https://stackoverflow.com/a/12627202/18758987
+    # ty https://stackoverflow.com/a/12627202/18758987
     signature = inspect.signature(func)
     return {
         name: value.default
@@ -83,7 +83,7 @@ def batchify(batchable_arg: str, batch_size: int = 32, progress_bar_desc: str = 
             batchable: Sequence = args[batchable_arg_idx]
             size = kwargs.get("batch_size", batch_size_default)
             outputs = []
-            args = list(args)  ## need to modify the batch argument value
+            args = list(args)  # need to modify the batch argument value
             with tqdm(total=len(batchable), desc=progress_bar_desc) as progress_bar:
                 for batch_ in constant(batchable, size):
                     args[batchable_arg_idx] = batch_

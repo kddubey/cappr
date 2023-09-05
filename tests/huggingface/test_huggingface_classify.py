@@ -17,16 +17,16 @@ from cappr import Example as Ex
 from cappr.huggingface import classify as fast
 from cappr.huggingface import classify_no_cache as slow
 
-## sys hack to import from parent. If someone has a cleaner solution, lmk
+# sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
 import _test
 
 
 @pytest.fixture(scope="module")
 def atol():
-    ## Reading through some transformers tests, it looks like 1e-3 is considered
-    ## "close enough" for hidden states. See, e.g.,
-    ## https://github.com/huggingface/transformers/blob/main/tests/models/gpt2/test_modeling_gpt2.py#L250
+    # Reading through some transformers tests, it looks like 1e-3 is considered
+    # "close enough" for hidden states. See, e.g.,
+    # https://github.com/huggingface/transformers/blob/main/tests/models/gpt2/test_modeling_gpt2.py#L250
     return 1e-4
 
 
@@ -45,12 +45,12 @@ def model(model_name):
 
 @pytest.fixture(scope="module")
 def tokenizer(model_name):
-    ## Set up the tokenizer as expected.
-    ## These things are done in cappr.huggingface._utils.load_model_and_tokenizer, which
-    ## is always applied to the user-inputted tokenizer
+    # Set up the tokenizer as expected.
+    # These things are done in cappr.huggingface._utils.load_model_and_tokenizer, which
+    # is always applied to the user-inputted tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     if tokenizer.pad_token_id is None:
-        ## allow padding -> allow batching
+        # allow padding -> allow batching
         tokenizer.pad_token_id = tokenizer.eos_token_id
     tokenizer.padding_side = "right"
     tokenizer.add_eos_token = False
@@ -80,7 +80,7 @@ def test__keys_values_prompts(
     keys_vals_slow, encodings_slow, offsets_slow, logits_last_slow = _outputs_slow
     keys_vals_fast, encodings_fast, offsets_fast, logits_last_fast = _outputs_fast
 
-    assert len(keys_vals_slow) == len(keys_vals_fast)  ## same # attention blocks
+    assert len(keys_vals_slow) == len(keys_vals_fast)  # same # attention blocks
     for (keys_slow, vals_slow), (keys_fast, vals_fast) in zip(
         keys_vals_slow, keys_vals_fast
     ):
@@ -106,15 +106,15 @@ def _test_encodings(
     """
 
     def _test_shapes(logits, encodings):
-        assert encodings["input_ids"].shape == logits.shape[:2]  ## 3rd dim is vocab
+        assert encodings["input_ids"].shape == logits.shape[:2]  # 3rd dim is vocab
         assert encodings["input_ids"].shape == encodings["attention_mask"].shape
         assert encodings["input_ids"].shape[0] == encodings["offsets"].shape[0]
 
     _test_shapes(logits_slow, encodings_slow)
     _test_shapes(logits_fast, encodings_fast)
 
-    ## Test offsets. These should be exactly the same b/c they're the number of
-    ## of non-pad tokens in each prompt
+    # Test offsets. These should be exactly the same b/c they're the number of
+    # of non-pad tokens in each prompt
     assert torch.equal(encodings_slow["offsets"], encodings_fast["offsets"])
 
 
@@ -129,21 +129,21 @@ def _test_logits(
     Tests that logits have identical shape, and that their non-pad token logits are
     numerically close.
     """
-    ## Test shapes
-    assert logits_slow.shape[0] == logits_fast.shape[0]  ## batch size
-    ## Middle dimension (for the # of tokens) is different b/c logits_slow includes
-    ## prompt and completion tokens, while logits_fast only includes completion tokens.
-    assert logits_slow.shape[2] == logits_fast.shape[2]  ## vocab size
+    # Test shapes
+    assert logits_slow.shape[0] == logits_fast.shape[0]  # batch size
+    # Middle dimension (for the # of tokens) is different b/c logits_slow includes
+    # prompt and completion tokens, while logits_fast only includes completion tokens.
+    assert logits_slow.shape[2] == logits_fast.shape[2]  # vocab size
 
-    ## Test logits at every *non-pad* token
+    # Test logits at every *non-pad* token
     completion_token_idxs = [
         list(range(num_completion_tokens))
         for num_completion_tokens in encodings_fast["attention_mask"].sum(dim=1)
     ]
     for text_idx in range(logits_slow.shape[0]):
         offset = encodings_fast["offsets"][text_idx].item() - 1
-        ## number of non-pad prompt tokens - 1 (!) b/c in the fast version we
-        ## included the last non-pad prompt token
+        # number of non-pad prompt tokens - 1 (!) b/c in the fast version we
+        # included the last non-pad prompt token
         for completion_token_idx in completion_token_idxs[text_idx]:
             assert torch.allclose(
                 logits_fast[text_idx, completion_token_idx],
@@ -163,7 +163,7 @@ def _test_log_probs(
     Tests that the conditional token log-probabilities are the right shape and are
     numerically close.
     """
-    ## Test lengths before zipping. Note transitivity
+    # Test lengths before zipping. Note transitivity
     assert len(log_probs_completions_slow) == len(log_probs_completions_fast)
     assert len(log_probs_completions_fast) == expected_len
     assert len(log_probs_completions_slow) == len(num_completions_per_prompt)
@@ -177,8 +177,8 @@ def _test_log_probs(
         assert len(log_probs_slow) == num_completions
         zipped_inner = zip(log_probs_slow, log_probs_fast)
         for log_probs_tokens_slow, log_probs_tokens_fast in zipped_inner:
-            ## cast to tensor so that we are consistent w/ the way "numerical closeness"
-            ## is defined for model-dependent outputs
+            # cast to tensor so that we are consistent w/ the way "numerical closeness"
+            # is defined for model-dependent outputs
             assert torch.allclose(
                 torch.tensor(log_probs_tokens_slow),
                 torch.tensor(log_probs_tokens_fast),
@@ -195,7 +195,7 @@ def _test_log_probs(
         ["d", "d e f"],
     ),
 )
-@pytest.mark.parametrize("end_of_prompt", (" ",))  ## TODO: expand
+@pytest.mark.parametrize("end_of_prompt", (" ",))  # TODO: expand
 class TestPromptsCompletions:
     """
     Tests all model-dependent, non-`_examples` functions, sharing the same set of
@@ -275,8 +275,8 @@ class TestPromptsCompletions:
             model_and_tokenizer=model_and_tokenizer,
             end_of_prompt=end_of_prompt,
         )
-        ## cast to tensor so that we are consistent w/ the way "numerical closeness"
-        ## is defined for model-dependent outputs
+        # cast to tensor so that we are consistent w/ the way "numerical closeness"
+        # is defined for model-dependent outputs
         assert torch.allclose(
             torch.tensor(pred_probs_fast), torch.tensor(pred_probs_slow), atol=atol
         )
@@ -387,8 +387,8 @@ class TestExamples:
         for pred_probs_fast_ex, pred_probs_slow_ex in zip(
             pred_probs_fast, pred_probs_slow
         ):
-            ## cast to tensor so that we are consistent w/ the way "numerical closeness"
-            ## is defined for model-dependent outputs
+            # cast to tensor so that we are consistent w/ the way "numerical closeness"
+            # is defined for model-dependent outputs
             assert torch.allclose(
                 torch.tensor(pred_probs_fast_ex),
                 torch.tensor(pred_probs_slow_ex),

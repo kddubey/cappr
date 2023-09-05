@@ -22,12 +22,12 @@ def logits_to_log_probs(
     """
     TODO: docstring
     """
-    ## logits.shape is (# texts, max # tokens in texts, vocab size)
+    # logits.shape is (# texts, max # tokens in texts, vocab size)
     log_probs = F.log_softmax(logits, dim=2)
 
-    ## Only keep the log-prob from the vocab dimension whose index is is the
-    ## next token's input ID.
-    ## input_ids.shape is (# texts, max # tokens in texts)
+    # Only keep the log-prob from the vocab dimension whose index is is the
+    # next token's input ID.
+    # input_ids.shape is (# texts, max # tokens in texts)
     return (
         log_probs[:, :logits_end_idx, :]
         .take_along_dim(input_ids[:, input_ids_start_idx:, None], dim=2)
@@ -52,16 +52,16 @@ def load_model_and_tokenizer(
     don't modify the model and tokenizer / the user doesn't have to reset attributes
     """
     model_, tokenizer = model_and_tokenizer
-    ## Prepare model
+    # Prepare model
     model_.eval()
-    ## Prepare tokenizer
+    # Prepare tokenizer
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token_id = tokenizer.eos_token_id
     tokenizer.padding_side = "right"
     try:
         tokenizer.add_eos_token = False
-        ## We don't want the prompt or completion to end w/ EOS, so this should always
-        ## be False
+        # We don't want the prompt or completion to end w/ EOS, so this should always
+        # be False
     except AttributeError:
         pass
     return model_, tokenizer

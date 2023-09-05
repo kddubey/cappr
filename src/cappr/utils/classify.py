@@ -44,23 +44,23 @@ def _agg_log_probs_from_constant_completions(
             "log_probs does not have a constant number of completions, i.e., there are "
             "indices i, j such that len(log_probs[i]) != len(log_probs[j])."
         )
-    ## At this point, we've verified that the number of completions is constant.
-    ## Say, e.g., we have 2 completions, ['a b', 'c d e'], and 2 prompts.
-    ## Then log_probs looks like:
-    ## [ [ [a1, b1],      (token log-probs for completion 1 | prompt 1)
+    # At this point, we've verified that the number of completions is constant.
+    # Say, e.g., we have 2 completions, ['a b', 'c d e'], and 2 prompts.
+    # Then log_probs looks like:
+    # [ [ [a1, b1],      (token log-probs for completion 1 | prompt 1)
     #      [c1, d1, e1]], (token log-probs for completion 2 | prompt 1)
-    ##   [ [a2, b2],      (token log-probs for completion 1 | prompt 2)
-    ##     [c2, d2, e2]]  (token log-probs for completion 2 | prompt 2)
-    ## ]
-    ## We can re-shape this "jagged" list as a list of (non-jagged) arrays:
-    ## [ array([[a1, b1]],
-    ##         [[a2, b2]]),
-    ##   array([[c1, d1, e1]],
-    ##         [[c2, d2, e2]])
-    ## ]
+    #   [ [a2, b2],      (token log-probs for completion 1 | prompt 2)
+    #     [c2, d2, e2]]  (token log-probs for completion 2 | prompt 2)
+    # ]
+    # We can re-shape this "jagged" list as a list of (non-jagged) arrays:
+    # [ array([[a1, b1]],
+    #         [[a2, b2]]),
+    #   array([[c1, d1, e1]],
+    #         [[c2, d2, e2]])
+    # ]
     num_completions_per_prompt = list(num_completions_per_prompt_set)[0]
     array_list = [
-        np.array(  ## raises jagged/inhomogeneous ValueError if non-constant # tokens
+        np.array(  # raises jagged/inhomogeneous ValueError if non-constant # tokens
             [
                 log_probs_completions[completion_idx]
                 for log_probs_completions in log_probs
@@ -68,15 +68,15 @@ def _agg_log_probs_from_constant_completions(
         )
         for completion_idx in range(num_completions_per_prompt)
     ]
-    ## Now apply the vectorized function to each array in the list
+    # Now apply the vectorized function to each array in the list
     likelihoods: npt.NDArray[np.floating] = np.exp(
         [func(array, axis=1) for array in array_list]
     )
-    ## likelihoods looks like:
-    ## array([[likelihood_a1b1,   likelihood_a2b2  ],
-    ##        [likelihood_c1d1e1, likelihood_c2d2e2]
-    ##       ])
-    ## Transpose it to satisfy likelihoods[i][j] = exp(func(log_probs[i][j]))
+    # likelihoods looks like:
+    # array([[likelihood_a1b1,   likelihood_a2b2  ],
+    #        [likelihood_c1d1e1, likelihood_c2d2e2]
+    #       ])
+    # Transpose it to satisfy likelihoods[i][j] = exp(func(log_probs[i][j]))
     return likelihoods.T
 
 
@@ -106,8 +106,8 @@ def agg_log_probs(
     try:
         return _agg_log_probs_from_constant_completions(log_probs, func)
     except (
-        ValueError,  ## log_probs is jagged
-        TypeError,  ## func doesn't take an axis argument
+        ValueError,  # log_probs is jagged
+        TypeError,  # func doesn't take an axis argument
     ):
         return _agg_log_probs(log_probs, func)
 
@@ -150,11 +150,11 @@ def posterior_prob(
         if `normalize` is a sequence whose length is different than that of
         `likelihoods`
     """
-    ## Input checks and preprocessing
-    likelihoods = np.array(likelihoods)  ## it should not be jagged/inhomogenous
+    # Input checks and preprocessing
+    likelihoods = np.array(likelihoods)  # it should not be jagged/inhomogenous
     if not isinstance(normalize, (Sequence, np.ndarray)):
-        ## For code simplicity, just repeat it
-        ## If likelihoods is 1-D, there's only a single probability distr to normalize
+        # For code simplicity, just repeat it
+        # If likelihoods is 1-D, there's only a single probability distr to normalize
         num_repeats = 1 if len(likelihoods.shape) == 1 else likelihoods.shape[0]
         normalize = [normalize] * num_repeats
     elif len(normalize) != len(likelihoods):
@@ -166,13 +166,13 @@ def posterior_prob(
     if check_prior:
         _check.prior(prior)
 
-    ## Apply Bayes' rule, w/ optional normalization per row
+    # Apply Bayes' rule, w/ optional normalization per row
     if prior is None:
         posteriors_unnorm = likelihoods
     else:
         posteriors_unnorm = likelihoods * prior
     marginals = posteriors_unnorm.sum(axis=axis, keepdims=True)
-    marginals[~normalize] = 1  ## denominator of 1 <=> no normalization
+    marginals[~normalize] = 1  # denominator of 1 <=> no normalization
     return posteriors_unnorm / marginals
 
 
@@ -187,7 +187,7 @@ def _predict_proba(log_probs_conditional):
     def wrapper(
         prompts: Sequence[str], completions: Sequence[str], *args, **kwargs
     ) -> npt.NDArray[np.floating]:
-        ## Before hitting any APIs ($$), let's check the prior
+        # Before hitting any APIs ($$), let's check the prior
         prior = kwargs.get("prior", None)
         _check.prior(prior)
         if prior is not None and len(completions) != len(prior):
@@ -200,9 +200,9 @@ def _predict_proba(log_probs_conditional):
             prompts, completions, *args, **kwargs
         )
         likelihoods = agg_log_probs(log_probs_completions)
-        ## If there's only 1 completion, normalizing will cause the probability to
-        ## trivially be 1! So let's not normalize in that case, and hope the user knows
-        ## what they're doing
+        # If there's only 1 completion, normalizing will cause the probability to
+        # trivially be 1! So let's not normalize in that case, and hope the user knows
+        # what they're doing
         normalize = len(completions) > 1
         return posterior_prob(likelihoods, axis=1, prior=prior, normalize=normalize)
 
@@ -223,44 +223,44 @@ def _predict_proba_examples(log_probs_conditional_examples):
             examples, *args, **kwargs
         )
         likelihoods = agg_log_probs(log_probs_completions)
-        ## If an example has just 1 completion, normalizing will cause the probability
-        ## to trivially be 1! So let's not normalize in that case, and hope the user
-        ## knows what they're doing
+        # If an example has just 1 completion, normalizing will cause the probability
+        # to trivially be 1! So let's not normalize in that case, and hope the user
+        # knows what they're doing
         num_completions_per_prompt = [len(example.completions) for example in examples]
         normalize = [num > 1 for num in num_completions_per_prompt]
         num_completions_per_prompt_set = set(num_completions_per_prompt)
         if len(num_completions_per_prompt_set) != 1:
-            ## Can't be easily vectorized :-(
+            # Can't be easily vectorized :-(
             return [
                 posterior_prob(
                     likelihoods_ex,
                     axis=0,
                     prior=example.prior,
                     normalize=normalize_ex,
-                    check_prior=False,  ## already checked during example construction
+                    check_prior=False,  # already checked during example construction
                 )
                 for likelihoods_ex, example, normalize_ex in zip(
                     likelihoods, examples, normalize
                 )
             ]
-        ## Vectorize!
+        # Vectorize!
         if all([example.prior is None for example in examples]):
             prior = None
         else:
-            ## For coding simplicity, just supply a prior which is non-None *everywhere*
-            ## It's the same shape as likelihoods
+            # For coding simplicity, just supply a prior which is non-None *everywhere*
+            # It's the same shape as likelihoods
             num_completions_per_prompt = list(num_completions_per_prompt_set)[0]
             uniform_prior = [
                 1 / num_completions_per_prompt
             ] * num_completions_per_prompt
             prior = np.array([example.prior or uniform_prior for example in examples])
-        ## prior cannot be jagged b/c every example has the same # of completions
+        # prior cannot be jagged b/c every example has the same # of completions
         return posterior_prob(
             likelihoods,
             axis=1,
             prior=prior,
             normalize=normalize,
-            check_prior=False,  ## already checked during example construction
+            check_prior=False,  # already checked during example construction
         )
 
     return wrapper
@@ -295,7 +295,7 @@ def _predict_examples(predict_proba_examples_func):
         pred_probs: Union[
             list[npt.NDArray[np.floating]], npt.NDArray[np.floating]
         ] = predict_proba_examples_func(examples, *args, **kwargs)
-        ## If it's an array, we can call .argmax, which is faster
+        # If it's an array, we can call .argmax, which is faster
         try:
             pred_class_idxs = pred_probs.argmax(axis=1)
         except AttributeError:

@@ -101,7 +101,7 @@ def _keys_values_prompts(
                 f"{len(prompts)}."
             )
     if isinstance(num_completions_per_prompt, int):
-        ## For code simplicity, just repeat it
+        # For code simplicity, just repeat it
         num_completions_per_prompt = [num_completions_per_prompt] * len(prompts)
     prompts_repeated = [
         prompt
@@ -116,8 +116,8 @@ def _keys_values_prompts(
 
     offsets: torch.Tensor = encodings.attention_mask.sum(dim=1)
 
-    ## Need (next-token) logits from prompts, i.e., last non-pad prompt token, since
-    ## that contains the first completion token's log-probability
+    # Need (next-token) logits from prompts, i.e., last non-pad prompt token, since
+    # that contains the first completion token's log-probability
     _last_nonpad_token_idxs = (offsets - 1)[:, None, None]
     last_nonpad_token_logits: torch.Tensor = out.logits.take_along_dim(
         _last_nonpad_token_idxs, dim=1
@@ -135,8 +135,8 @@ def _logits_texts(
     with torch.no_grad():
         out = model(**encodings)
     if getattr(tokenizer, "add_bos_token", False):
-        ## Drop the first <s> token after we're done encoding so that the shape is
-        ## consistent w/ other tokenizers
+        # Drop the first <s> token after we're done encoding so that the shape is
+        # consistent w/ other tokenizers
         logits = out.logits[:, 1:, :]
         encodings = BatchEncoding(
             {key: value[:, 1:] for key, value in encodings.items()}
@@ -161,8 +161,8 @@ def _prompts_offsets(
         .repeat_interleave(num_completions_per_prompt, dim=0)
     )
     if getattr(tokenizer, "add_bos_token", False):
-        ## Drop the first <s> token after we're done encoding so that the shape is
-        ## consistent w/ other tokenizers
+        # Drop the first <s> token after we're done encoding so that the shape is
+        # consistent w/ other tokenizers
         offsets -= 1
     return offsets
 
@@ -184,7 +184,7 @@ def _logits_completions_given_prompts(
         for completion in completions
     ]
     logits, encodings = _logits_texts(model, tokenizer, texts)
-    ## Need these indices to slice completion tokens
+    # Need these indices to slice completion tokens
     encodings["offsets"] = _prompts_offsets(
         tokenizer, prompts, num_completions_per_prompt=len(completions)
     ).to(model.device)
@@ -202,7 +202,7 @@ def _logits_completions_given_prompts_examples(
         for completion in example.completions
     ]
     logits, encodings = _logits_texts(model, tokenizer, texts)
-    ## Need these indices to slice completion tokens
+    # Need these indices to slice completion tokens
     prompts = [example.prompt for example in examples]
     num_completions_per_prompt = [len(example.completions) for example in examples]
     encodings["offsets"] = _prompts_offsets(
@@ -218,7 +218,7 @@ def _logits_to_log_probs_completions(
         logits, encodings["input_ids"], input_ids_start_idx=1, logits_end_idx=-1
     )
     last_idx_non_pad = encodings["attention_mask"].sum(dim=1)
-    ## i.e., # of tokens per text
+    # i.e., # of tokens per text
     return [
         log_probs_prompt_completion[completion_start:completion_end].tolist()
         for log_probs_prompt_completion, completion_start, completion_end in zip(

@@ -44,7 +44,7 @@ def token_logprobs(
         `texts[text_idx]`. If `texts[text_idx]` is a single token, then
         `log_probs[text_idx]` is `[None]`.
     """
-    ## Need to handle texts which are single tokens. Set their logprobs to [None]
+    # Need to handle texts which are single tokens. Set their logprobs to [None]
     tokenizer = tiktoken.encoding_for_model(model)
     text_lengths = [len(tokens) for tokens in tokenizer.encode_batch(texts)]
     idxs_multiple_tokens = [i for i, length in enumerate(text_lengths) if length > 1]
@@ -52,12 +52,12 @@ def token_logprobs(
         texts=[texts[i] for i in idxs_multiple_tokens],
         ask_if_ok=ask_if_ok,
         model=model,
-        ## rest must be hard-coded
+        # rest must be hard-coded
         max_tokens=0,
         logprobs=1,
         echo=True,
     )
-    ## Interleave
+    # Interleave
     log_probs_texts = [choice["logprobs"]["token_logprobs"] for choice in choices]
     log_probs = [[None]] * len(texts)
     for i, log_probs_text in zip(idxs_multiple_tokens, log_probs_texts):
@@ -162,20 +162,20 @@ def log_probs_conditional(
         # [[-11.6],       [[log Pr(z | a, b, c)],
         #  [-0.3, -1.2]]   [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
-    ## str / non-Sequence[str] inputs silently, wastefully, and irreparably fail
+    # str / non-Sequence[str] inputs silently, wastefully, and irreparably fail
     if isinstance(prompts, str) or not isinstance(prompts, Sequence):
         raise TypeError("prompts must be a Sequence of strings.")
     if isinstance(completions, str) or not isinstance(completions, Sequence):
         raise TypeError("completions must be a Sequence of strings.")
-    ## Flat list of prompts and their completions. Will post-process
+    # Flat list of prompts and their completions. Will post-process
     texts = [
         prompt + end_of_prompt + completion
         for prompt in prompts
         for completion in completions
     ]
     log_probs = token_logprobs(texts, model=model, ask_if_ok=ask_if_ok)
-    ## Since log_probs is a flat list, we'll need to batch them by the size and order of
-    ## completions to fulfill the spec.
+    # Since log_probs is a flat list, we'll need to batch them by the size and order of
+    # completions to fulfill the spec.
     return [
         _slice_completions(completions, end_of_prompt, log_probs_batch, model)
         for log_probs_batch in _batch.constant(log_probs, size=len(completions))
@@ -247,14 +247,14 @@ def log_probs_conditional_examples(
         log_probs_completions[1] # corresponds to examples[1]
         # [[-11.2, -4.7]]  [[log Pr(1 | a, b, c)], log Pr(2 | a, b, c, 1)]]
     """
-    ## Flat list of prompts and their completions. Will post-process
+    # Flat list of prompts and their completions. Will post-process
     texts = [
         example.prompt + example.end_of_prompt + completion
         for example in examples
         for completion in example.completions
     ]
     log_probs_all = token_logprobs(texts, model=model, ask_if_ok=ask_if_ok)
-    ## Flatten completions in same order as examples were flattened
+    # Flatten completions in same order as examples were flattened
     completions_all = [
         example.end_of_prompt + completion
         for example in examples
@@ -263,7 +263,7 @@ def log_probs_conditional_examples(
     log_probs_completions_all = _slice_completions(
         completions_all, "", log_probs_all, model
     )
-    ## Batch by completions to fulfill the spec
+    # Batch by completions to fulfill the spec
     num_completions_per_prompt = [len(example.completions) for example in examples]
     return list(
         _batch.variable(log_probs_completions_all, sizes=num_completions_per_prompt)
@@ -392,14 +392,14 @@ def predict_proba(
     )
     if not discount_completions:
         return log_probs_completions
-    ## log Pr(completion token i | completion token :i) for each completion
+    # log Pr(completion token i | completion token :i) for each completion
     if log_marginal_probs_completions is None:
         log_marginal_probs_completions = token_logprobs(
             completions, model, ask_if_ok=ask_if_ok
         )
     for x in log_marginal_probs_completions:
-        x[0] = 0  ## set it from None to 0, i.e., no discount for the first token
-    ## pre-multiply by the discount amount
+        x[0] = 0  # set it from None to 0, i.e., no discount for the first token
+    # pre-multiply by the discount amount
     log_marginal_probs_completions_discounted = [
         discount_completions * np.array(log_marginal_probs_completion)
         for log_marginal_probs_completion in log_marginal_probs_completions
