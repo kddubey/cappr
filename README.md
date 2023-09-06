@@ -389,8 +389,8 @@ TODO
 pytest
 ```
 
-Note that a few small, dummy model will be downloaded to your computer if you don't have
-them already.
+Note that a few small, dummy models will be downloaded to your computer if you don't
+have them already.
 
 ### Docs
 
@@ -404,7 +404,7 @@ make.bat html
 
 To preview these docs, open `docs/build/html/index.html`.
 
-Docs are automatically built when code is merged to main.
+Docs are automatically built and published when code is merged to main.
 
 ### Release
 

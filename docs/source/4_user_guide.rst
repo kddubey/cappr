@@ -51,8 +51,8 @@ Here's an example of these two steps:
 
    prompt_raw = """
    Hi Professor. I'm interested in taking ML-101, but I'm struggling to decide which
-   course I need to take before that. I've already taken CS-101 and MATH-101. Which
-   course should I take next?
+   course I need to take before that. I've already taken CS-101. Which course should I
+   take next?
 
    Here's a list of courses and their prerequisites which I pulled from the course
    catalog.
@@ -71,7 +71,10 @@ Here's an example of these two steps:
    chat_api_response = gpt_chat_complete(
       texts=[prompt_step_by_step],
       model="gpt-4",
-      system_msg="You are a computer scientist mentoring a student.",
+      system_msg=(
+         "You are a computer scientist mentoring a student. End your response to "
+         "the student's question with the final answer, which is the name of a course."
+      ),
       max_tokens=1_000,
       temperature=0,
    )
@@ -85,7 +88,7 @@ Here's an example of these two steps:
    {step_by_step_answer}
    """
 
-   According to this answer, the next course that the student should take is
+   According to this answer, the very next course that the student should take is
    '''
 
    class_names = (
@@ -101,11 +104,11 @@ Here's an example of these two steps:
    answer = predict(
       prompts=[prompt_answer],
       completions=class_names,
-      model="text-babbage-001",
+      model="text-ada-001",
    )
 
-   print(answer[0])
-   # 'MATH-102' or 'STAT-101' are the only valid answers
+   print(answer)
+   # ['MATH-101']
 
 .. warning:: Currently, :mod:`cappr.openai.classify` must repeat the ``prompt`` for
              however many completions there are. So if your prompt is long and your
