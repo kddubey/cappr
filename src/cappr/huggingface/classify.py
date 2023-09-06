@@ -38,7 +38,7 @@ def _keys_values_prompts(
     prompts: Sequence[str],
     num_repeats_per_prompt: Union[int, Sequence[int]],
 ) -> tuple[
-    tuple[torch.Tensor, torch.Tensor], BatchEncoding, torch.Tensor, torch.Tensor
+    tuple[tuple[torch.Tensor, torch.Tensor]], BatchEncoding, torch.Tensor, torch.Tensor
 ]:
     """
     Efficiently performs this procedure:
@@ -74,7 +74,7 @@ def _keys_values_prompts(
 
     Returns
     -------
-    past_key_values : tuple[torch.Tensor, torch.Tensor]
+    past_key_values : tuple[tuple[torch.Tensor, torch.Tensor]]
         for each attention block in `model`, the keys and values for each prompt in the
         repeated prompts
     encodings : BatchEncoding
@@ -110,13 +110,20 @@ def _keys_values_prompts(
                 f"{len(prompts)}."
             )
 
-    # Need to put num_repeats_per_prompt on the device
-    if not isinstance(num_repeats_per_prompt, int) and not isinstance(
-        num_repeats_per_prompt, torch.Tensor
-    ):
-        num_repeats_per_prompt = torch.tensor(
-            num_repeats_per_prompt, device=model.device
-        )
+    # Need to determine whether we actually need to repeat the prompt's keys and values.
+    # Running that repeat operation (despite not needing it) may be expensive b/c its
+    # intermediate steps require allocating memory to hold big tensors. It'd be nice if
+    # past_key_values were a tensor instead of a nested tuple. That way, we could just
+    # use repeat_interleave and not worry.
+    if isinstance(num_repeats_per_prompt, int):
+        must_repeat: bool = num_repeats_per_prompt > 1
+    else:
+        if not isinstance(num_repeats_per_prompt, torch.Tensor):
+            # Need to put num_repeats_per_prompt on the device
+            num_repeats_per_prompt: torch.Tensor = torch.tensor(
+                num_repeats_per_prompt, device=model.device
+            )
+        must_repeat: bool = (num_repeats_per_prompt > 1).any()
 
     # Batch inference prompts
     prompts = list(prompts)  # 0-index in case it's a Series or something
@@ -126,28 +133,32 @@ def _keys_values_prompts(
     with torch.no_grad():
         out = model(**encodings)
 
-    # We need to repeat each prompt's keys and values num_repeats_per_prompt times
-    # For layer i, prompts_out.past_key_values[i] is a tuple (key, value),
-    # Each w/ shape: (batch size=len(prompts),
-    #                 number of attention heads=12 for gpt2,
-    #                 encodings.input_ids.shape[-1],
-    #                 key/value hidden dimension=64 for gpt2)
-    past_key_values = (
-        torch.stack([torch.stack(block) for block in out.past_key_values], dim=0)
-        # The tuple is now a tensor w/ shape:
-        # (# layers=12 for gpt2,
-        #  (for key and value),
-        #  and then the rest as before)
-        # Repeat along batch size dim so that it aligns downstream w/ completions
-        .repeat_interleave(num_repeats_per_prompt, dim=2)
-    )
-    # Re-format this tensor to the nested tuple format we'd get if we passed multiple
-    # copies of the prompt at the same time to the model
-    past_key_values = tuple(
-        [(layer[0], layer[1]) for layer in past_key_values]  # keys, values
-    )
+    past_key_values: tuple[tuple[torch.Tensor, torch.Tensor]] = out.past_key_values
+    if must_repeat:
+        # We need to repeat each prompt's keys and values num_repeats_per_prompt times
+        # For layer i, prompts_out.past_key_values[i] is a tuple (key, value),
+        # Each w/ shape: (batch size=len(prompts),
+        #                 number of attention heads=12 for gpt2,
+        #                 max number of tokens in batch=encodings.input_ids.shape[-1],
+        #                 key/value hidden dimension=64 for gpt2)
+        past_key_values = (
+            torch.stack([torch.stack(block) for block in past_key_values], dim=0)
+            # The tuple is now a tensor w/ shape:
+            # (# layers=12 for gpt2,
+            #  2 for key and value,
+            #  and then the rest as before)
+            # Repeat along batch size dim so that it aligns downstream w/ completions
+            .repeat_interleave(num_repeats_per_prompt, dim=2)
+        )
+        # Re-format this tensor to the nested tuple format we'd get if we passed
+        # multiple copies of the prompt at the same time to the model
+        past_key_values = tuple(
+            [(layer[0], layer[1]) for layer in past_key_values]  # keys, values
+        )
 
-    # Repeat stuff
+    # Repeat prompt encodings data
+    # Note: you need to use the __setitem__ method not setattr methods for modifying
+    # BatchEncoding items
     encodings["attention_mask"] = encodings.attention_mask.repeat_interleave(
         num_repeats_per_prompt, dim=0
     )
@@ -190,19 +201,12 @@ def _blessed_helper(
     if isinstance(completions, str) or not isinstance(completions, Sequence):
         raise TypeError("completions must be a Sequence of strings.")
 
-    # Prepare prompt data
-    (
-        past_key_values,
-        prompts_encodings,
-        offsets,
-        prompts_last_nonpad_token_logits,
-    ) = _keys_values_prompts(model, tokenizer, prompts, num_completions_per_prompt)
-
     # Prepare completion data
     # For Llama (and probably others) we don't want the completions to start w/ a bos
     # token <s> b/c we need to mimic sending the prompt + completion together.
     # For example, if 'a b' is the prompt and 'c' is the completion, the encoding
     # should correspond to '<s> a b c' not '<s> a b <s> c'.
+    # TODO: clean this up.
     completions = list(completions)  # 0-index in case it's a Series or something
     has_add_bos_token = hasattr(tokenizer, "add_bos_token")
     if has_add_bos_token:
@@ -213,11 +217,42 @@ def _blessed_helper(
     )
     if has_add_bos_token:
         tokenizer.add_bos_token = _add_bos_token  # reset
+
+    # Single-token optimization: if every completion is a single token, we don't need to
+    # repeat stuff or run the model on any of the completions data. Currently, this
+    # optimization is only done for constant completions, i.e., not _examples.
+    # fmt: off
+    _are_completions_constant = (
+        isinstance(num_completions_per_prompt, int) and
+        completions_repeats == len(prompts)
+    )
+    # fmt: on
+    if _are_completions_constant and completions_encoding.input_ids.shape[1] == 1:
+        # Note that completions_encoding.input_ids.shape[1] == logits.shape[1]
+        (
+            _,
+            _,
+            _,
+            prompts_last_nonpad_token_logits,
+        ) = _keys_values_prompts(model, tokenizer, prompts, num_repeats_per_prompt=1)
+        return prompts_last_nonpad_token_logits, completions_encoding
+
+    # We need to repeat stuff
     completions_input_ids: torch.Tensor = completions_encoding.input_ids.repeat(
         completions_repeats, 1
     )
     completions_attention_mask: torch.Tensor = (
         completions_encoding.attention_mask.repeat(completions_repeats, 1)
+    )
+
+    # Prepare prompt data
+    (
+        past_key_values,
+        prompts_encodings,
+        offsets,
+        prompts_last_nonpad_token_logits,
+    ) = _keys_values_prompts(
+        model, tokenizer, prompts, num_repeats_per_prompt=num_completions_per_prompt
     )
 
     # Set position_ids to what they were had we fed the prompt + completion together w/
@@ -360,19 +395,18 @@ def _logits_completions_given_prompts_examples(
     ]
     # TODO: figure out how to do this generally, not just for ' ' end_of_prompt
     num_completions_per_prompt = [len(example.completions) for example in examples]
-    completions_repeats = 1
     return _blessed_helper(
         model,
         tokenizer,
         prompts,
         completions,
         num_completions_per_prompt=num_completions_per_prompt,
-        completions_repeats=completions_repeats,
+        completions_repeats=1,
     )
 
 
 def _logits_to_log_probs_completions(
-    logits: torch.Tensor, encodings: Mapping[str, torch.Tensor]
+    logits: torch.Tensor, encodings: Mapping[str, torch.Tensor], from_examples: bool
 ) -> list[list[float]]:
     """
     TODO: convert docstring to numpy style
@@ -391,9 +425,20 @@ def _logits_to_log_probs_completions(
     `logits[i,j]` is assumed to be an unnormalized distribution (over tokens in
     the vocab) given tokens `input_ids[i,:j]`.
     """
-    log_probs = hf._utils.logits_to_log_probs(
-        logits, encodings["input_ids"], input_ids_start_idx=None, logits_end_idx=None
-    )
+    if (not from_examples) and logits.shape[1] == 1:
+        # Single-token optimization: all of the completions are always a single token.
+        # So we just need to intelligently slice out their tokens from the prompts' last
+        # non-pad token logits. Currently, this optimization is only done for constant
+        # completions, i.e., not _examples.
+        completions_input_ids: torch.Tensor = encodings.input_ids.repeat_interleave(
+            logits.shape[0], dim=1  # the number of prompts
+        ).T
+        log_probs = hf._utils.logits_to_log_probs(logits, completions_input_ids)
+        # Need to reshape them to the expected shape
+        return log_probs.flatten()[:, None].tolist()
+
+    # There are some completions with multiple tokens
+    log_probs = hf._utils.logits_to_log_probs(logits, encodings["input_ids"])
     last_idx_non_pad = encodings["attention_mask"].sum(dim=1)
     # i.e., # of tokens per completion
     return [
@@ -484,7 +529,7 @@ def log_probs_conditional(
         logits, encodings = _logits_completions_given_prompts(
             model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
         )
-        return _logits_to_log_probs_completions(logits, encodings)
+        return _logits_to_log_probs_completions(logits, encodings, from_examples=False)
 
     log_probs_completions = log_probs_completions_batch(prompts)
     return list(_batch.constant(log_probs_completions, size=len(completions)))
@@ -568,7 +613,7 @@ def log_probs_conditional_examples(
         logits, encodings = _logits_completions_given_prompts_examples(
             model, tokenizer, examples
         )
-        return _logits_to_log_probs_completions(logits, encodings)
+        return _logits_to_log_probs_completions(logits, encodings, from_examples=True)
 
     log_probs_completions = log_probs_completions_batch(examples)
     num_completions_per_prompt = [len(example.completions) for example in examples]

@@ -442,7 +442,9 @@ next release or two. Hopefully the next one is a Llama2-battle-tested CAPPr 1.0.
     - [ ] Vicuna
     - [ ] PaLM
     - [ ] T5
-  - [ ] If all completions are single-tokens, just run inference once (**)
+  - [ ] If all completions are single-tokens, just run inference once
+    - [x] non `_examples` fxns
+    - [ ] `_examples` fxns: need to think more about how to slice efficiently
   - [ ] Don't modify the tokenizer. Create a context manager around tokenizations (**)
   - [x] Optimize backend to enable greater scaling wrt # completions/classes
   - [x] Get it working on GPU, check that it's faster than sampling

@@ -108,6 +108,10 @@ def _test_encodings(
     Tests that all objects have the expected shape, and that the encodings `offsets` are
     identical.
     """
+    if logits_slow.shape[0] > logits_fast.shape[0] and logits_fast.shape[1] == 1:
+        # Single-token optimization: this test doesn't apply b/c the optimization
+        # doesn't repeat any data, unlike what's done in the slow/no-cache module
+        return
 
     def _test_shapes(logits, encodings):
         assert encodings["input_ids"].shape == logits.shape[:2]  # 3rd dim is vocab
@@ -133,8 +137,21 @@ def _test_logits(
     Tests that logits have identical shape, and that their non-pad token logits are
     numerically close.
     """
-    # Test shapes
-    assert logits_slow.shape[0] == logits_fast.shape[0]  # batch size
+    if logits_slow.shape[0] > logits_fast.shape[0] and logits_fast.shape[1] == 1:
+        # Single-token optimization: we only need to compare the last nonpad token's
+        # logits for each prompt.
+        num_completions = int(logits_slow.shape[0] / logits_fast.shape[0])
+        logits_fast = logits_fast.repeat_interleave(num_completions, dim=0)
+        last_nonpad_token_idxs = (encodings_slow["offsets"] - 1)[:, None, None]
+        logits_slow_last_nonpad_token = logits_slow.take_along_dim(
+            last_nonpad_token_idxs, dim=1
+        )
+        assert (
+            logits_fast.shape == logits_slow_last_nonpad_token.shape
+        )  # allclose doesn't check this
+        assert torch.allclose(logits_fast, logits_slow_last_nonpad_token, atol=atol)
+        return
+
     # Middle dimension (for the # of tokens) is different b/c logits_slow includes
     # prompt and completion tokens, while logits_fast only includes completion tokens.
     assert logits_slow.shape[2] == logits_fast.shape[2]  # vocab size
@@ -195,8 +212,10 @@ def _test_log_probs(
     "completions",
     (
         ["d", "e f g h i"],
-        ####### Next set of completions to test #######
-        ["d", "d e f"],
+        ######################## Next set of completions to test #######################
+        ["d e f", "1 2"],
+        ######################## Test single token optimization ########################
+        ["d", "e", "f"],
     ),
 )
 @pytest.mark.parametrize("end_of_prompt", (" ",))  # TODO: expand

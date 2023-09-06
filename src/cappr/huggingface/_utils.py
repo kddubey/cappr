@@ -16,8 +16,8 @@ from transformers import (
 def logits_to_log_probs(
     logits: torch.Tensor,
     input_ids: torch.Tensor,
-    input_ids_start_idx: int,
-    logits_end_idx: int,
+    input_ids_start_idx: int = None,
+    logits_end_idx: int = None,
 ):
     """
     TODO: docstring
