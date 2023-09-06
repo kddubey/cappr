@@ -226,9 +226,11 @@ TBH my current implementation of caching is far from perfect, partly because it 
 in a misleading way. But it performed [well
 enough](https://cappr.readthedocs.io/en/latest/6_computational_performance.html).
 
-A major todo is to make caching compatible with non-GPT-2 HuggingFace models. I tabled
+A major todo was to make caching compatible with non-GPT-2 HuggingFace models. I tabled
 that because I figured most users would just use OpenAI, not HuggingFace. Seeing how
-popular Llama is today, I think tabling that work may have been a mistake.
+popular self-hosting is today, that was *almost* a mistake. I say *almost* because I
+would've been too early. Quantized Llama 2 models were only released and supported by
+HuggingFace a few weeks ago.
 
 
 ## Marketing matters
@@ -250,7 +252,7 @@ accurate. See the experiment
 [here](https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb). It'd be
 cool to demonstrate that CAPPr generally works better for smaller or under-trained LMs.
 
-Besides the algorithmic stuff, I was pleasantly surprised to learn that I loved
+Besides the algorithmic stuff, I was pleasantly surprised to find that I loved
 engineering this project from the ground up. Mulling over design decisions and managing
 myself was fun. Writing tests was satisfying and easy using pytest. Writing docs was
 satisfying (and [almost](https://github.com/kddubey/dumpy/tree/main/sphinx_setup) easy)
