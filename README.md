@@ -92,7 +92,9 @@ print(preds)
 ```
 
 For an example with Llama 2, see the notebook
-[`demos/llama2.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama2/quick_check_correctness.ipynb).
+[`demos/llama2/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb)
+or
+[`demos/llama2/quick_check_correctness.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama2/quick_check_correctness.ipynb).
 So far, CAPPr has been tested for correctness on the following architectures:
   - GPT-2
   - GPT-J
@@ -334,8 +336,8 @@ notebook](https://github.com/kddubey/cappr/blob/main/demos/computational_analysi
 
 ## Related work
 
-There are many papers where averaging token log-probabilities is a useful subroutine.
-Here are some papers which focus on this idea.
+The idea behind CAPPr is very well known. There are many papers where averaging token
+log-probabilities is a useful subroutine. Here are some papers which focus on this idea.
 
 While [benchmarking this
 method](https://github.com/kddubey/cappr/blob/main/demos/superglue/wsc.ipynb) on the
