@@ -407,7 +407,8 @@ automatically published on PyPI.
 
 ## Todo
 
-(**) = I'm currently working on this or will work on it really soon
+(**) = I'm currently working on this or will work on it really soon. Expect it in the
+next release or two.
 
 <details>
 <summary>Code</summary>
@@ -422,25 +423,24 @@ automatically published on PyPI.
   - [ ] Support as many of them as possible
     - [x] GPT-2
     - [x] GPT-J
-    - [x] Llama
-    - [ ] Llama chat
-    - [ ] Llama2
-    - [ ] Llama2 chat
+    - [x] Llama (**)
+    - [x] Llama2 (**)
+    - [x] Llama2 chat (**)
     - [ ] Vicuna
     - [ ] PaLM
     - [ ] T5
-  - [ ] If all completions are single-tokens, just run inference once
+  - [ ] If all completions are single-tokens, just run inference once (**)
   - [x] Optimize backend to enable greater scaling wrt # completions/classes
   - [x] Get it working on GPU, check that it's faster than sampling
-    - [ ] Get to the bottom of why it's slower w/o batching
-  - [ ] Allow non-`' '` `end_of_prompt`! I'll have to go back to the drawing board I
-  think
+    - [ ] Get to the bottom of why it's slower w/o batching (**)
+  - [ ] Allow non-`' '` `end_of_prompt`. I'm not sure how helpful that is.
   - [ ] Factor out repeated code b/t `classify` and `classify_no_cache`
   - [ ] Support [Inference
     Endpoints](https://huggingface.co/docs/inference-endpoints/index)?
-  - [ ] Support TensorFlow models
-  - [ ] Support priming, as in: cache it
-- [ ] Make progress bars optional, since inference often isn't batched
+  - [ ] Support TensorFlow models?
+  - [ ] Support priming, as in: cache it. See
+    [backprompt](https://github.com/kddubey/backprompt)
+- [ ] Make progress bars optional, since inference often isn't batched (**)
 - [ ] Factor out input checks (on prompts and completions)
 - [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
 - [ ] Allow for multi-label classification
@@ -450,6 +450,7 @@ automatically published on PyPI.
 - [ ] Fill in missing or non-numpy docstrings
 - [ ] Testing
   - [ ] Test `cappr.huggingface.classify_no_cache` by comparing to results w/o batching!
+  - [ ] For heavily quantized models, only test that pred probs are w/in 1e-2 atol
   - [ ] Increase test cases
   - [ ] Test input checks
   - [ ] Test `cappr.openai.api`
@@ -461,6 +462,8 @@ automatically published on PyPI.
 Evaluate on more datasets, and understand its relative advantages and disadvantages vs
 other classification methods.
 
+- [ ] (Llama2 + CAPPr) (Llama2 + CVS) vs (Llama2 chat + CAPPr) vs (Llama2 chat + CVS)
+  (**)
 - [ ] RAFT benchmark
   - [x] Zero-shot training scores
   - [ ] Submit zero-shot test predictions
