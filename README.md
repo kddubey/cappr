@@ -417,7 +417,7 @@ automatically published on PyPI.
 ## Todo
 
 (**) = I'm currently working on this or will work on it really soon. Expect it in the
-next release or two.
+next release or two. Hopefully the next one is a Llama2-battle-tested CAPPr 1.0.0!
 
 <details>
 <summary>Code</summary>
@@ -439,6 +439,7 @@ next release or two.
     - [ ] PaLM
     - [ ] T5
   - [ ] If all completions are single-tokens, just run inference once (**)
+  - [ ] Don't modify the tokenizer. Create a context manager around tokenizations (**)
   - [x] Optimize backend to enable greater scaling wrt # completions/classes
   - [x] Get it working on GPU, check that it's faster than sampling
     - [ ] Get to the bottom of why it's slower w/o batching (**)
@@ -465,6 +466,7 @@ next release or two.
   - [ ] Increase test cases
   - [ ] Test input checks
   - [ ] Test `cappr.openai.api`
+- [ ] Rebrand docs to be more SWE friendly, no ML knowledge needed (**)
 </details>
 
 <details>
