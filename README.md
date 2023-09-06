@@ -90,6 +90,15 @@ preds = predict(
 print(preds)
 # ['Mercury']
 ```
+
+For an example with Llama 2, see the notebook
+[`demos/llama2.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama2.ipynb).
+So far, CAPPr has been tested for correctness on the following models:
+  - GPT-2
+  - GPT-J
+  - Llama
+  - Llama 2 (chat and raw).
+
 </details>
 
 <details>
@@ -423,9 +432,9 @@ next release or two.
   - [ ] Support as many of them as possible
     - [x] GPT-2
     - [x] GPT-J
-    - [x] Llama (**)
-    - [x] Llama2 (**)
-    - [x] Llama2 chat (**)
+    - [x] Llama
+    - [x] Llama 2
+    - [x] Llama 2 chat
     - [ ] Vicuna
     - [ ] PaLM
     - [ ] T5
@@ -440,7 +449,9 @@ next release or two.
   - [ ] Support TensorFlow models?
   - [ ] Support priming, as in: cache it. See
     [backprompt](https://github.com/kddubey/backprompt)
-- [ ] Make progress bars optional, since inference often isn't batched (**)
+- [ ] User conveniences (**)
+  - [ ] Make progress bars optional, since inference often isn't batched
+  - [ ] Accept string input and return string instead of list
 - [ ] Factor out input checks (on prompts and completions)
 - [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
 - [ ] Allow for multi-label classification

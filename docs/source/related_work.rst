@@ -1,6 +1,9 @@
 Related work
 ============
 
+There are many papers where averaging token log-probabilities is a useful subroutine.
+Here are some papers which focus on this idea.
+
 While `benchmarking this method`_ on the Winograd Schema Challenge, I found that
 `this paper`_\ [#]_ is very similar.
 

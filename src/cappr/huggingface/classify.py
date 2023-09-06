@@ -7,10 +7,17 @@ across completions. See the computational performance `here`_.
 
 .. _here: https://cappr.readthedocs.io/en/latest/6_computational_performance.html
 
-You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
+So far, CAPPr has been tested for correctness on the following models:
+
+- GPT-2
+- GPT-J
+- Llama
+- Llama 2 (chat and raw).
 
 .. warning:: This module doesn't work with ``transformers.BartForCausalLM``, among
              others probably.
+
+You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 """
 from __future__ import annotations
 from typing import Mapping, Optional, Sequence, Union
