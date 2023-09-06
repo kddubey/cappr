@@ -92,12 +92,14 @@ print(preds)
 ```
 
 For an example with Llama 2, see the notebook
-[`demos/llama2.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama2.ipynb).
-So far, CAPPr has been tested for correctness on the following models:
+[`demos/llama2.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama2/quick_check_correctness.ipynb).
+So far, CAPPr has been tested for correctness on the following architectures:
   - GPT-2
   - GPT-J
   - Llama
-  - Llama 2 (chat and raw).
+  - Llama 2 (chat, raw, and its GPTQd versions).
+
+Raise an issue to lmk that you don't see your architecture on this list.
 
 </details>
 
@@ -466,6 +468,11 @@ next release or two. Hopefully the next one is a Llama2-battle-tested CAPPr 1.0.
   - [ ] Increase test cases
   - [ ] Test input checks
   - [ ] Test `cappr.openai.api`
+- [ ] Fix or hide warning
+  ```
+  /usr/local/lib/python3.10/dist-packages/cappr/utils/classify.py:63: VisibleDeprecationWarning: Creating an ndarray from ragged nested sequences (which is a list-or-tuple of lists-or-tuples-or ndarrays with different lengths or shapes) is deprecated. If you meant to do this, you must specify 'dtype=object' when creating the ndarray.
+  np.array(  # raises jagged/inhomogeneous ValueError if non-constant # tokens
+  ```
 - [ ] Rebrand docs to be more SWE friendly, no ML knowledge needed (**)
 </details>
 

@@ -12,7 +12,7 @@ So far, CAPPr has been tested for correctness on the following models:
 - GPT-2
 - GPT-J
 - Llama
-- Llama 2 (chat and raw).
+- Llama 2 (chat, raw, and its GPTQd versions).
 
 .. warning:: This module doesn't work with ``transformers.BartForCausalLM``, among
              others probably.
