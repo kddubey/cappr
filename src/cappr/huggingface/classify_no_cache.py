@@ -27,7 +27,9 @@ from cappr import huggingface as hf
 def token_logprobs(
     texts: Sequence[str],
     model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
+    end_of_prompt: str = " ",
     batch_size: int = 32,
+    **kwargs,
 ) -> list[list[float]]:
     """
     For each text, compute each token's log-probability conditional on all previous
@@ -39,6 +41,9 @@ def token_logprobs(
         input texts
     model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
         an instantiated model and its corresponding tokenizer
+    end_of_prompt : str, optional
+        This string gets added to the beginning of each text. It's important to set this
+        if you're using the discount feature. Otherwise, set it to "". By default " "
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -312,7 +317,9 @@ def log_probs_conditional(
     model, tokenizer = hf._utils.set_up_model_and_tokenizer(model_and_tokenizer)
 
     @_batch.flatten
-    @_batch.batchify(batchable_arg="prompts", progress_bar_desc="log-probs (no cache)")
+    @_batch.batchify(
+        batchable_arg="prompts", progress_bar_desc="conditional log-probs (no cache)"
+    )
     def log_probs_completions_batch(prompts, batch_size=batch_size):
         logits, encodings = _logits_completions_given_prompts(
             model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
@@ -396,7 +403,9 @@ def log_probs_conditional_examples(
     model, tokenizer = hf._utils.set_up_model_and_tokenizer(model_and_tokenizer)
 
     @_batch.flatten
-    @_batch.batchify(batchable_arg="examples", progress_bar_desc="log-probs (no cache)")
+    @_batch.batchify(
+        batchable_arg="examples", progress_bar_desc="conditional log-probs (no cache)"
+    )
     def log_probs_completions_batch(examples, batch_size=batch_size):
         logits, encodings = _logits_completions_given_prompts_examples(
             model, tokenizer, examples
@@ -417,6 +426,8 @@ def predict_proba(
     model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
     prior: Optional[Sequence[float]] = None,
     end_of_prompt: str = " ",
+    discount_completions: float = 0.0,
+    log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
     batch_size: int = 32,
 ) -> npt.NDArray[np.floating]:
     """
@@ -437,6 +448,16 @@ def predict_proba(
         `completions` is assumed to be equally likely
     end_of_prompt : str, optional
         the string to tack on at the end of every prompt, by default " "
+    discount_completions : float, optional
+        experimental feature: set it (e.g., 1.0 may work well) if a completion is
+        consistently getting too high predicted probabilities. You could instead fudge
+        the `prior`, but this hyperparameter may be easier to tune than the `prior`. By
+        default 0.0
+    log_marginal_probs_completions : Sequence[Sequence[float]] , optional
+        experimental feature: pre-computed log probabilities of completion tokens
+        conditional on previous completion tokens (not prompt tokens). Only used if `not
+        discount_completions`. Compute them by passing `completions` and `model` to
+        :func:`cappr.huggingface.classify_no_cache.token_logprobs`. By default, None
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -578,6 +599,8 @@ def predict(
     model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
     prior: Optional[Sequence[float]] = None,
     end_of_prompt: str = " ",
+    discount_completions: float = 0.0,
+    log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
     batch_size: int = 32,
 ) -> list[str]:
     """
@@ -598,6 +621,15 @@ def predict(
         `completions` is assumed to be equally likely
     end_of_prompt : str, optional
         the string to tack on at the end of every prompt, by default " "
+    discount_completions : float, optional
+        experimental feature: set it to >0.0 (e.g., 1.0 may work well) if a completion
+        is consistently getting over-predicted. You could instead fudge the `prior`, but
+        this hyperparameter may be easier to tune than the `prior`. By default 0.0
+    log_marginal_probs_completions : Sequence[Sequence[float]] , optional
+        experimental feature: pre-computed log probabilities of completion tokens
+        conditional on previous completion tokens (not prompt tokens). Only used if `not
+        discount_completions`. Compute them by passing `completions` and `model` to
+        :func:`cappr.huggingface.classify_no_cache.token_logprobs`. By default, None
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -646,6 +678,8 @@ def predict(
         model_and_tokenizer,
         prior=prior,
         end_of_prompt=end_of_prompt,
+        discount_completions=discount_completions,
+        log_marginal_probs_completions=log_marginal_probs_completions,
         batch_size=batch_size,
     )
 

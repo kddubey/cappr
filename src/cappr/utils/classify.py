@@ -4,6 +4,7 @@ completions.
 """
 from __future__ import annotations
 from functools import wraps
+from inspect import getmodule
 from typing import Callable, Optional, Sequence, Union
 
 import numpy as np
@@ -176,6 +177,41 @@ def posterior_prob(
     return posteriors_unnorm / marginals
 
 
+def _discount(
+    token_logprobs_func,
+    completions: Sequence[str],
+    log_probs_completions: list[list[list[float]]],
+    *model_args,  # rest are kwarg-only, and must come from the og function's kwargs
+    discount_completions: float,
+    log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
+    **kwargs,
+) -> list[list[list[float]]]:
+    if not discount_completions:
+        return log_probs_completions
+
+    # log Pr(completion token i | completion token :i) for each completion
+    if log_marginal_probs_completions is None:
+        log_marginal_probs_completions = token_logprobs_func(
+            completions, *model_args, **kwargs
+        )
+    for x in log_marginal_probs_completions:
+        if x[0] is None:
+            x[0] = 0  # no discount for the first token
+    # pre-multiply by the discount amount
+    log_marginal_probs_completions_discounted = [
+        discount_completions * np.array(log_marginal_probs_completion)
+        for log_marginal_probs_completion in log_marginal_probs_completions
+    ]
+    return [
+        [
+            np.array(log_probs_prompt_completions[completion_idx])
+            + (np.array(log_marginal_probs_completions_discounted[completion_idx]))
+            for completion_idx in range(len(completions))
+        ]
+        for log_probs_prompt_completions in log_probs_completions
+    ]
+
+
 def _predict_proba(log_probs_conditional):
     """
     Decorator which converts a `log_probs_condtional` function call into a
@@ -187,7 +223,7 @@ def _predict_proba(log_probs_conditional):
     def wrapper(
         prompts: Sequence[str], completions: Sequence[str], *args, **kwargs
     ) -> npt.NDArray[np.floating]:
-        # Before hitting any APIs ($$), let's check the prior
+        # Check the inputs before hitting any APIs ($$). First the prior
         prior = kwargs.get("prior", None)
         _check.prior(prior)
         if prior is not None and len(completions) != len(prior):
@@ -196,10 +232,35 @@ def _predict_proba(log_probs_conditional):
                 f"{len(completions)}, {len(prior)}."
             )
 
+        # Check inputs for discount feature
+        discount_completions = kwargs.get("discount_completions", 0)
+        log_marginal_probs_completions = kwargs.get(
+            "log_marginal_probs_completions", None
+        )
+        if not discount_completions and (log_marginal_probs_completions is not None):
+            raise ValueError(
+                "log_marginal_probs_completions is set, but they will not be used "
+                "because discount_completions was not set."
+            )
+
+        # Do the expensive computation
         log_probs_completions = log_probs_conditional(
             prompts, completions, *args, **kwargs
         )
+
+        # Maybe apply discount
+        if discount_completions:
+            log_probs_completions = _discount(
+                getmodule(log_probs_conditional).token_logprobs,
+                completions,
+                log_probs_completions,
+                *args,
+                **kwargs,
+            )
+
+        # Aggregate probs
         likelihoods = agg_log_probs(log_probs_completions)
+
         # If there's only 1 completion, normalizing will cause the probability to
         # trivially be 1! So let's not normalize in that case, and hope the user knows
         # what they're doing

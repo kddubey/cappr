@@ -81,12 +81,24 @@ def atol():
     "texts", (["a", "fistful of", "tokens more", "the good, the bad, and the tokens."],)
 )
 @pytest.mark.parametrize("batch_size", (10, 3))
-def test_token_logprobs(texts, model_and_tokenizer, batch_size, atol):
+def test_token_logprobs(
+    texts, model_and_tokenizer, batch_size, atol, end_of_prompt=" "
+):
     """
     Tests that the model's token log probabilities are correct by testing against an
     unbatched and carefully/manually indexed result.
     """
     log_probs = fast.token_logprobs(texts, model_and_tokenizer, batch_size=batch_size)
+
+    # bleh
+    if (
+        end_of_prompt == " "
+        and not hf._utils.does_tokenizer_prepend_space_to_first_token(
+            model_and_tokenizer[1]
+        )
+    ):
+        end_of_prompt = ""
+    texts = [end_of_prompt + text for text in texts]
 
     # Gather un-batched data to compare against as the expected result
     texts_log_probs = []
@@ -332,15 +344,24 @@ class TestPromptsCompletions:
             atol,
         )
 
+    @pytest.mark.parametrize("discount_completions", (0.0, 1.0))
     def test_predict_proba(
-        self, prompts, completions, model_and_tokenizer, end_of_prompt, atol
+        self,
+        prompts,
+        completions,
+        model_and_tokenizer,
+        end_of_prompt,
+        discount_completions,
+        atol,
     ):
+        # Test form of output
         _test.predict_proba(
             fast.predict_proba,
             prompts,
             completions,
             model_and_tokenizer=model_and_tokenizer,
             end_of_prompt=end_of_prompt,
+            discount_completions=discount_completions,
         )
         _test.predict_proba(
             slow.predict_proba,
@@ -348,18 +369,23 @@ class TestPromptsCompletions:
             completions,
             model_and_tokenizer=model_and_tokenizer,
             end_of_prompt=end_of_prompt,
+            discount_completions=discount_completions,
         )
+
+        # Test that predictions match
         pred_probs_fast = fast.predict_proba(
             prompts,
             completions,
             model_and_tokenizer=model_and_tokenizer,
             end_of_prompt=end_of_prompt,
+            discount_completions=discount_completions,
         )
         pred_probs_slow = slow.predict_proba(
             prompts,
             completions,
             model_and_tokenizer=model_and_tokenizer,
             end_of_prompt=end_of_prompt,
+            discount_completions=discount_completions,
         )
         # cast to tensor so that we are consistent w/ the way "numerical closeness"
         # is defined for model-dependent outputs
@@ -367,13 +393,23 @@ class TestPromptsCompletions:
             torch.tensor(pred_probs_fast), torch.tensor(pred_probs_slow), atol=atol
         )
 
-    def test_predict(self, prompts, completions, model_and_tokenizer, end_of_prompt):
+    @pytest.mark.parametrize("discount_completions", (0.0, 1.0))
+    def test_predict(
+        self,
+        prompts,
+        completions,
+        model_and_tokenizer,
+        end_of_prompt,
+        discount_completions,
+    ):
+        # Test form of output
         _test.predict(
             fast.predict,
             prompts,
             completions,
             model_and_tokenizer=model_and_tokenizer,
             end_of_prompt=end_of_prompt,
+            discount_completions=discount_completions,
         )
         _test.predict(
             slow.predict,
@@ -381,18 +417,23 @@ class TestPromptsCompletions:
             completions,
             model_and_tokenizer=model_and_tokenizer,
             end_of_prompt=end_of_prompt,
+            discount_completions=discount_completions,
         )
+
+        # Test that predictions match
         preds_fast = fast.predict(
             prompts,
             completions,
             model_and_tokenizer=model_and_tokenizer,
             end_of_prompt=end_of_prompt,
+            discount_completions=discount_completions,
         )
         preds_slow = slow.predict(
             prompts,
             completions,
             model_and_tokenizer=model_and_tokenizer,
             end_of_prompt=end_of_prompt,
+            discount_completions=discount_completions,
         )
         assert preds_fast == preds_slow
 
@@ -454,6 +495,7 @@ class TestExamples:
         )
 
     def test_predict_proba_examples(self, examples, model_and_tokenizer, atol):
+        # Test form of output
         _test.predict_proba_examples(
             fast.predict_proba_examples,
             examples,
@@ -464,6 +506,8 @@ class TestExamples:
             examples,
             model_and_tokenizer=model_and_tokenizer,
         )
+
+        # Test that predictions match
         pred_probs_fast = fast.predict_proba_examples(
             examples, model_and_tokenizer=model_and_tokenizer
         )
@@ -482,12 +526,15 @@ class TestExamples:
             )
 
     def test_predict_examples(self, examples, model_and_tokenizer):
+        # Test form of output
         _test.predict_examples(
             fast.predict_examples, examples, model_and_tokenizer=model_and_tokenizer
         )
         _test.predict_examples(
             slow.predict_examples, examples, model_and_tokenizer=model_and_tokenizer
         )
+
+        # Test that predictions match
         preds_fast = fast.predict_examples(
             examples, model_and_tokenizer=model_and_tokenizer
         )

@@ -33,11 +33,13 @@ from cappr import huggingface as hf
 
 
 @_batch.flatten
-@_batch.batchify(batchable_arg="texts", progress_bar_desc="log-probs")
+@_batch.batchify(batchable_arg="texts", progress_bar_desc="marginal log-probs")
 def token_logprobs(
     texts: Sequence[str],
     model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
+    end_of_prompt: str = " ",
     batch_size: int = 32,
+    **kwargs,
 ) -> list[list[float]]:
     """
     For each text, compute each token's log-probability conditional on all previous
@@ -49,6 +51,9 @@ def token_logprobs(
         input texts
     model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
         an instantiated model and its corresponding tokenizer
+    end_of_prompt : str, optional
+        This string gets added to the beginning of each text. It's important to set this
+        if you're using the discount feature. Otherwise, set it to "". By default " "
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -62,8 +67,18 @@ def token_logprobs(
         `log_probs[text_idx]` is `[None]`.
     """
     model, tokenizer = hf._utils.set_up_model_and_tokenizer(model_and_tokenizer)
+
+    # bleh
+    if (
+        end_of_prompt == " "
+        and not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer)
+    ):
+        end_of_prompt = ""
+    texts = [end_of_prompt + text for text in texts]
+
     # Batch inference
     logits, encodings = hf._utils.logits_texts(texts, model, tokenizer)
+
     # Convert next-token logits to this-token logprobs.
     # It's probably wrong to set input_ids_start_idx=0 for tokenizers which add a bos
     # token (like SentencePiece for Llama). Pr(token | <s>) is not Pr(token), so we
@@ -74,6 +89,7 @@ def token_logprobs(
         input_ids_start_idx=1,  # this token's log-prob is in the prev token's logit
         logits_end_idx=-1,
     )
+
     # Remove pad token logprobs
     num_non_pad_tokens = encodings.attention_mask.sum(dim=1)
     log_probs = []
@@ -389,10 +405,11 @@ def _logits_completions_given_prompts(
     2. `encodings`: `BatchEncoding` containing the input IDs, attention mask,
     and position offsets.
     """
-    if end_of_prompt != " ":
-        raise ValueError("end_of_prompt must be ' ' for now. Sorry!")
     if not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer):
         end_of_prompt = ""
+    else:
+        if end_of_prompt != " ":
+            raise ValueError("end_of_prompt must be ' ' for now. Sorry!")
     completions = [end_of_prompt + completion.lstrip() for completion in completions]
     # TODO: figure out how to do this generally, not just for ' ' end_of_prompt
     return _blessed_helper(
@@ -434,13 +451,14 @@ def _logits_completions_given_prompts_examples(
     2. `encodings`: `BatchEncoding` containing the input IDs, attention mask,
     and position offsets.
     """
-    if any([example.end_of_prompt != " " for example in examples]):
-        raise ValueError("Every example's end_of_prompt must be ' ' for now. Sorry!")
-    prompts = [example.prompt for example in examples]
     if not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer):
         end_of_prompt = ""
     else:
+        if any([example.end_of_prompt != " " for example in examples]):
+            raise ValueError("Every example's end_of_prompt must be ' '")
         end_of_prompt = " "
+
+    prompts = [example.prompt for example in examples]
     completions = [
         end_of_prompt + completion.lstrip()
         for example in examples
@@ -577,7 +595,7 @@ def log_probs_conditional(
     model, tokenizer = hf._utils.set_up_model_and_tokenizer(model_and_tokenizer)
 
     @_batch.flatten
-    @_batch.batchify(batchable_arg="prompts", progress_bar_desc="log-probs")
+    @_batch.batchify(batchable_arg="prompts", progress_bar_desc="conditional log-probs")
     def log_probs_completions_batch(prompts, batch_size=batch_size):
         logits, encodings = _logits_completions_given_prompts(
             model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
@@ -661,7 +679,9 @@ def log_probs_conditional_examples(
     model, tokenizer = hf._utils.set_up_model_and_tokenizer(model_and_tokenizer)
 
     @_batch.flatten
-    @_batch.batchify(batchable_arg="examples", progress_bar_desc="log-probs")
+    @_batch.batchify(
+        batchable_arg="examples", progress_bar_desc="conditional log-probs"
+    )
     def log_probs_completions_batch(examples, batch_size=batch_size):
         logits, encodings = _logits_completions_given_prompts_examples(
             model, tokenizer, examples
@@ -682,6 +702,8 @@ def predict_proba(
     model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
     prior: Optional[Sequence[float]] = None,
     end_of_prompt: str = " ",
+    discount_completions: float = 0.0,
+    log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
     batch_size: int = 32,
 ) -> npt.NDArray[np.floating]:
     """
@@ -702,6 +724,16 @@ def predict_proba(
         `completions` is assumed to be equally likely
     end_of_prompt : str, optional
         the string to tack on at the end of every prompt, by default " "
+    discount_completions : float, optional
+        experimental feature: set it (e.g., 1.0 may work well) if a completion is
+        consistently getting too high predicted probabilities. You could instead fudge
+        the `prior`, but this hyperparameter may be easier to tune than the `prior`. By
+        default 0.0
+    log_marginal_probs_completions : Sequence[Sequence[float]] , optional
+        experimental feature: pre-computed log probabilities of completion tokens
+        conditional on previous completion tokens (not prompt tokens). Only used if `not
+        discount_completions`. Compute them by passing `completions` and `model` to
+        :func:`cappr.huggingface.classify.token_logprobs`. By default, None
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -843,6 +875,8 @@ def predict(
     model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
     prior: Optional[Sequence[float]] = None,
     end_of_prompt: str = " ",
+    discount_completions: float = 0.0,
+    log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
     batch_size: int = 32,
 ) -> list[str]:
     """
@@ -863,6 +897,15 @@ def predict(
         `completions` is assumed to be equally likely
     end_of_prompt : str, optional
         the string to tack on at the end of every prompt, by default " "
+    discount_completions : float, optional
+        experimental feature: set it to >0.0 (e.g., 1.0 may work well) if a completion
+        is consistently getting over-predicted. You could instead fudge the `prior`, but
+        this hyperparameter may be easier to tune than the `prior`. By default 0.0
+    log_marginal_probs_completions : Sequence[Sequence[float]] , optional
+        experimental feature: pre-computed log probabilities of completion tokens
+        conditional on previous completion tokens (not prompt tokens). Only used if `not
+        discount_completions`. Compute them by passing `completions` and `model` to
+        :func:`cappr.huggingface.classify.token_logprobs`. By default, None
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -911,6 +954,8 @@ def predict(
         model_and_tokenizer,
         prior=prior,
         end_of_prompt=end_of_prompt,
+        discount_completions=discount_completions,
+        log_marginal_probs_completions=log_marginal_probs_completions,
         batch_size=batch_size,
     )
 

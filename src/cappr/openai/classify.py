@@ -17,7 +17,7 @@ from cappr import openai
 
 
 def token_logprobs(
-    texts: Sequence[str], model: openai.api.Model, ask_if_ok: bool = False
+    texts: Sequence[str], model: openai.api.Model, ask_if_ok: bool = False, **kwargs
 ) -> list[list[float]]:
     """
     For each text, compute each token's log-probability conditional on all previous
@@ -378,43 +378,13 @@ def predict_proba(
         pred_probs[1,0]
         # 0.1
     """
-    if not discount_completions and (log_marginal_probs_completions is not None):
-        raise ValueError(
-            "log_marginal_probs_completions is set, but they will not be used because "
-            "discount_completions was not set."
-        )
-    log_probs_completions = log_probs_conditional(
+    return log_probs_conditional(
         prompts,
         completions,
         model,
         end_of_prompt=end_of_prompt,
         ask_if_ok=ask_if_ok,
     )
-    if not discount_completions:
-        return log_probs_completions
-
-    # Apply discount. TODO: put this in the decorator so that all modules can use it
-    # log Pr(completion token i | completion token :i) for each completion
-    if log_marginal_probs_completions is None:
-        log_marginal_probs_completions = token_logprobs(
-            completions, model, ask_if_ok=ask_if_ok
-        )
-    for x in log_marginal_probs_completions:
-        if x[0] is None:
-            x[0] = 0  # no discount for the first token
-    # pre-multiply by the discount amount
-    log_marginal_probs_completions_discounted = [
-        discount_completions * np.array(log_marginal_probs_completion)
-        for log_marginal_probs_completion in log_marginal_probs_completions
-    ]
-    return [
-        [
-            np.array(log_probs_prompt_completions[completion_idx])
-            + (np.array(log_marginal_probs_completions_discounted[completion_idx]))
-            for completion_idx in range(len(completions))
-        ]
-        for log_probs_prompt_completions in log_probs_completions
-    ]
 
 
 @classify._predict_proba_examples
@@ -584,6 +554,7 @@ def predict(
         prior=prior,
         end_of_prompt=end_of_prompt,
         discount_completions=discount_completions,
+        log_marginal_probs_completions=log_marginal_probs_completions,
         ask_if_ok=ask_if_ok,
     )
 

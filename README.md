@@ -426,8 +426,6 @@ next release or two. Hopefully the next one is a Llama2-battle-tested CAPPr 1.0.
 <details>
 <summary>Code</summary>
 
-- [ ] Factor out the discount feature in `cappr.openai.classify.predict_proba` into
-`cappr.utils.classify._predict_proba`
 - [x] Small CPU speed-ups
   - [x] For constant-completions input, vectorize `cappr.utils.classify.agg_log_probs`
   - [x] For `examples` input, if # completions per prompt is constant, vectorize
@@ -460,6 +458,7 @@ next release or two. Hopefully the next one is a Llama2-battle-tested CAPPr 1.0.
 - [ ] User conveniences (**)
   - [ ] Make progress bars optional, since inference often isn't batched
   - [ ] Accept string input and return string instead of list
+- [ ] Support discount feature for `_examples` functions
 - [ ] Factor out input checks (on prompts and completions)
 - [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
 - [ ] Allow for multi-label classification
