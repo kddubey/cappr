@@ -19,7 +19,7 @@ def display_df(
     if num_rows is None:
         num_rows = len(df)
     df_head_styled = df.head(num_rows)[columns].style
-    with pd.option_context("max_colwidth", -1):
+    with pd.option_context("max_colwidth", None):
         ## I'm not sure why try-except doesn't work w/ display(), so instead
         ## check the necessary uniqueness condition before running it
         if df.index.is_unique:
