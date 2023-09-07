@@ -98,13 +98,13 @@ def examples():
 def test_token_logprobs(model):
     texts = ["a b c", "d e"]
     log_probs = classify.token_logprobs(texts, model)
-    assert log_probs == [[0, 1, 2], [0, 1]]
+    assert log_probs == [[0, 1, 2], [0, 1]]  # cuz the API is mocked w/ range(len())
 
 
 def test__slice_completions(completions, model):
     log_probs = [[0, 1, 2], [0, 1]]
     log_probs_completions = classify._slice_completions(
-        completions, "", log_probs, model
+        completions, end_of_prompt="", log_probs=log_probs, model=model
     )
     assert log_probs_completions == [[1, 2], [1]]
 

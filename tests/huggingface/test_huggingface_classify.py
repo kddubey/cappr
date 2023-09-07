@@ -16,10 +16,16 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from cappr import Example as Ex
 from cappr.huggingface import classify as fast
 from cappr.huggingface import classify_no_cache as slow
+from cappr import huggingface as hf
 
 # sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
 import _test
+
+
+########################################################################################
+###################################### Fixtures ########################################
+########################################################################################
 
 
 @pytest.fixture(
@@ -66,6 +72,53 @@ def atol():
     return 1e-4
 
 
+########################################################################################
+#################################### One-off tests #####################################
+########################################################################################
+
+
+@pytest.mark.parametrize(
+    "texts", (["a", "fistful of", "tokens more", "the good, the bad, and the tokens."],)
+)
+@pytest.mark.parametrize("batch_size", (10, 3))
+def test_token_logprobs(texts, model_and_tokenizer, batch_size, atol):
+    """
+    Tests that the model's token log probabilities are correct by testing against an
+    unbatched and carefully/manually indexed result.
+    """
+    log_probs = fast.token_logprobs(texts, model_and_tokenizer, batch_size=batch_size)
+
+    # Gather un-batched data to compare against as the expected result
+    texts_log_probs = []
+    texts_input_ids = []
+    for text in texts:
+        logits, _encoding = hf._utils.logits_texts([text], *model_and_tokenizer)
+        # grab first index b/c we only gave it 1 text
+        texts_log_probs.append(logits[0].log_softmax(dim=1))
+        texts_input_ids.append(_encoding.input_ids[0])
+
+    # The first logprob of every text must be None b/c no CausalLM estimates Pr(token)
+    for log_prob in log_probs:
+        assert log_prob[0] is None
+
+    # The sizes are the same as the number of tokens
+    assert len(log_probs) == len(texts)  # == len(texts_encodings) => zip is strict
+    for log_prob, input_ids in zip(log_probs, texts_input_ids):
+        assert len(log_prob) == len(input_ids)
+
+    # Every log prob is correct
+    for log_prob, input_ids, log_probs_expected in zip(
+        log_probs, texts_input_ids, texts_log_probs
+    ):
+        for i in range(0, len(input_ids) - 1):
+            log_prob_expected = log_probs_expected[i, input_ids[i + 1]]
+            assert torch.isclose(
+                torch.tensor(log_prob[i + 1]),
+                log_prob_expected,
+                atol=atol,
+            )
+
+
 @pytest.mark.parametrize("prompts", (["a b c", "c"],))
 @pytest.mark.parametrize("num_completions_per_prompt", (2, (2, 3)))
 def test__keys_values_prompts(
@@ -96,6 +149,11 @@ def test__keys_values_prompts(
     assert torch.equal(offsets_slow, offsets_fast)
 
     assert torch.allclose(logits_last_slow, logits_last_fast, atol=atol)
+
+
+########################################################################################
+#################################### Test helpers ######################################
+########################################################################################
 
 
 def _test_encodings(
@@ -207,6 +265,11 @@ def _test_log_probs(
             )
 
 
+########################################################################################
+####################################### Tests ##########################################
+########################################################################################
+
+
 @pytest.mark.parametrize("prompts", (["a b c", "c"],))
 @pytest.mark.parametrize(
     "completions",
@@ -214,7 +277,7 @@ def _test_log_probs(
         ["d", "e f g h i"],
         ######################## Next set of completions to test #######################
         ["d e f", "1 2"],
-        ######################## Test single token optimization ########################
+        ######################## Test Single-token optimization ########################
         ["d", "e", "f"],
     ),
 )

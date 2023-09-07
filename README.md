@@ -448,7 +448,8 @@ next release or two. Hopefully the next one is a Llama2-battle-tested CAPPr 1.0.
   - [ ] Don't modify the tokenizer. Create a context manager around tokenizations (**)
   - [x] Optimize backend to enable greater scaling wrt # completions/classes
   - [x] Get it working on GPU, check that it's faster than sampling
-    - [ ] Get to the bottom of why it's slower w/o batching (**)
+  - [ ] May need to revisit batching
+  - [ ] Add type alias `ModelForCausalLM` which is a `PreTrainedModel` (**)
   - [ ] Allow non-`' '` `end_of_prompt`. I'm not sure how helpful that is.
   - [ ] Factor out repeated code b/t `classify` and `classify_no_cache`
   - [ ] Support [Inference
@@ -472,7 +473,7 @@ next release or two. Hopefully the next one is a Llama2-battle-tested CAPPr 1.0.
   - [ ] Increase test cases
   - [ ] Test input checks
   - [ ] Test `cappr.openai.api`
-- [ ] Fix or hide warning
+- [ ] Fix or hide warning (**)
   ```
   /usr/local/lib/python3.10/dist-packages/cappr/utils/classify.py:63: VisibleDeprecationWarning: Creating an ndarray from ragged nested sequences (which is a list-or-tuple of lists-or-tuples-or ndarrays with different lengths or shapes) is deprecated. If you meant to do this, you must specify 'dtype=object' when creating the ndarray.
   np.array(  # raises jagged/inhomogeneous ValueError if non-constant # tokens

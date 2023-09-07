@@ -32,6 +32,59 @@ from cappr import Example
 from cappr import huggingface as hf
 
 
+@_batch.flatten
+@_batch.batchify(batchable_arg="texts", progress_bar_desc="log-probs")
+def token_logprobs(
+    texts: Sequence[str],
+    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
+    batch_size: int = 32,
+) -> list[list[float]]:
+    """
+    For each text, compute each token's log-probability conditional on all previous
+    tokens in the text.
+
+    Parameters
+    ----------
+    texts : Sequence[str]
+        input texts
+    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
+        an instantiated model and its corresponding tokenizer
+    batch_size : int, optional
+        the maximum number of inputs that the model will process in parallel, by default
+        32
+
+    Returns
+    -------
+    log_probs : list[list[float]]
+        `log_probs[text_idx][token_idx]` is the log-probability of the token at
+        `token_idx` of `texts[text_idx]` conditional on all previous tokens in
+        `texts[text_idx]`. If `texts[text_idx]` is a single token, then
+        `log_probs[text_idx]` is `[None]`.
+    """
+    model, tokenizer = hf._utils.set_up_model_and_tokenizer(model_and_tokenizer)
+    # Batch inference
+    logits, encodings = hf._utils.logits_texts(texts, model, tokenizer)
+    # Convert next-token logits to this-token logprobs.
+    # It's probably wrong to set input_ids_start_idx=0 for tokenizers which add a bos
+    # token (like SentencePiece for Llama). Pr(token | <s>) is not Pr(token), so we
+    # should treat these tokenizers the same way as others.
+    log_probs_texts = hf._utils.logits_to_log_probs(
+        logits=logits,
+        input_ids=encodings["input_ids"],
+        input_ids_start_idx=1,  # this token's log-prob is in the prev token's logit
+        logits_end_idx=-1,
+    )
+    # Remove pad token logprobs
+    num_non_pad_tokens = encodings.attention_mask.sum(dim=1)
+    log_probs = []
+    first_token_log_prob = [None]  # no CausalLM estimates Pr(token), so call it None
+    for log_probs_text, n in zip(log_probs_texts, num_non_pad_tokens):
+        # we slice off the right side b/c the tokenizer was set up to do padding on the
+        # right
+        log_probs.append(first_token_log_prob + log_probs_text[: (n - 1)].tolist())
+    return log_probs
+
+
 def _keys_values_prompts(
     model: AutoModelForCausalLM,
     tokenizer: PreTrainedTokenizer,

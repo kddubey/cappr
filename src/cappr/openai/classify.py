@@ -46,8 +46,8 @@ def token_logprobs(
     """
     # Need to handle texts which are single tokens. Set their logprobs to [None]
     tokenizer = tiktoken.encoding_for_model(model)
-    text_lengths = [len(tokens) for tokens in tokenizer.encode_batch(texts)]
-    idxs_multiple_tokens = [i for i, length in enumerate(text_lengths) if length > 1]
+    num_tokens = [len(tokens) for tokens in tokenizer.encode_batch(texts)]
+    idxs_multiple_tokens = [i for i, length in enumerate(num_tokens) if length > 1]
     choices = openai.api.gpt_complete(
         texts=[texts[i] for i in idxs_multiple_tokens],
         ask_if_ok=ask_if_ok,
@@ -392,13 +392,16 @@ def predict_proba(
     )
     if not discount_completions:
         return log_probs_completions
+
+    # Apply discount. TODO: put this in the decorator so that all modules can use it
     # log Pr(completion token i | completion token :i) for each completion
     if log_marginal_probs_completions is None:
         log_marginal_probs_completions = token_logprobs(
             completions, model, ask_if_ok=ask_if_ok
         )
     for x in log_marginal_probs_completions:
-        x[0] = 0  # set it from None to 0, i.e., no discount for the first token
+        if x[0] is None:
+            x[0] = 0  # no discount for the first token
     # pre-multiply by the discount amount
     log_marginal_probs_completions_discounted = [
         discount_completions * np.array(log_marginal_probs_completion)

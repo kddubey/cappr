@@ -24,6 +24,36 @@ from cappr import Example
 from cappr import huggingface as hf
 
 
+def token_logprobs(
+    texts: Sequence[str],
+    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
+    batch_size: int = 32,
+) -> list[list[float]]:
+    """
+    For each text, compute each token's log-probability conditional on all previous
+    tokens in the text.
+
+    Parameters
+    ----------
+    texts : Sequence[str]
+        input texts
+    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
+        an instantiated model and its corresponding tokenizer
+    batch_size : int, optional
+        the maximum number of inputs that the model will process in parallel, by default
+        32
+
+    Returns
+    -------
+    log_probs : list[list[float]]
+        `log_probs[text_idx][token_idx]` is the log-probability of the token at
+        `token_idx` of `texts[text_idx]` conditional on all previous tokens in
+        `texts[text_idx]`. If `texts[text_idx]` is a single token, then
+        `log_probs[text_idx]` is `[None]`.
+    """
+    return hf.classify.token_logprobs(texts, model_and_tokenizer, batch_size=batch_size)
+
+
 def _keys_values_prompts(
     model: AutoModelForCausalLM,
     tokenizer: PreTrainedTokenizer,
@@ -126,26 +156,6 @@ def _keys_values_prompts(
     return out.past_key_values, encodings, offsets, last_nonpad_token_logits
 
 
-def _logits_texts(
-    model: AutoModelForCausalLM,
-    tokenizer: PreTrainedTokenizer,
-    texts: Sequence[str],
-) -> tuple[torch.Tensor, BatchEncoding]:
-    encodings = tokenizer(texts, return_tensors="pt", padding=True).to(model.device)
-    with torch.no_grad():
-        out = model(**encodings)
-    if getattr(tokenizer, "add_bos_token", False):
-        # Drop the first <s> token after we're done encoding so that the shape is
-        # consistent w/ other tokenizers
-        logits = out.logits[:, 1:, :]
-        encodings = BatchEncoding(
-            {key: value[:, 1:] for key, value in encodings.items()}
-        )
-    else:
-        logits = out.logits
-    return logits, encodings
-
-
 def _prompts_offsets(
     tokenizer: PreTrainedTokenizer,
     prompts: Sequence[str],
@@ -183,7 +193,7 @@ def _logits_completions_given_prompts(
         for prompt in prompts
         for completion in completions
     ]
-    logits, encodings = _logits_texts(model, tokenizer, texts)
+    logits, encodings = hf._utils.logits_texts(texts, model, tokenizer)
     # Need these indices to slice completion tokens
     encodings["offsets"] = _prompts_offsets(
         tokenizer, prompts, num_completions_per_prompt=len(completions)
@@ -201,7 +211,7 @@ def _logits_completions_given_prompts_examples(
         for example in examples
         for completion in example.completions
     ]
-    logits, encodings = _logits_texts(model, tokenizer, texts)
+    logits, encodings = hf._utils.logits_texts(texts, model, tokenizer)
     # Need these indices to slice completion tokens
     prompts = [example.prompt for example in examples]
     num_completions_per_prompt = [len(example.completions) for example in examples]
