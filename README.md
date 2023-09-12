@@ -461,10 +461,11 @@ next release or two. Hopefully the next one is a Llama2-battle-tested CAPPr 1.0.
 - [ ] Support discount feature for `_examples` functions
 - [ ] Factor out input checks (on prompts and completions)
 - [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
-- [ ] Allow for multi-label classification
+- [ ] Allow for multi-label classification (**)
   - [ ] Pass `normalize` as an argument to predict_proba functions
   - [ ] For `huggingface`, add note that you'll get faster results by passing all
-  labels at once (assuming prompt is identical for each label)
+  labels at once (assuming prompt is identical for each label). May need to set
+  `batch_size` to 1.
 - [ ] Fill in missing or non-numpy docstrings
 - [ ] Testing
   - [ ] Test `cappr.huggingface.classify_no_cache` by comparing to results w/o batching!
