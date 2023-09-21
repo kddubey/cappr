@@ -2,12 +2,11 @@
 Perform prompt-completion classification using a ``transformers.AutoModelForCausalLM``.
 Currently, only PyTorch models are supported.
 
-This module is a mirror of :mod:`cappr.huggingface.classify` which **does not**
-precompute attention block keys and values for prompts.
-
-This module may happen to be compatible with a slightly broader class of
-causal/autoregressive language models, as the model's forward method is only assumed
-take input IDs and the attention mask.
+This module is a mirror of :mod:`cappr.huggingface.classify`. The difference is that
+this module **does not** precompute attention block keys and values for prompts. As a
+result, it may happen to be compatible with a slightly broader class of
+causal/autoregressive language models. The model's forward method is only assumed take
+input IDs and the attention mask.
 
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 """

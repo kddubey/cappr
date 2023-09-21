@@ -17,12 +17,12 @@ Install with ``pip``:
 
 ::
 
-   pip install cappr[hf]
+   pip install "cappr[hf]"
 
 (Optional) Install requirements for running `demos`_:
 
 ::
 
-   pip install cappr[demos]
+   pip install "cappr[demos]"
 
 .. _demos: https://github.com/kddubey/cappr/tree/main/demos

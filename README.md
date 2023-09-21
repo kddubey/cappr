@@ -235,14 +235,14 @@ pip install cappr
 (Optional) Install requirements for HuggingFace models
 
 ```
-pip install cappr[hf]
+pip install "cappr[hf]"
 ```
 
 (Optional) Install requirements for running
 [`demos`](https://github.com/kddubey/cappr/tree/main/demos)
 
 ```
-pip install cappr[demos]
+pip install "cappr[demos]"
 ```
 
 
@@ -376,15 +376,14 @@ TODO
    requirements (ensure your venv is activated)
 
    ```
-   python -m pip install -e .[dev]
+   python -m pip install -e ".[dev]"
    ```
 
 ### VS code extensions for development
 
   * [autoDocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring).
-  Use the numpy format.
-  * [Set Python formatting to
-    `black`](https://dev.to/adamlombard/how-to-use-the-black-python-code-formatter-in-vscode-3lo0).
+  Use the numpy format, and check "Start On New Line".
+  * Set Python formatting to `black`.
   * [Rewrap](https://stkb.github.io/Rewrap/). Enable Auto Wrap.
 
 ### Testing
@@ -393,22 +392,21 @@ TODO
 pytest
 ```
 
-Note that a few small, dummy models will be downloaded to your computer if you don't
-have them already.
+Note that a few small transformers will be downloaded to your computer.
 
 ### Docs
 
-To locally build docs (I'm on Windows lol), run
+To test changes to documentation, first locally build them via
 
 ```
 cd docs
 
-make.bat html
+make html
 ```
 
-To preview these docs, open `docs/build/html/index.html`.
+and then preview them by opening `docs/build/html/index.html` in your browser.
 
-Docs are automatically built and published when code is merged to main.
+After merging code to main, the official docs will be automatically built and published.
 
 ### Release
 
@@ -421,7 +419,7 @@ automatically published on PyPI.
 ## Todo
 
 (**) = I'm currently working on this or will work on it really soon. Expect it in the
-next release or two. Hopefully the next one is a Llama2-battle-tested CAPPr 1.0.0!
+next release or two. Hopefully the next one is a Llama2-battle-tested CAPPr 0.5.0.
 
 <details>
 <summary>Code</summary>
@@ -478,6 +476,7 @@ next release or two. Hopefully the next one is a Llama2-battle-tested CAPPr 1.0.
   /usr/local/lib/python3.10/dist-packages/cappr/utils/classify.py:63: VisibleDeprecationWarning: Creating an ndarray from ragged nested sequences (which is a list-or-tuple of lists-or-tuples-or ndarrays with different lengths or shapes) is deprecated. If you meant to do this, you must specify 'dtype=object' when creating the ndarray.
   np.array(  # raises jagged/inhomogeneous ValueError if non-constant # tokens
   ```
+- [ ] Allow user to set `OPENAI_API_KEY` env var, or just dynamically use it
 - [ ] Rebrand docs to be more SWE friendly, no ML knowledge needed (**)
 </details>
 

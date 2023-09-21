@@ -2,12 +2,14 @@
 Perform prompt-completion classification using a ``transformers.AutoModelForCausalLM``.
 Currently, only PyTorch models are supported.
 
+You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
+
 In the implementation, attention block keys and values for prompts are cached and shared
 across completions. See the computational performance `here`_.
 
 .. _here: https://cappr.readthedocs.io/en/latest/6_computational_performance.html
 
-So far, CAPPr has been tested for correctness on the following models:
+So far, CAPPr has been tested for correctness on the following architectures:
 
 - GPT-2
 - GPT-J
@@ -16,8 +18,6 @@ So far, CAPPr has been tested for correctness on the following models:
 
 .. warning:: This module doesn't work with ``transformers.BartForCausalLM``, among
              others probably.
-
-You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 """
 from __future__ import annotations
 from typing import Mapping, Optional, Sequence, Union
