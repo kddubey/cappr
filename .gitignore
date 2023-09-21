@@ -6,3 +6,4 @@ docs/_build
 docs/build
 dist/
 .vscode/
+.DS_Store
