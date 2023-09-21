@@ -49,7 +49,7 @@ def _agg_log_probs_from_constant_completions(
     # Say, e.g., we have 2 completions, ['a b', 'c d e'], and 2 prompts.
     # Then log_probs looks like:
     # [ [ [a1, b1],      (token log-probs for completion 1 | prompt 1)
-    #      [c1, d1, e1]], (token log-probs for completion 2 | prompt 1)
+    #     [c1, d1, e1]], (token log-probs for completion 2 | prompt 1)
     #   [ [a2, b2],      (token log-probs for completion 1 | prompt 2)
     #     [c2, d2, e2]]  (token log-probs for completion 2 | prompt 2)
     # ]

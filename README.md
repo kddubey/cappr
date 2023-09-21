@@ -476,7 +476,9 @@ next release or two. Hopefully the next one is a Llama2-battle-tested CAPPr 0.5.
   /usr/local/lib/python3.10/dist-packages/cappr/utils/classify.py:63: VisibleDeprecationWarning: Creating an ndarray from ragged nested sequences (which is a list-or-tuple of lists-or-tuples-or ndarrays with different lengths or shapes) is deprecated. If you meant to do this, you must specify 'dtype=object' when creating the ndarray.
   np.array(  # raises jagged/inhomogeneous ValueError if non-constant # tokens
   ```
-- [ ] Allow user to set `OPENAI_API_KEY` env var, or just dynamically use it
+- [ ] Allow user to set `OPENAI_API_KEY` env var, or just dynamically use it (**)
+- [ ] Allow for more generic Sequence types instead of explicit `Sequence`. See, e.g.,
+  [this SO answer](https://stackoverflow.com/a/31043360/18758987) (**)
 - [ ] Rebrand docs to be more SWE friendly, no ML knowledge needed (**)
 </details>
 
