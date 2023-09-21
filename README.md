@@ -355,11 +355,6 @@ assumed to come from masked language models like BERT.
 > models are also few-shot learners." arXiv preprint arXiv:2009.07118 (2020).
 
 
-## Contributing
-
-TODO
-
-
 ## Local development
 
 ### Setup
@@ -418,96 +413,8 @@ automatically published on PyPI.
 
 ## Todo
 
-(**) = I'm currently working on this or will work on it really soon. Expect it in the
-next release or two. Hopefully the next one is a Llama2-battle-tested CAPPr 0.5.0.
+Idk how to use GitHub projects, but I've put TODOs here:
 
-<details>
-<summary>Code</summary>
+[Code changes](https://github.com/users/kddubey/projects/1/views/1)
 
-- [x] Small CPU speed-ups
-  - [x] For constant-completions input, vectorize `cappr.utils.classify.agg_log_probs`
-  - [x] For `examples` input, if # completions per prompt is constant, vectorize
-  `cappr.utils.classify.posterior_prob`
-- [ ] HuggingFace `transformers.AutoModelForCausalLM`
-  - [ ] Support as many of them as possible
-    - [x] GPT-2
-    - [x] GPT-J
-    - [x] Llama
-    - [x] Llama 2
-    - [x] Llama 2 chat
-    - [ ] Vicuna
-    - [ ] PaLM
-    - [ ] T5
-  - [ ] If all completions are single-tokens, just run inference once
-    - [x] non `_examples` fxns
-    - [ ] `_examples` fxns: need to think more about how to slice efficiently
-  - [ ] Don't modify the tokenizer. Create a context manager around tokenizations (**)
-  - [x] Optimize backend to enable greater scaling wrt # completions/classes
-  - [x] Get it working on GPU, check that it's faster than sampling
-  - [ ] May need to revisit batching
-  - [ ] Add type alias `ModelForCausalLM` which is a `PreTrainedModel` (**)
-  - [ ] Allow non-`' '` `end_of_prompt`. I'm not sure how helpful that is.
-  - [ ] Factor out repeated code b/t `classify` and `classify_no_cache`
-  - [ ] Support [Inference
-    Endpoints](https://huggingface.co/docs/inference-endpoints/index)?
-  - [ ] Support TensorFlow models?
-  - [ ] Support priming, as in: cache it. See
-    [backprompt](https://github.com/kddubey/backprompt)
-- [ ] User conveniences (**)
-  - [ ] Make progress bars optional, since inference often isn't batched
-  - [ ] Accept string input and return string instead of list
-- [ ] Support discount feature for `_examples` functions
-- [ ] Factor out input checks (on prompts and completions)
-- [x] (for me) Auto-enforced code formatting b/c it's getting time-consuming
-- [ ] Allow for multi-label classification (**)
-  - [ ] Pass `normalize` as an argument to predict_proba functions
-  - [ ] For `huggingface`, add note that you'll get faster results by passing all
-  labels at once (assuming prompt is identical for each label). May need to set
-  `batch_size` to 1.
-- [ ] Fill in missing or non-numpy docstrings
-- [ ] Testing
-  - [ ] Test `cappr.huggingface.classify_no_cache` by comparing to results w/o batching!
-  - [ ] For heavily quantized models, only test that pred probs are w/in 1e-2 atol
-  - [ ] Increase test cases
-  - [ ] Test input checks
-  - [ ] Test `cappr.openai.api`
-- [ ] Fix or hide warning (**)
-  ```
-  /usr/local/lib/python3.10/dist-packages/cappr/utils/classify.py:63: VisibleDeprecationWarning: Creating an ndarray from ragged nested sequences (which is a list-or-tuple of lists-or-tuples-or ndarrays with different lengths or shapes) is deprecated. If you meant to do this, you must specify 'dtype=object' when creating the ndarray.
-  np.array(  # raises jagged/inhomogeneous ValueError if non-constant # tokens
-  ```
-- [ ] Allow user to set `OPENAI_API_KEY` env var, or just dynamically use it (**)
-- [ ] Allow for more generic Sequence types instead of explicit `Sequence`. See, e.g.,
-  [this SO answer](https://stackoverflow.com/a/31043360/18758987) (**)
-- [ ] Rebrand docs to be more SWE friendly, no ML knowledge needed (**)
-</details>
-
-<details>
-<summary>Research</summary>
-
-Evaluate on more datasets, and understand its relative advantages and disadvantages vs
-other classification methods.
-
-- [ ] (Llama2 + CAPPr) (Llama2 + CVS) vs (Llama2 chat + CAPPr) vs (Llama2 chat + CVS)
-  (**)
-- [ ] RAFT benchmark
-  - [x] Zero-shot training scores
-  - [ ] Submit zero-shot test predictions
-  - [ ] Few-shot (priming) training scores
-  - [ ] Submit few-shot test predictions
-- [ ] Create a user guide, build a table of results comparing competing approaches on
-statistical performance, cost, and computation
-- [ ] Evaluate a CoT/SbS prompt -> CAPPr to pull out the answer
-- [ ] Make a computational comparison to sampling
-  - [x] Assume I have full freedom to decide how inference works. Demo w/ GPT-2. Process
-  inputs in batches.
-  - [ ] Process inputs 1-by-1
-- [ ] More SuperGLUE tasks?
-- [ ] Calibration
-  - [ ] Is the prior actually effective? Downsample and see
-  - [ ] curves
-- [ ] Finetune smaller, cheaper model and compare against zero-shot w/ davinci
-  - [ ] e.g., GPT-2 from huggingface, `text-ada-001`
-  - [ ] Again, compare against sampling
-- [ ] Evaluate a bigger model like GPT-J
-</details>
+[Reseach experiments](https://github.com/users/kddubey/projects/2)
