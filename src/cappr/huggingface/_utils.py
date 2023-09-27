@@ -3,12 +3,11 @@ YouTils
 """
 from __future__ import annotations
 from contextlib import contextmanager
-from typing import Sequence
+from typing import Sequence, TypeVar
 
 import torch
 import torch.nn.functional as F
 from transformers import (
-    AutoModelForCausalLM,
     BatchEncoding,
     LlamaTokenizer,
     LlamaTokenizerFast,
@@ -17,10 +16,19 @@ from transformers import (
 )
 
 
+# AutoModelForCausalLM is not actually a superclass for pretrained causal/autoregressive
+# LMs. Its from_pretrained method is a loading utility which always returns a
+# PreTrainedModel. Let's create a type for them to make the documentation clearer.
+PreTrainedModelForCausalLM = TypeVar(
+    "PreTrainedModelForCausalLM", bound=PreTrainedModel
+)
+"A model loaded via `transformers.AutoModelForCausalLM.from_pretrained`"
+
+
 @contextmanager
 def set_up_model_and_tokenizer(
-    model_and_tokenizer: tuple[PreTrainedModel, PreTrainedTokenizerBase]
-) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
+    model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
+):
     """
     In this context, internal attributes of the model and tokenizer are set to enable
     correct, batched inference. Namely:
@@ -72,9 +80,7 @@ def set_up_model_and_tokenizer(
 
 
 @contextmanager
-def disable_add_bos_token(
-    tokenizer: PreTrainedTokenizerBase,
-) -> PreTrainedTokenizerBase:
+def disable_add_bos_token(tokenizer: PreTrainedTokenizerBase):
     if hasattr(tokenizer, "add_bos_token"):
         add_bos_token: bool = tokenizer.add_bos_token
         tokenizer.add_bos_token = False
@@ -87,7 +93,7 @@ def disable_add_bos_token(
 
 def logits_texts(
     texts: Sequence[str],
-    model: AutoModelForCausalLM,
+    model: PreTrainedModelForCausalLM,
     tokenizer: PreTrainedTokenizerBase,
 ) -> tuple[torch.Tensor, BatchEncoding]:
     # TODO: auto-batch? consider adding a batch_size kwarg, and decorating the func like

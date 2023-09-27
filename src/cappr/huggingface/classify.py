@@ -1,6 +1,7 @@
 """
-Perform prompt-completion classification using a ``transformers.AutoModelForCausalLM``.
-Currently, only PyTorch models are supported.
+Perform prompt-completion classification using a model which can be loaded via
+``transformers.AutoModelForCausalLM.from_pretrained``. Currently, only PyTorch models
+are supported.
 
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 
@@ -25,18 +26,19 @@ from typing import Mapping, Optional, Sequence, Union
 import numpy as np
 import numpy.typing as npt
 import torch
-from transformers import AutoModelForCausalLM, BatchEncoding, PreTrainedTokenizer
+from transformers import BatchEncoding, PreTrainedTokenizerBase
 
 from cappr.utils import _batch, classify
 from cappr import Example
 from cappr import huggingface as hf
+from cappr.huggingface._utils import PreTrainedModelForCausalLM
 
 
 @_batch.flatten
 @_batch.batchify(batchable_arg="texts", progress_bar_desc="marginal log-probs")
 def token_logprobs(
     texts: Sequence[str],
-    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
+    model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     end_of_prompt: str = " ",
     batch_size: int = 32,
     **kwargs,
@@ -49,7 +51,7 @@ def token_logprobs(
     ----------
     texts : Sequence[str]
         input texts
-    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
+    model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
     end_of_prompt : str, optional
         This string gets added to the beginning of each text. It's important to set this
@@ -104,8 +106,8 @@ def token_logprobs(
 
 
 def _keys_values_prompts(
-    model: AutoModelForCausalLM,
-    tokenizer: PreTrainedTokenizer,
+    model: PreTrainedModelForCausalLM,
+    tokenizer: PreTrainedTokenizerBase,
     prompts: Sequence[str],
     num_repeats_per_prompt: Union[int, Sequence[int]],
 ) -> tuple[
@@ -134,9 +136,9 @@ def _keys_values_prompts(
 
     Parameters
     ----------
-    model : AutoModelForCausalLM
+    model : PreTrainedModelForCausalLM
         an autoregressive transformer language model
-    tokenizer : PreTrainedTokenizer
+    tokenizer : PreTrainedTokenizerBase
         the tokenizer corresponding to `model`
     prompts : Sequence[str]
         strings, where, e.g., each contains the text you want to classify
@@ -251,8 +253,8 @@ def _keys_values_prompts(
 
 
 def _blessed_helper(
-    model: AutoModelForCausalLM,
-    tokenizer: PreTrainedTokenizer,
+    model: PreTrainedModelForCausalLM,
+    tokenizer: PreTrainedTokenizerBase,
     prompts: Sequence[str],
     completions: Sequence[str],
     num_completions_per_prompt: Union[int, Sequence[int]],
@@ -367,8 +369,8 @@ def _blessed_helper(
 
 
 def _logits_completions_given_prompts(
-    model: AutoModelForCausalLM,
-    tokenizer: PreTrainedTokenizer,
+    model: PreTrainedModelForCausalLM,
+    tokenizer: PreTrainedTokenizerBase,
     prompts: Sequence[str],
     completions: Sequence[str],
     end_of_prompt: str = " ",
@@ -416,8 +418,8 @@ def _logits_completions_given_prompts(
 
 
 def _logits_completions_given_prompts_examples(
-    model: AutoModelForCausalLM,
-    tokenizer: PreTrainedTokenizer,
+    model: PreTrainedModelForCausalLM,
+    tokenizer: PreTrainedTokenizerBase,
     examples: Sequence[Example],
 ):
     """
@@ -516,7 +518,7 @@ def _logits_to_log_probs_completions(
 def log_probs_conditional(
     prompts: Sequence[str],
     completions: Sequence[str],
-    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
+    model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     end_of_prompt: str = " ",
     batch_size: int = 32,
 ) -> list[list[list[float]]]:
@@ -531,7 +533,7 @@ def log_probs_conditional(
     completions : Sequence[str]
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
-    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
+    model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
     end_of_prompt : str, optional
         the string to tack on at the end of every prompt, by default " "
@@ -606,7 +608,7 @@ def log_probs_conditional(
 
 def log_probs_conditional_examples(
     examples: Sequence[Example],
-    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
+    model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     batch_size: int = 32,
 ) -> list[list[list[float]]]:
     """
@@ -618,7 +620,7 @@ def log_probs_conditional_examples(
     examples : Sequence[Example]
         `Example` objects, where each contains a prompt and its set of possible
         completions
-    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
+    model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
@@ -700,7 +702,7 @@ def log_probs_conditional_examples(
 def predict_proba(
     prompts: Sequence[str],
     completions: Sequence[str],
-    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
+    model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     prior: Optional[Sequence[float]] = None,
     end_of_prompt: str = " ",
     discount_completions: float = 0.0,
@@ -717,7 +719,7 @@ def predict_proba(
     completions : Sequence[str]
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
-    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
+    model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
     prior : Sequence[float], optional
         a probability distribution over `completions`, representing a belief about their
@@ -803,7 +805,7 @@ def predict_proba(
 @classify._predict_proba_examples
 def predict_proba_examples(
     examples: Sequence[Example],
-    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
+    model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     batch_size: int = 32,
 ) -> Union[list[npt.NDArray[np.floating]], npt.NDArray[np.floating]]:
     """
@@ -814,7 +816,7 @@ def predict_proba_examples(
     examples : Sequence[Example]
         `Example` objects, where each contains a prompt and its set of possible
         completions
-    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
+    model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
@@ -873,7 +875,7 @@ def predict_proba_examples(
 def predict(
     prompts: Sequence[str],
     completions: Sequence[str],
-    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
+    model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     prior: Optional[Sequence[float]] = None,
     end_of_prompt: str = " ",
     discount_completions: float = 0.0,
@@ -890,7 +892,7 @@ def predict(
     completions : Sequence[str]
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
-    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
+    model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
     prior : Sequence[float], optional
         a probability distribution over `completions`, representing a belief about their
@@ -964,7 +966,7 @@ def predict(
 @classify._predict_examples
 def predict_examples(
     examples: Sequence[Example],
-    model_and_tokenizer: tuple[AutoModelForCausalLM, PreTrainedTokenizer],
+    model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     batch_size: int = 32,
 ) -> list[str]:
     """
@@ -975,7 +977,7 @@ def predict_examples(
     examples : Sequence[Example]
         `Example` objects, where each contains a prompt and its set of possible
         completions
-    model_and_tokenizer : tuple[AutoModelForCausalLM, PreTrainedTokenizer]
+    model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default

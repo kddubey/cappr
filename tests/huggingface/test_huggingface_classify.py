@@ -11,17 +11,13 @@ from typing import Mapping
 import pytest
 
 import torch
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    PreTrainedModel,
-    PreTrainedTokenizerBase,
-)
+from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizerBase
 
 from cappr import Example as Ex
 from cappr.huggingface import classify as fast
 from cappr.huggingface import classify_no_cache as slow
 from cappr import huggingface as hf
+from cappr.huggingface._utils import PreTrainedModelForCausalLM
 
 # sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
@@ -46,8 +42,8 @@ def model_name(request) -> str:
 
 
 @pytest.fixture(scope="module")
-def model(model_name) -> PreTrainedModel:
-    model: PreTrainedModel = AutoModelForCausalLM.from_pretrained(model_name)
+def model(model_name) -> PreTrainedModelForCausalLM:
+    model: PreTrainedModelForCausalLM = AutoModelForCausalLM.from_pretrained(model_name)
     # Set up the model as expected.
     model.eval()
     return model
@@ -68,12 +64,14 @@ def tokenizer(model_name) -> PreTrainedTokenizerBase:
 
 
 @pytest.fixture(scope="module")
-def model_and_tokenizer(model_name) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
+def model_and_tokenizer(
+    model_name,
+) -> tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]:
     # This input is directly from a user, so we can't assume the model and tokenizer are
     # set up correctly. For testing, that means we shouldn't just do:
     # return model, tokenizer
     # Instead, load them from scratch:
-    model: PreTrainedModel = AutoModelForCausalLM.from_pretrained(model_name)
+    model: PreTrainedModelForCausalLM = AutoModelForCausalLM.from_pretrained(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     return model, tokenizer
 
@@ -101,7 +99,7 @@ def test_set_up_model_and_tokenizer(model_and_tokenizer):
     """
     model, tokenizer = model_and_tokenizer
     # Not sure why type inference isn't catching these
-    model: PreTrainedModel
+    model: PreTrainedModelForCausalLM
     tokenizer: PreTrainedTokenizerBase
 
     # Grab old attribute values.
