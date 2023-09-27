@@ -347,7 +347,7 @@ def _test_log_probs(
     (
         ["d", "e f g h i"],
         ######################## Next set of completions to test #######################
-        ["d e f", "1 2"],
+        ["d e f", "1 2", "O O"],
         ######################## Test Single-token optimization ########################
         ["d", "e", "f"],
     ),
@@ -504,11 +504,17 @@ class TestPromptsCompletions:
             Ex("a b c", ["d", "e f g"]),
             Ex("C", ["p G C p G", "D E F", "ya later alligator"]),
         ],
-        ########## Next set of examples ##########
+        ############################# Next set of examples #############################
         [
             Ex("chi", ["can", "ery"]),
             Ex("koyaa", ["nisqatsi"]),
             Ex("hi hi", ["bye bye", "yo yo"]),
+        ],
+        ############## Test constant # completions, non-constant # tokens ##############
+        [
+            Ex("jelly", ["fin", "is"]),
+            Ex("a great", ["thing.", "shout"]),
+            Ex("out to", ["open", "source, yo."]),
         ],
     ),
 )
