@@ -27,6 +27,11 @@ class Example:
         `completions` is assumed to be equally likely
     end_of_prompt : str, optional
         the string to tack on at the end of every prompt, by default " "
+    normalize : bool, optional
+        whether or not to normalize completion-after-prompt probabilities into a
+        probability distribution over completions. Set this to `False` if you'd like the
+        raw completion-after-prompt probability, or you're solving a multi-label
+        prediction problem. By default, True
 
     Raises
     ------
@@ -48,6 +53,7 @@ class Example:
     completions: Sequence[str]
     prior: Optional[Sequence[float]] = None
     end_of_prompt: str = " "
+    normalize: bool = True
 
     def __post_init__(self):
         # Check inputs here so that fxns of Example don't need to check
@@ -63,3 +69,4 @@ class Example:
                 "completions and prior are different lengths: "
                 f"{len(self.completions)}, {len(self.prior)}."
             )
+        _check.normalize(self.completions, self.normalize)

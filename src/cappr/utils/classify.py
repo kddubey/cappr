@@ -14,22 +14,6 @@ import numpy.typing as npt
 from cappr.utils import _check
 
 
-def _agg_log_probs(
-    log_probs: Sequence[Sequence[Sequence[float]]],
-    func: Callable[[Sequence[float]], float] = np.mean,
-) -> list[list[float]]:
-    """
-    Aggregate using a slow, nested list comprehension.
-    """
-    return [
-        [
-            np.exp(func(log_probs_completion))
-            for log_probs_completion in log_probs_completions
-        ]
-        for log_probs_completions in log_probs
-    ]
-
-
 def _agg_log_probs_from_constant_completions(
     log_probs: Sequence[Sequence[Sequence[float]]],
     func: Callable[[Sequence[float]], float] = np.mean,
@@ -83,7 +67,10 @@ def _agg_log_probs_from_constant_completions(
                 for completion_idx in range(num_completions_per_prompt)
             ]
         except:
-            raise ValueError("non-constant # of tokens")
+            raise ValueError(
+                "log_probs has a constant # of completions, but there are a "
+                "non-constant # of tokens."
+            )
     # Now apply the vectorized function to each array in the list
     likelihoods: npt.NDArray[np.floating] = np.exp(
         [func(array, axis=1) for array in array_list]
@@ -94,6 +81,22 @@ def _agg_log_probs_from_constant_completions(
     #       ])
     # Transpose it to satisfy likelihoods[i][j] = exp(func(log_probs[i][j]))
     return likelihoods.T
+
+
+def _agg_log_probs(
+    log_probs: Sequence[Sequence[Sequence[float]]],
+    func: Callable[[Sequence[float]], float] = np.mean,
+) -> list[list[float]]:
+    """
+    Aggregate using a slow, nested list comprehension.
+    """
+    return [
+        [
+            np.exp(func(log_probs_completion))
+            for log_probs_completion in log_probs_completions
+        ]
+        for log_probs_completions in log_probs
+    ]
 
 
 def agg_log_probs(
@@ -201,6 +204,11 @@ def _discount(
     log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
     **kwargs,
 ) -> list[list[list[float]]]:
+    """
+    Highly experimental feature: discount completion given prompt probabilities by
+    completion probabilities. Useful when particular completions are getting
+    over-predicted.
+    """
     if not discount_completions:
         return log_probs_completions
 
@@ -220,7 +228,7 @@ def _discount(
     return [
         [
             np.array(log_probs_prompt_completions[completion_idx])
-            + (np.array(log_marginal_probs_completions_discounted[completion_idx]))
+            + log_marginal_probs_completions_discounted[completion_idx]
             for completion_idx in range(len(completions))
         ]
         for log_probs_prompt_completions in log_probs_completions
@@ -238,7 +246,8 @@ def _predict_proba(log_probs_conditional):
     def wrapper(
         prompts: Sequence[str], completions: Sequence[str], *args, **kwargs
     ) -> npt.NDArray[np.floating]:
-        # Check the inputs before hitting any APIs ($$). First the prior
+        # Check the inputs before hitting any APIs ($$)
+        # First the prior
         prior = kwargs.get("prior", None)
         _check.prior(prior)
         if prior is not None and len(completions) != len(prior):
@@ -246,6 +255,10 @@ def _predict_proba(log_probs_conditional):
                 "completions and prior are different lengths: "
                 f"{len(completions)}, {len(prior)}."
             )
+
+        # Check normalization
+        normalize = kwargs.get("normalize", True)
+        _check.normalize(completions, normalize)
 
         # Check inputs for discount feature
         discount_completions = kwargs.get("discount_completions", 0)
@@ -266,7 +279,7 @@ def _predict_proba(log_probs_conditional):
         # Maybe apply discount
         if discount_completions:
             log_probs_completions = _discount(
-                getmodule(log_probs_conditional).token_logprobs,
+                getattr(getmodule(log_probs_conditional), "token_logprobs"),
                 completions,
                 log_probs_completions,
                 *args,
@@ -275,11 +288,6 @@ def _predict_proba(log_probs_conditional):
 
         # Aggregate probs
         likelihoods = agg_log_probs(log_probs_completions)
-
-        # If there's only 1 completion, normalizing will cause the probability to
-        # trivially be 1! So let's not normalize in that case, and hope the user knows
-        # what they're doing
-        normalize = len(completions) > 1
         return posterior_prob(likelihoods, axis=1, prior=prior, normalize=normalize)
 
     return wrapper
@@ -299,11 +307,10 @@ def _predict_proba_examples(log_probs_conditional_examples):
             examples, *args, **kwargs
         )
         likelihoods = agg_log_probs(log_probs_completions)
-        # If an example has just 1 completion, normalizing will cause the probability
-        # to trivially be 1! So let's not normalize in that case, and hope the user
-        # knows what they're doing
+
+        # Determine whether vectorization is possible for posterior probability calc
         num_completions_per_prompt = [len(example.completions) for example in examples]
-        normalize = [num > 1 for num in num_completions_per_prompt]
+        normalize = [example.normalize for example in examples]
         num_completions_per_prompt_set = set(num_completions_per_prompt)
         if len(num_completions_per_prompt_set) != 1:
             # Can't be easily vectorized :-(

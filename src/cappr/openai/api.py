@@ -176,7 +176,7 @@ def gpt_complete(
         which text completion model to use
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
-        after notifying you of the approximate cost of the OpenAI API calls. By default
+        after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
     progress_bar_desc: str, optional
         description of the progress bar that's displayed, by default ``'log-probs'``
@@ -242,7 +242,7 @@ def gpt_chat_complete(
         one of the chat model names, by default "gpt-3.5-turbo"
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
-        after notifying you of the approximate cost of the OpenAI API calls. By default
+        after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
     system_msg : str, optional
         text which is passed in 1-by-1 immediately before every piece of

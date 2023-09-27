@@ -85,6 +85,7 @@ def examples():
         Ex(
             prompt=("🎶The best time to wear a striped sweater is all the"),
             completions=("time🎶",),
+            normalize=False,
         ),
         Ex(
             prompt="machine",
@@ -124,12 +125,12 @@ def test_log_probs_conditional_examples(examples, model):
 def test_predict_proba(prompts, completions, model):
     _test.predict_proba(classify.predict_proba, prompts, completions, model)
 
-    # test discount_completions > 0.0
+    # Test discount_completions > 0.0
     _test.predict_proba(
         classify.predict_proba, prompts, completions, model, discount_completions=1.0
     )
 
-    # test bad prior input. TODO: standardize for other inputs
+    # Test bad prior input. TODO: standardize for other inputs
     prior = [1 / len(completions)] * len(completions)
     prior_bad = prior + [0]
     expected_error_msg = (
@@ -137,16 +138,17 @@ def test_predict_proba(prompts, completions, model):
         f"{len(completions)}, {len(prior_bad)}."
     )
     with pytest.raises(ValueError, match=expected_error_msg):
-        _test.predict_proba(
-            classify.predict_proba, prompts, completions, model, prior=prior_bad
-        )
+        classify.predict_proba(prompts, completions, model, prior=prior_bad)
 
     prior_bad = prior[:-1] + [0]
     expected_error_msg = "prior must sum to 1."
     with pytest.raises(ValueError, match=expected_error_msg):
-        _test.predict_proba(
-            classify.predict_proba, prompts, completions, model, prior=prior_bad
-        )
+        classify.predict_proba(prompts, completions, model, prior=prior_bad)
+
+    # Test bad normalize input
+    expected_error_msg = "Setting normalize=True when there's only 1 completion"
+    with pytest.raises(ValueError, match=expected_error_msg):
+        classify.predict_proba(prompts, completions[:1], model, normalize=True)
 
 
 def test_predict_proba_examples(examples: list[Ex], model):

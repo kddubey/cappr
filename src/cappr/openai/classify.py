@@ -33,7 +33,7 @@ def token_logprobs(
         https://platform.openai.com/docs/models/model-endpoint-compatibility
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
-        after notifying you of the approximate cost of the OpenAI API calls. By default
+        after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
 
     Returns
@@ -118,7 +118,7 @@ def log_probs_conditional(
         the string to tack on at the end of every prompt, by default " "
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
-        after notifying you of the approximate cost of the OpenAI API calls. By default
+        after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
 
     Returns
@@ -199,7 +199,7 @@ def log_probs_conditional_examples(
         https://platform.openai.com/docs/models/model-endpoint-compatibility
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
-        after notifying you of the approximate cost of the OpenAI API calls. By default
+        after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
 
     Returns
@@ -277,6 +277,7 @@ def predict_proba(
     model: openai.api.Model,
     prior: Optional[Sequence[float]] = None,
     end_of_prompt: str = " ",
+    normalize: bool = True,
     discount_completions: float = 0.0,
     log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
     ask_if_ok: bool = False,
@@ -301,6 +302,11 @@ def predict_proba(
         `completions` is assumed to be equally likely
     end_of_prompt : str, optional
         the string to tack on at the end of every prompt, by default " "
+    normalize : bool, optional
+        whether or not to normalize completion-after-prompt probabilities into a
+        probability distribution over completions. Set this to `False` if you'd like the
+        raw completion-after-prompt probability, or you're solving a multi-label
+        prediction problem. By default, True
     discount_completions : float, optional
         experimental feature: set it (e.g., 1.0 may work well) if a completion is
         consistently getting too high predicted probabilities. You could instead fudge
@@ -313,7 +319,7 @@ def predict_proba(
         :func:`cappr.openai.classify.token_logprobs`. By default, None
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
-        after notifying you of the approximate cost of the OpenAI API calls. By default
+        after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
 
     Returns
@@ -405,7 +411,7 @@ def predict_proba_examples(
         https://platform.openai.com/docs/models/model-endpoint-compatibility
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
-        after notifying you of the approximate cost of the OpenAI API calls. By default
+        after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
 
     Returns
@@ -494,7 +500,7 @@ def predict(
         :func:`cappr.openai.classify.token_logprobs`. By default, None
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
-        after notifying you of the approximate cost of the OpenAI API calls. By default
+        after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
 
     Returns
@@ -577,7 +583,7 @@ def predict_examples(
         https://platform.openai.com/docs/models/model-endpoint-compatibility
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
-        after notifying you of the approximate cost of the OpenAI API calls. By default
+        after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
 
     Returns

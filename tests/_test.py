@@ -22,18 +22,25 @@ def predict_proba(
 ):
     """
     Tests that `predict_proba_func(prompts, completions, *args, **kwargs)` returns a
-    numpy array with the correct shape, and that each row is a probability distribution.
+    numpy array with the correct shape, and that each row is a probability distribution
+    if `normalize=True`.
     """
     pred_probs = predict_proba_func(prompts, completions, *args, **kwargs)
     assert isinstance(pred_probs, np.ndarray)
     assert pred_probs.shape == (len(prompts), len(completions))
     assert np.all(pred_probs >= 0)
+    assert np.all(pred_probs <= 1)
     if pred_probs.shape[1] == 1:
         # We don't normalize if there's one completion. It's almost definitely the case
         # that the predicted probability is < 1 by a decent amount.
         assert not any(np.isclose(pred_probs[:, 0], 1))
     else:
-        assert np.allclose(pred_probs.sum(axis=1), 1)
+        prob_sums = pred_probs.sum(axis=1)
+        are_close_to_1 = np.isclose(prob_sums, 1)
+        if kwargs.get("normalize", True):
+            assert np.all(are_close_to_1)
+        else:
+            assert not np.any(are_close_to_1)
 
 
 def predict_proba_examples(
@@ -53,13 +60,25 @@ def predict_proba_examples(
     assert len(pred_probs) == len(examples)
     for pred_prob_example, example in zip(pred_probs, examples):
         assert len(pred_prob_example) == len(example.completions)
-        assert np.all(np.array(pred_prob_example) >= 0)
+        assert np.all(pred_prob_example >= 0)
+        if len(pred_prob_example) > 1:
+            # Testing artifact: for mocked log-prob API endpoints, we currently return
+            # integers, not log-probs. This fact combined with the fact that we obv
+            # don't normalize when there's 1 completion causes the test "probability"
+            # output to be > 1. So let's only run this test for examples w/ more than 1
+            # completion
+            assert np.all(pred_prob_example <= 1)
         if len(pred_prob_example) == 1:
             # We don't normalize if there's one completion. It's almost definitely the
             # case that the predicted probability is < 1 by a decent amount.
             assert not any(np.isclose(pred_prob_example, 1))
         else:
-            assert np.isclose(sum(pred_prob_example), 1)
+            prob_sum = pred_prob_example.sum()
+            is_close_to_1 = np.isclose(prob_sum, 1)
+            if example.normalize:
+                assert is_close_to_1
+            else:
+                assert not is_close_to_1
 
 
 def predict(

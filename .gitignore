@@ -1,7 +1,7 @@
 *.pyc
 *.egg-info/
 __pycache__/
-.coverage
+.coverage*
 docs/_build
 docs/build
 dist/

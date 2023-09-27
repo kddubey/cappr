@@ -705,6 +705,7 @@ def predict_proba(
     model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     prior: Optional[Sequence[float]] = None,
     end_of_prompt: str = " ",
+    normalize: bool = True,
     discount_completions: float = 0.0,
     log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
     batch_size: int = 32,
@@ -727,6 +728,11 @@ def predict_proba(
         `completions` is assumed to be equally likely
     end_of_prompt : str, optional
         the string to tack on at the end of every prompt, by default " "
+    normalize : bool, optional
+        whether or not to normalize completion-after-prompt probabilities into a
+        probability distribution over completions. Set this to `False` if you'd like the
+        raw completion-after-prompt probability, or you're solving a multi-label
+        prediction problem. By default, True
     discount_completions : float, optional
         experimental feature: set it (e.g., 1.0 may work well) if a completion is
         consistently getting too high predicted probabilities. You could instead fudge

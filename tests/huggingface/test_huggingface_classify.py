@@ -336,6 +336,14 @@ def _test_log_probs(
             )
 
 
+def _function_kwargs(function_kwargs: dict, non_args: tuple[str] = ("self", "atol")):
+    """
+    This module tests two implementations of the same thing. This utility grabs their
+    inputs so that arguments don't have to be repeated.
+    """
+    return {arg: value for arg, value in function_kwargs.items() if arg not in non_args}
+
+
 ########################################################################################
 ####################################### Tests ##########################################
 ########################################################################################
@@ -366,12 +374,9 @@ class TestPromptsCompletions:
         Tests that encodings have the right shape and that logits are numerically close.
         If this test fails, all of the tests below will fail.
         """
-        slow_out = slow._logits_completions_given_prompts(
-            model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
-        )
-        fast_out = fast._logits_completions_given_prompts(
-            model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
-        )
+        kwargs = _function_kwargs(locals())
+        slow_out = slow._logits_completions_given_prompts(**kwargs)
+        fast_out = fast._logits_completions_given_prompts(**kwargs)
         _test_encodings(*slow_out, *fast_out)
         _test_logits(*slow_out, *fast_out, atol)
 
@@ -379,73 +384,37 @@ class TestPromptsCompletions:
     def test_log_probs_conditional(
         self, prompts, completions, model_and_tokenizer, end_of_prompt, batch_size, atol
     ):
-        log_probs_completions_slow = slow.log_probs_conditional(
-            prompts,
-            completions,
-            model_and_tokenizer=model_and_tokenizer,
-            end_of_prompt=end_of_prompt,
-            batch_size=batch_size,
-        )
-        log_probs_completions_fast = fast.log_probs_conditional(
-            prompts,
-            completions,
-            model_and_tokenizer=model_and_tokenizer,
-            end_of_prompt=end_of_prompt,
-            batch_size=batch_size,
-        )
-        expected_len = len(prompts)
-        num_completions_per_prompt = [len(completions)] * len(prompts)
+        kwargs = _function_kwargs(locals())
+        log_probs_completions_slow = slow.log_probs_conditional(**kwargs)
+        log_probs_completions_fast = fast.log_probs_conditional(**kwargs)
         _test_log_probs(
             log_probs_completions_slow,
             log_probs_completions_fast,
-            expected_len,
-            num_completions_per_prompt,
-            atol,
+            expected_len=len(prompts),
+            num_completions_per_prompt=[len(completions)] * len(prompts),
+            atol=atol,
         )
 
     @pytest.mark.parametrize("discount_completions", (0.0, 1.0))
+    @pytest.mark.parametrize("normalize", (True, False))
     def test_predict_proba(
         self,
         prompts,
         completions,
         model_and_tokenizer,
         end_of_prompt,
+        normalize,
         discount_completions,
         atol,
     ):
+        kwargs = _function_kwargs(locals())
         # Test form of output
-        _test.predict_proba(
-            fast.predict_proba,
-            prompts,
-            completions,
-            model_and_tokenizer=model_and_tokenizer,
-            end_of_prompt=end_of_prompt,
-            discount_completions=discount_completions,
-        )
-        _test.predict_proba(
-            slow.predict_proba,
-            prompts,
-            completions,
-            model_and_tokenizer=model_and_tokenizer,
-            end_of_prompt=end_of_prompt,
-            discount_completions=discount_completions,
-        )
+        _test.predict_proba(fast.predict_proba, **kwargs)
+        _test.predict_proba(slow.predict_proba, **kwargs)
 
         # Test that predictions match
-        pred_probs_fast = fast.predict_proba(
-            prompts,
-            completions,
-            model_and_tokenizer=model_and_tokenizer,
-            end_of_prompt=end_of_prompt,
-            discount_completions=discount_completions,
-        )
-        pred_probs_slow = slow.predict_proba(
-            prompts,
-            completions,
-            model_and_tokenizer=model_and_tokenizer,
-            end_of_prompt=end_of_prompt,
-            discount_completions=discount_completions,
-        )
+        pred_probs_fast = fast.predict_proba(**kwargs)
+        pred_probs_slow = slow.predict_proba(**kwargs)
         # cast to tensor so that we are consistent w/ the way "numerical closeness"
         # is defined for model-dependent outputs
         assert torch.allclose(
@@ -461,39 +430,14 @@ class TestPromptsCompletions:
         end_of_prompt,
         discount_completions,
     ):
+        kwargs = _function_kwargs(locals())
         # Test form of output
-        _test.predict(
-            fast.predict,
-            prompts,
-            completions,
-            model_and_tokenizer=model_and_tokenizer,
-            end_of_prompt=end_of_prompt,
-            discount_completions=discount_completions,
-        )
-        _test.predict(
-            slow.predict,
-            prompts,
-            completions,
-            model_and_tokenizer=model_and_tokenizer,
-            end_of_prompt=end_of_prompt,
-            discount_completions=discount_completions,
-        )
+        _test.predict(fast.predict, **kwargs)
+        _test.predict(slow.predict, **kwargs)
 
         # Test that predictions match
-        preds_fast = fast.predict(
-            prompts,
-            completions,
-            model_and_tokenizer=model_and_tokenizer,
-            end_of_prompt=end_of_prompt,
-            discount_completions=discount_completions,
-        )
-        preds_slow = slow.predict(
-            prompts,
-            completions,
-            model_and_tokenizer=model_and_tokenizer,
-            end_of_prompt=end_of_prompt,
-            discount_completions=discount_completions,
-        )
+        preds_fast = fast.predict(**kwargs)
+        preds_slow = slow.predict(**kwargs)
         assert preds_fast == preds_slow
 
 
@@ -507,7 +451,7 @@ class TestPromptsCompletions:
         ############################# Next set of examples #############################
         [
             Ex("chi", ["can", "ery"]),
-            Ex("koyaa", ["nisqatsi"]),
+            Ex("koyaa", ["nisqatsi"], normalize=False),
             Ex("hi hi", ["bye bye", "yo yo"]),
         ],
         ############## Test constant # completions, non-constant # tokens ##############
@@ -530,12 +474,9 @@ class TestExamples:
         Tests that encodings have the right shape and that logits are numerically close.
         If this test fails, all of the tests below will fail.
         """
-        slow_out = slow._logits_completions_given_prompts_examples(
-            model, tokenizer, examples
-        )
-        fast_out = fast._logits_completions_given_prompts_examples(
-            model, tokenizer, examples
-        )
+        kwargs = _function_kwargs(locals())
+        slow_out = slow._logits_completions_given_prompts_examples(**kwargs)
+        fast_out = fast._logits_completions_given_prompts_examples(**kwargs)
         _test_encodings(*slow_out, *fast_out)
         _test_logits(*slow_out, *fast_out, atol)
 
@@ -543,42 +484,28 @@ class TestExamples:
     def test_log_probs_conditional_examples(
         self, examples: list[Ex], model_and_tokenizer, batch_size, atol
     ):
-        log_probs_completions_slow = slow.log_probs_conditional_examples(
-            examples, model_and_tokenizer=model_and_tokenizer, batch_size=batch_size
-        )
-        log_probs_completions_fast = fast.log_probs_conditional_examples(
-            examples, model_and_tokenizer=model_and_tokenizer, batch_size=batch_size
-        )
-        expected_len = len(examples)
-        num_completions_per_prompt = [len(example.completions) for example in examples]
+        kwargs = _function_kwargs(locals())
+        log_probs_completions_slow = slow.log_probs_conditional_examples(**kwargs)
+        log_probs_completions_fast = fast.log_probs_conditional_examples(**kwargs)
         _test_log_probs(
             log_probs_completions_slow,
             log_probs_completions_fast,
-            expected_len,
-            num_completions_per_prompt,
-            atol,
+            expected_len=len(examples),
+            num_completions_per_prompt=[
+                len(example.completions) for example in examples
+            ],
+            atol=atol,
         )
 
     def test_predict_proba_examples(self, examples, model_and_tokenizer, atol):
+        kwargs = _function_kwargs(locals())
         # Test form of output
-        _test.predict_proba_examples(
-            fast.predict_proba_examples,
-            examples,
-            model_and_tokenizer=model_and_tokenizer,
-        )
-        _test.predict_proba_examples(
-            slow.predict_proba_examples,
-            examples,
-            model_and_tokenizer=model_and_tokenizer,
-        )
+        _test.predict_proba_examples(fast.predict_proba_examples, **kwargs)
+        _test.predict_proba_examples(slow.predict_proba_examples, **kwargs)
 
         # Test that predictions match
-        pred_probs_fast = fast.predict_proba_examples(
-            examples, model_and_tokenizer=model_and_tokenizer
-        )
-        pred_probs_slow = slow.predict_proba_examples(
-            examples, model_and_tokenizer=model_and_tokenizer
-        )
+        pred_probs_fast = fast.predict_proba_examples(**kwargs)
+        pred_probs_slow = slow.predict_proba_examples(**kwargs)
         for pred_probs_fast_ex, pred_probs_slow_ex in zip(
             pred_probs_fast, pred_probs_slow
         ):
@@ -591,19 +518,12 @@ class TestExamples:
             )
 
     def test_predict_examples(self, examples, model_and_tokenizer):
+        kwargs = _function_kwargs(locals())
         # Test form of output
-        _test.predict_examples(
-            fast.predict_examples, examples, model_and_tokenizer=model_and_tokenizer
-        )
-        _test.predict_examples(
-            slow.predict_examples, examples, model_and_tokenizer=model_and_tokenizer
-        )
+        _test.predict_examples(fast.predict_examples, **kwargs)
+        _test.predict_examples(slow.predict_examples, **kwargs)
 
         # Test that predictions match
-        preds_fast = fast.predict_examples(
-            examples, model_and_tokenizer=model_and_tokenizer
-        )
-        preds_slow = slow.predict_examples(
-            examples, model_and_tokenizer=model_and_tokenizer
-        )
+        preds_fast = fast.predict_examples(**kwargs)
+        preds_slow = slow.predict_examples(**kwargs)
         assert preds_fast == preds_slow
