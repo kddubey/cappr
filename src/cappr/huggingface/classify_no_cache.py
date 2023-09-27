@@ -313,20 +313,22 @@ def log_probs_conditional(
         # [[-9.7],        [[log Pr(z | a, b, c)],
         #  [-0.2, -0.03]]  [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
-    model, tokenizer = hf._utils.set_up_model_and_tokenizer(model_and_tokenizer)
+    with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
+        model, tokenizer = model_and_tokenizer
 
-    @_batch.flatten
-    @_batch.batchify(
-        batchable_arg="prompts", progress_bar_desc="conditional log-probs (no cache)"
-    )
-    def log_probs_completions_batch(prompts, batch_size=batch_size):
-        logits, encodings = _logits_completions_given_prompts(
-            model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
+        @_batch.flatten
+        @_batch.batchify(
+            batchable_arg="prompts",
+            progress_bar_desc="conditional log-probs (no cache)",
         )
-        return _logits_to_log_probs_completions(logits, encodings)
+        def log_probs_completions_batch(prompts, batch_size=batch_size):
+            logits, encodings = _logits_completions_given_prompts(
+                model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
+            )
+            return _logits_to_log_probs_completions(logits, encodings)
 
-    log_probs_completions = log_probs_completions_batch(prompts)
-    return list(_batch.constant(log_probs_completions, size=len(completions)))
+        log_probs_completions = log_probs_completions_batch(prompts)
+        return list(_batch.constant(log_probs_completions, size=len(completions)))
 
 
 def log_probs_conditional_examples(
@@ -399,23 +401,25 @@ def log_probs_conditional_examples(
         log_probs_completions[1] # corresponds to examples[1]
         # [[-5.0, -1.7]]  [[log Pr(1 | a, b, c)], log Pr(2 | a, b, c, 1)]]
     """
-    model, tokenizer = hf._utils.set_up_model_and_tokenizer(model_and_tokenizer)
+    with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
+        model, tokenizer = model_and_tokenizer
 
-    @_batch.flatten
-    @_batch.batchify(
-        batchable_arg="examples", progress_bar_desc="conditional log-probs (no cache)"
-    )
-    def log_probs_completions_batch(examples, batch_size=batch_size):
-        logits, encodings = _logits_completions_given_prompts_examples(
-            model, tokenizer, examples
+        @_batch.flatten
+        @_batch.batchify(
+            batchable_arg="examples",
+            progress_bar_desc="conditional log-probs (no cache)",
         )
-        return _logits_to_log_probs_completions(logits, encodings)
+        def log_probs_completions_batch(examples, batch_size=batch_size):
+            logits, encodings = _logits_completions_given_prompts_examples(
+                model, tokenizer, examples
+            )
+            return _logits_to_log_probs_completions(logits, encodings)
 
-    log_probs_completions = log_probs_completions_batch(examples)
-    num_completions_per_prompt = [len(example.completions) for example in examples]
-    return list(
-        _batch.variable(log_probs_completions, sizes=num_completions_per_prompt)
-    )
+        log_probs_completions = log_probs_completions_batch(examples)
+        num_completions_per_prompt = [len(example.completions) for example in examples]
+        return list(
+            _batch.variable(log_probs_completions, sizes=num_completions_per_prompt)
+        )
 
 
 @classify._predict_proba

@@ -2,6 +2,7 @@
 YouTils
 """
 from __future__ import annotations
+from contextlib import contextmanager
 from typing import Sequence
 
 import torch
@@ -12,41 +13,82 @@ from transformers import (
     LlamaTokenizer,
     LlamaTokenizerFast,
     PreTrainedModel,
-    PreTrainedTokenizer,
+    PreTrainedTokenizerBase,
 )
 
 
+@contextmanager
 def set_up_model_and_tokenizer(
-    model_and_tokenizer: tuple[PreTrainedModel, PreTrainedTokenizer],
-) -> tuple[PreTrainedModel, PreTrainedTokenizer]:
+    model_and_tokenizer: tuple[PreTrainedModel, PreTrainedTokenizerBase]
+) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
     """
-    Returns back `model_and_tokenizer` where the model is in eval mode and the
-    tokenizer's padding settings are correctly configured. This function is quick and
-    idempotent, so you can apply it whenever.
-
-    TODO: consider changing this to an (internally used) context manager so that we
-    don't modify the model and tokenizer / the user doesn't have to reset attributes
+    In this context, internal attributes of the model and tokenizer are set to enable
+    correct, batched inference. Namely:
+      - the model is set in eval mode
+      - the tokenizer pads on the right
+      - the tokenizer does not add an EOS token.
     """
     model, tokenizer = model_and_tokenizer
-    # Prepare model
+
+    # Grab attributes - model
+    model_is_train = model.training
+    # Grab attributes - tokenizer
+    tokenizer_pad_token_id = tokenizer.pad_token_id
+    tokenizer_padding_side = tokenizer.padding_side
+    if hasattr(tokenizer, "add_eos_token"):
+        tokenizer_add_eos_token = tokenizer.add_eos_token
+
+    # Set attributes - model
+    # 1. Just ensure that the model is in eval mode. CAPPr only makes sense as an
+    #    inference computation.
     model.eval()
-    # Prepare tokenizer
-    if tokenizer.pad_token_id is None:
+
+    # Set attributes - tokenizer
+    # Note: PreTrainedTokenizerBase is smart about setting auxiliary attributes, e.g.,
+    # it updates tokenizer.special_tokens_map after setting tokenizer.pad_token_id.
+    # 1. Set the pad token (if it's not set) so that batch inference is possible. These
+    #    get masked out. Keep in mind that you need to be careful about setting position
+    #    IDs correctly.
+    if tokenizer_pad_token_id is None:
         tokenizer.pad_token_id = tokenizer.eos_token_id
+    # 2. Set the padding side to right. Left-padding would alter position IDs for
+    #    non-pad tokens, which makes things a bit more confusing.
     tokenizer.padding_side = "right"
-    try:
+    # 3. Don't add an end-of-sentence token. We'll never need it for the CAPPr scheme.
+    #    Keeping it would throw off the classify module (which caches).
+    if hasattr(tokenizer, "add_eos_token"):
         tokenizer.add_eos_token = False
-        # We don't want the prompt or completion to end w/ EOS, so this should always
-        # be False
-    except AttributeError:
-        pass
-    return model, tokenizer
+
+    yield
+
+    # Reset attributes - model
+    model.train(model_is_train)
+    # Reset attributes - tokenizer
+    if tokenizer_pad_token_id is None:
+        tokenizer.pad_token_id = tokenizer_pad_token_id
+    tokenizer.padding_side = tokenizer_padding_side
+    if hasattr(tokenizer, "add_eos_token"):
+        tokenizer.add_eos_token = tokenizer_add_eos_token
+
+
+@contextmanager
+def disable_add_bos_token(
+    tokenizer: PreTrainedTokenizerBase,
+) -> PreTrainedTokenizerBase:
+    if hasattr(tokenizer, "add_bos_token"):
+        add_bos_token: bool = tokenizer.add_bos_token
+        tokenizer.add_bos_token = False
+
+    yield
+
+    if hasattr(tokenizer, "add_bos_token"):
+        tokenizer.add_bos_token = add_bos_token
 
 
 def logits_texts(
     texts: Sequence[str],
     model: AutoModelForCausalLM,
-    tokenizer: PreTrainedTokenizer,
+    tokenizer: PreTrainedTokenizerBase,
 ) -> tuple[torch.Tensor, BatchEncoding]:
     # TODO: auto-batch? consider adding a batch_size kwarg, and decorating the func like
     # token_logprobs
@@ -88,6 +130,6 @@ def logits_to_log_probs(
 
 
 def does_tokenizer_prepend_space_to_first_token(
-    tokenizer: PreTrainedTokenizer,
+    tokenizer: PreTrainedTokenizerBase,
 ) -> bool:
     return not isinstance(tokenizer, (LlamaTokenizer, LlamaTokenizerFast))

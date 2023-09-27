@@ -11,7 +11,12 @@ from typing import Mapping
 import pytest
 
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    PreTrainedModel,
+    PreTrainedTokenizerBase,
+)
 
 from cappr import Example as Ex
 from cappr.huggingface import classify as fast
@@ -41,26 +46,35 @@ def model_name(request) -> str:
 
 
 @pytest.fixture(scope="module")
-def model(model_name):
-    return AutoModelForCausalLM.from_pretrained(model_name)
+def model(model_name) -> PreTrainedModel:
+    model: PreTrainedModel = AutoModelForCausalLM.from_pretrained(model_name)
+    # Set up the model as expected.
+    model.eval()
+    return model
 
 
 @pytest.fixture(scope="module")
-def tokenizer(model_name):
-    # Set up the tokenizer as expected.
-    # These things are done in cappr.huggingface._utils.set_up_model_and_tokenizer,
-    # which is always applied to the user-inputted tokenizer
+def tokenizer(model_name) -> PreTrainedTokenizerBase:
     tokenizer = AutoTokenizer.from_pretrained(model_name)
+    # Set up the tokenizer as expected.
+    # These things are done in cappr.huggingface._utils.set_up_model_and_tokenizer.
     if tokenizer.pad_token_id is None:
         # allow padding -> allow batching
         tokenizer.pad_token_id = tokenizer.eos_token_id
     tokenizer.padding_side = "right"
-    tokenizer.add_eos_token = False
+    if hasattr(tokenizer, "add_eos_token"):
+        tokenizer.add_eos_token = False
     return tokenizer
 
 
 @pytest.fixture(scope="module")
-def model_and_tokenizer(model, tokenizer):
+def model_and_tokenizer(model_name) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
+    # This input is directly from a user, so we can't assume the model and tokenizer are
+    # set up correctly. For testing, that means we shouldn't just do:
+    # return model, tokenizer
+    # Instead, load them from scratch:
+    model: PreTrainedModel = AutoModelForCausalLM.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
     return model, tokenizer
 
 
@@ -77,12 +91,57 @@ def atol():
 ########################################################################################
 
 
+def test_set_up_model_and_tokenizer(model_and_tokenizer):
+    """
+    Tests that the context manager doesn't change any attributes of the model or
+    tokenizer when we've exited the context. It's conceivable that someone uses CAPPr to
+    evaluate their model on a downstream application during a train-and-validate loop.
+    Or they're using CAPPr as part of a larger system where the tokenizer needs to be
+    configured differently.
+    """
+    model, tokenizer = model_and_tokenizer
+    # Not sure why type inference isn't catching these
+    model: PreTrainedModel
+    tokenizer: PreTrainedTokenizerBase
+
+    # Grab old attribute values.
+    model_attribute_to_old_value = {
+        "training": model.training,
+        # we could keep recursing on children, but whatever
+        **{i: module.training for i, module in enumerate(model.children())},
+    }
+    tokenizer_attributes = [
+        "pad_token_id",
+        "padding_side",
+        "add_eos_token",
+        "pad_token",
+        "special_tokens_map",
+    ]
+    tokenizer_attribute_to_old_value = {
+        attribute: getattr(tokenizer, attribute, None)
+        # None is for tokenizers which don't have an add_eos_token attribute
+        for attribute in tokenizer_attributes
+    }
+
+    # Enter the context
+    with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
+        pass
+
+    # Exit the context. No attributes should have changed.
+    assert model.training == model_attribute_to_old_value["training"]
+    for i, module in enumerate(model.children()):
+        assert module.training == model_attribute_to_old_value[i]
+
+    for attribute, old_value in tokenizer_attribute_to_old_value.items():
+        assert getattr(tokenizer, attribute, None) == old_value
+
+
 @pytest.mark.parametrize(
     "texts", (["a", "fistful of", "tokens more", "the good, the bad, and the tokens."],)
 )
 @pytest.mark.parametrize("batch_size", (10, 3))
 def test_token_logprobs(
-    texts, model_and_tokenizer, batch_size, atol, end_of_prompt=" "
+    texts, model_and_tokenizer, batch_size, model, tokenizer, atol, end_of_prompt=" "
 ):
     """
     Tests that the model's token log probabilities are correct by testing against an
@@ -104,7 +163,9 @@ def test_token_logprobs(
     texts_log_probs = []
     texts_input_ids = []
     for text in texts:
-        logits, _encoding = hf._utils.logits_texts([text], *model_and_tokenizer)
+        # the correct expected result requires that we use the model() and tokenizer()
+        # fixtures b/c they're set up correctly
+        logits, _encoding = hf._utils.logits_texts([text], model, tokenizer)
         # grab first index b/c we only gave it 1 text
         texts_log_probs.append(logits[0].log_softmax(dim=1))
         texts_input_ids.append(_encoding.input_ids[0])
@@ -164,7 +225,7 @@ def test__keys_values_prompts(
 
 
 ########################################################################################
-#################################### Test helpers ######################################
+############################### Helpers for future tests ###############################
 ########################################################################################
 
 

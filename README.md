@@ -357,20 +357,39 @@ assumed to come from masked language models like BERT.
 
 ## Local development
 
+(If you're on a Windows system, some of the commands below will be different.)
+
 ### Setup
 
-1. Create a new Python 3.8+ environment using venv. Activate it
+1. Create a new Python 3.8+ virtual environment. Activate the venv. I use
+   [`virtualenvwrapper`](https://virtualenvwrapper.readthedocs.io/en/latest/). For
+   example, let's create a virtual environment called `cappr`
+   using Python's native `venv`:
 
-2. Clone the repo (or fork it and clone that)
+   ```bash
+   cd your/venvs
+
+   python3 -m venv cappr
+
+   source cappr/bin/activate
+
+   python -m pip install wheel --upgrade pip
+   ```
+
+2. `cd` to wherever you store projects, and clone the repo (or fork it and clone that) there
+
+    ```bash
+    cd your/projects
+
+    git clone https://github.com/kddubey/cappr.git
+    ```
+
+3. `cd` to the repo and install this package in editable mode, along with development
+   requirements (**ensure your venv is activated**)
 
    ```
-   git clone https://github.com/kddubey/cappr.git
-   ```
+   cd cappr
 
-3. cd to the repo and install this package in editable mode, along with development
-   requirements (ensure your venv is activated)
-
-   ```
    python -m pip install -e ".[dev]"
    ```
 
@@ -383,15 +402,22 @@ assumed to come from masked language models like BERT.
 
 ### Testing
 
+From the repo home directory `cappr`:
+
 ```
 pytest
 ```
 
 Note that a few small transformers will be downloaded to your computer.
 
+If a code change could affect statistical performance, then additionally test
+statistical performance by running an appropriate demo in
+[`demos`](https://github.com/kddubey/cappr/tree/main/demos).
+
 ### Docs
 
-To test changes to documentation, first locally build them via
+To test changes to documentation, first locally build them from the repo home directory
+`cappr` via
 
 ```
 cd docs
