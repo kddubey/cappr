@@ -6,6 +6,7 @@ from __future__ import annotations
 from functools import wraps
 from inspect import getmodule
 from typing import Callable, Optional, Sequence, Union
+import warnings
 
 import numpy as np
 import numpy.typing as npt
@@ -18,7 +19,7 @@ def _agg_log_probs(
     func: Callable[[Sequence[float]], float] = np.mean,
 ) -> list[list[float]]:
     """
-    Aggregate using a nested list comprehension.
+    Aggregate using a slow, nested list comprehension.
     """
     return [
         [
@@ -45,7 +46,9 @@ def _agg_log_probs_from_constant_completions(
             "log_probs does not have a constant number of completions, i.e., there are "
             "indices i, j such that len(log_probs[i]) != len(log_probs[j])."
         )
-    # At this point, we've verified that the number of completions is constant.
+    # At this point, we've verified that the number of completions is constant. (numpy
+    # will automatically check if the number of tokens is constant later. For
+    # demonstration purposes, say that the number of tokens is also constant.)
     # Say, e.g., we have 2 completions, ['a b', 'c d e'], and 2 prompts.
     # Then log_probs looks like:
     # [ [ [a1, b1],      (token log-probs for completion 1 | prompt 1)
@@ -60,15 +63,27 @@ def _agg_log_probs_from_constant_completions(
     #         [[c2, d2, e2]])
     # ]
     num_completions_per_prompt = list(num_completions_per_prompt_set)[0]
-    array_list = [
-        np.array(  # raises jagged/inhomogeneous ValueError if non-constant # tokens
-            [
-                log_probs_completions[completion_idx]
-                for log_probs_completions in log_probs
-            ]
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "error",
+            category=np.VisibleDeprecationWarning,
+            message="Creating an ndarray from ragged nested sequences",
         )
-        for completion_idx in range(num_completions_per_prompt)
-    ]
+        # Intentionally raise an error if there are a non-constant # of tokens, because
+        # vectorization is not possible in this case. In older versions of numpy, this
+        # error is just a warning.
+        try:
+            array_list = [
+                np.array(
+                    [
+                        log_probs_completions[completion_idx]
+                        for log_probs_completions in log_probs
+                    ]
+                )
+                for completion_idx in range(num_completions_per_prompt)
+            ]
+        except:
+            raise ValueError("non-constant # of tokens")
     # Now apply the vectorized function to each array in the list
     likelihoods: npt.NDArray[np.floating] = np.exp(
         [func(array, axis=1) for array in array_list]
@@ -356,13 +371,18 @@ def _predict_examples(predict_proba_examples_func):
         pred_probs: Union[
             list[npt.NDArray[np.floating]], npt.NDArray[np.floating]
         ] = predict_proba_examples_func(examples, *args, **kwargs)
-        # If it's an array, we can call .argmax, which is faster
+        # If it's an array, we can call .argmax on the whole thing, which is faster
         try:
             pred_class_idxs = pred_probs.argmax(axis=1)
-        except AttributeError:
+        except (
+            AttributeError,  # no argmax attr
+            TypeError,  # no axis kwarg
+        ):
             pred_class_idxs = [
                 np.argmax(example_pred_probs) for example_pred_probs in pred_probs
             ]
+            # Decided against example_pred_probs.argmax(). If this decorator gets
+            # surfaced, then it should work out-of-the-box with any sequence of floats.
         return [
             example.completions[pred_class_idx]
             for example, pred_class_idx in zip(examples, pred_class_idxs)

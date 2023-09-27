@@ -32,8 +32,7 @@ endpoint.
 from cappr.openai.classify import predict
 
 prompt = """
-Tweet about a movie: "Oppenheimer was pretty good. But 3 hrs...cmon Nolan."
-
+This is a tweet about a movie: "Oppenheimer was pretty good. But 3 hrs...cmon Nolan."
 This tweet contains the following criticism:
 """.strip("\n")
 
@@ -77,7 +76,7 @@ from cappr.huggingface.classify import predict
 prompt = "Which planet is closer to the Sun: Mercury or Earth?"
 class_names = ("Mercury", "Earth")
 
-# load model and tokenizer
+# Load a model and its corresponding tokenizer
 model_name = "gpt2"
 model = AutoModelForCausalLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -122,16 +121,17 @@ prompts = [
     "LeBron James is a",
 ]
 
-# each of the prompts could be completed with one of these:
+# Each of the prompts could be completed with one of these:
 class_names = ("basketball player", "tennis player", "scientist")
 prior =       (      1/6,                1/6,            2/3    )
-# say I expect most of my data to have scientists
+# Say I expect most of my data to have scientists
 
-# load model and tokenizer
+# Load a model and its corresponding tokenizer
 model_name = "gpt2"
 model = AutoModelForCausalLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
+# Run CAPPr
 pred_probs = predict_proba(
     prompts=prompts,
     completions=class_names,
@@ -147,9 +147,10 @@ print(pred_probs.round(1))
 #  [0.1 0.1 0.8]
 #  [0.8 0.2 0. ]]
 
-# for each prompt, which completion is most likely?
+# For each prompt, which completion is most likely?
 pred_class_idxs = pred_probs.argmax(axis=1)
-print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
+preds = [class_names[pred_class_idx] for pred_class_idx in pred_class_idxs]
+print(preds)
 # ['basketball player',
 #  'tennis player',
 #  'scientist',
@@ -164,12 +165,12 @@ print([class_names[pred_class_idx] for pred_class_idx in pred_class_idxs])
 Again, let's use `huggingface` to predict probabilities.
 
 ```python
-import numpy as np
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from cappr import Example
 from cappr.huggingface.classify import predict_proba_examples
 
+# Create a sequence of Example objects representing your classification tasks
 examples = [
     Example(
         prompt="Jodie Foster played",
@@ -182,9 +183,12 @@ examples = [
     ),
 ]
 
+# Load a model and its corresponding tokenizer
 model_name = "gpt2"
 model = AutoModelForCausalLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+# Run CAPPr
 pred_probs = predict_proba_examples(examples, model_and_tokenizer=(model, tokenizer))
 
 # pred_probs[i][j] = probability that examples[i].prompt is classified as
@@ -193,14 +197,13 @@ print([example_pred_probs.round(2) for example_pred_probs in pred_probs])
 # [array([0.7, 0.3]),
 #  array([0.03, 0.97, 0.  ])]
 
-# for each example, which completion is most likely?
-pred_class_idxs = [np.argmax(example_pred_probs) for example_pred_probs in pred_probs]
-print(
-    [
-        example.completions[pred_class_idx]
-        for example, pred_class_idx in zip(examples, pred_class_idxs)
-    ]
-)
+# For each example, which completion is most likely?
+pred_class_idxs = [example_pred_probs.argmax() for example_pred_probs in pred_probs]
+preds = [
+    example.completions[pred_class_idx]
+    for example, pred_class_idx in zip(examples, pred_class_idxs)
+]
+print(preds)
 # ['Clarice Starling',
 #  'Kevin Conroy']
 ```
