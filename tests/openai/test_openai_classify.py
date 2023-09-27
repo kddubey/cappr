@@ -1,5 +1,5 @@
 """
-Unit tests `cappr.openai.classify`.
+Unit and integration tests for tests `cappr.openai.classify`.
 """
 from __future__ import annotations
 import os

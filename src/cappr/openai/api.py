@@ -2,6 +2,7 @@
 Helpers for interacting with the OpenAI API.
 """
 from __future__ import annotations
+from dataclasses import dataclass
 import logging
 import os
 import time
@@ -22,20 +23,46 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 end_of_prompt = "\n\n###\n\n"
 # https://platform.openai.com/docs/guides/fine-tuning/data-formatting
+# kinda annoying that they don't let you use their special tokens.
 
 
 Model = Literal[
+    "gpt-3.5-turbo-instruct",
+    "babbage-002",
+    "davinci-002",
     "text-ada-001",
     "text-babbage-001",
     "text-curie-001",
     "text-davinci-002",
     "text-davinci-003",
-]
+]  # Literal so that docs and IDEs easily parse it
 # https://platform.openai.com/docs/models/model-endpoint-compatibility
-_costs = [0.0004, 0.0005, 0.002, 0.02, 0.02]
+# TODO: deprecate according to
+# https://platform.openai.com/docs/deprecations/instructgpt-models
+
+
+@dataclass(frozen=True)
+class _DollarCostPer1kTokens:
+    prompt: float = None
+    completion: float = None
+
+
+_costs = [
+    _DollarCostPer1kTokens(0.0015, 0.002),
+    _DollarCostPer1kTokens(0.0004, 0.0004),
+    _DollarCostPer1kTokens(0.002, 0.002),
+    _DollarCostPer1kTokens(0.0004, 0.0004),
+    _DollarCostPer1kTokens(0.0005, 0.0005),
+    _DollarCostPer1kTokens(0.002, 0.002),
+    _DollarCostPer1kTokens(0.02, 0.02),
+    _DollarCostPer1kTokens(0.02, 0.02),
+]
+# sampling is so inefficient that they really gotta pull this cheese on me lol
 # https://openai.com/api/pricing/
 # TODO: figure out how to get this automatically from openai, if possible
-model_to_cost_per_1k: dict[Model, float] = dict(zip(get_args(Model), _costs))
+model_to_cost_per_1k: dict[Model, _DollarCostPer1kTokens] = dict(
+    zip(get_args(Model), _costs)
+)
 
 
 def openai_method_retry(
@@ -97,11 +124,12 @@ class _UserCanceled(Exception):
 
 
 def _openai_api_call_is_ok(
-    model: Model,
     texts: list[str],
+    model: Model,
     max_tokens: int = 0,
-    cost_per_1k_tokens: Optional[float] = None,
-):
+    cost_per_1k_tokens_prompt: Optional[float] = None,
+    cost_per_1k_tokens_completion: Optional[float] = None,
+) -> str:
     """
     After displaying the cost (usually an upper bound) of hitting the OpenAI API
     text completion endpoint, prompt the user to manually input ``y`` or ``n`` to
@@ -109,16 +137,25 @@ def _openai_api_call_is_ok(
 
     Parameters
     ----------
-    model : Model
-        name of the OpenAI API text completion model
     texts : list[str]
         texts or prompts inputted to the `model` OpenAI API call
+    model : Model
+        name of the OpenAI API text completion model
     max_tokens : int, optional
         maximum number of tokens to generate, by default 0
-    cost_per_1k_tokens : Optional[float], optional
-        OpenAI API dollar cost for processing 1k tokens. If unset,
-        `cappr.openai.api.model_to_cost_per_1k[model]` is used. If it's still unknown,
-        the cost will be displayed as `unknown`. By default None
+    cost_per_1k_tokens_prompt : Optional[float], optional
+        OpenAI API dollar cost for processing 1k prompt tokens. If unset,
+        `cappr.openai.api.model_to_cost_per_1k[model]["prompt"]` is used. If it's still
+        unknown, the cost will be displayed as `unknown`. By default, None
+    cost_per_1k_tokens_completion : Optional[float], optional
+        OpenAI API dollar cost for processing 1k completion tokens. If unset,
+        `cappr.openai.api.model_to_cost_per_1k[model]["completion"]` is used. If it's
+        still unknown, the cost will be displayed as `unknown`. By default, None
+
+    Returns
+    -------
+    str
+        the input prompt made to the user
 
     Raises
     ------
@@ -130,22 +167,41 @@ def _openai_api_call_is_ok(
         tokenizer = tiktoken.encoding_for_model(model)
     except KeyError:  # that's fine, we just need an approximation
         tokenizer = tiktoken.get_encoding("gpt2")
-    _num_tokens_prompts = sum(len(tokens) for tokens in tokenizer.encode_batch(texts))
-    _num_tokens_completions = len(texts) * max_tokens  # upper bound ofc
-    num_tokens = _num_tokens_prompts + _num_tokens_completions
-    cost_per_1k_tokens = cost_per_1k_tokens or model_to_cost_per_1k.get(model)
-    if cost_per_1k_tokens is None:
-        cost = "unknown (see https://openai.com/api/pricing/)"
+
+    # prompts
+    num_tokens_prompts = sum(len(tokens) for tokens in tokenizer.encode_batch(texts))
+    cost_per_1k_tokens_prompt = (
+        cost_per_1k_tokens_prompt
+        or model_to_cost_per_1k.get(model, _DollarCostPer1kTokens()).prompt
+    )
+    if cost_per_1k_tokens_prompt is None:
+        cost = None
     else:
-        cost = round(num_tokens * cost_per_1k_tokens / 1_000, 2)
+        cost = num_tokens_prompts * cost_per_1k_tokens_prompt / 1_000
+
+    # completions
+    num_tokens_completions = len(texts) * max_tokens  # upper bound
+    cost_per_1k_tokens_completion = (
+        cost_per_1k_tokens_completion
+        or model_to_cost_per_1k.get(model, _DollarCostPer1kTokens()).completion
+    )
+    if cost is not None and cost_per_1k_tokens_completion is not None:
+        cost += num_tokens_completions * cost_per_1k_tokens_completion / 1_000
+        cost = round(cost, 2)
+    else:
+        cost = "unknown (see https://openai.com/api/pricing/)"
+
+    num_tokens_total = num_tokens_prompts + num_tokens_completions
     output = None
+    input_message = (
+        f"This API call will cost about ${cost} (≤{num_tokens_total:_} tokens). "
+        "Proceed? (y/n): "
+    )
     while output not in {"y", "n"}:
-        output = input(
-            f"This API call will cost you about ${cost} "
-            f"({num_tokens:_} tokens). Proceed? (y/n): "
-        )
+        output = input(input_message)
     if output == "n":
         raise _UserCanceled("No API requests will be submitted.")
+    return input_message  # for testing purposes
 
 
 def gpt_complete(
@@ -191,12 +247,13 @@ def gpt_complete(
         list with the same length as `texts`. Each element is the ``choices`` mapping
         which the OpenAI text completion endpoint returns.
     """
-    _batch_size = 32  # max that the API can currently handle
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    _batch_size = 20  # max that the API can currently handle
     if isinstance(texts, str):
         # Passing in a string will silently but majorly fail. Handle it
         texts = [texts]
     if ask_if_ok:
-        _openai_api_call_is_ok(model, texts, max_tokens=max_tokens)
+        _ = _openai_api_call_is_ok(texts, model, max_tokens=max_tokens)
     choices = []
     with tqdm(total=len(texts), desc=progress_bar_desc) as progress_bar:
         for texts_batch in _batch.constant(texts, _batch_size):
@@ -261,15 +318,12 @@ def gpt_chat_complete(
         (flat) list of the JSONs which the chat completion endpoint returns. More
         specifically, it's a list of ``openai.openai_object.OpenAIObject``
     """
+    openai.api_key = os.getenv("OPENAI_API_KEY")
     # TODO: batch, if possible
     if isinstance(texts, str):
         texts = [texts]
     if ask_if_ok:
-        _openai_api_call_is_ok(
-            model=model,
-            texts=texts,
-            max_tokens=max_tokens,
-        )
+        _ = _openai_api_call_is_ok(texts, model, max_tokens=max_tokens)
     choices = []
     for text in tqdm(texts, total=len(texts), desc="Completing chats"):
         messages = [

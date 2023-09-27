@@ -1,7 +1,8 @@
 """
-Unit tests `cappr.huggingface.classify` by checking that its functions' outputs are
-numerically close to those from `cappr.huggingface.classify_no_cache`, which is assumed
-to be correct (TODO: yeah I really should test that).
+Unit and integration tests for `cappr.huggingface.classify`. Works by checking that its
+functions' outputs are numerically close to those from
+`cappr.huggingface.classify_no_cache`, which is assumed to be correct (TODO: yeah I
+really should test that).
 """
 from __future__ import annotations
 import os
