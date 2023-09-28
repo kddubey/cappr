@@ -261,6 +261,7 @@ def log_probs_conditional(
     end_of_prompt: str = " ",
     show_progress_bar: Optional[bool] = None,
     batch_size: int = 32,
+    **kwargs,
 ) -> Union[list[list[float]], list[list[list[float]]]]:
     """
     Log-probabilities of each completion token conditional on each prompt and previous
@@ -572,14 +573,7 @@ def predict_proba(
         pred_probs[1,2]
         # 0.4
     """
-    return log_probs_conditional(
-        prompts,
-        completions,
-        model_and_tokenizer,
-        end_of_prompt=end_of_prompt,
-        show_progress_bar=show_progress_bar,
-        batch_size=batch_size,
-    )
+    return log_probs_conditional(**locals())
 
 
 @classify._predict_proba_examples
@@ -654,12 +648,7 @@ def predict_proba_examples(
         pred_probs[0][1]
         # 0.97
     """
-    return log_probs_conditional_examples(
-        examples,
-        model_and_tokenizer,
-        show_progress_bar=show_progress_bar,
-        batch_size=batch_size,
-    )
+    return log_probs_conditional_examples(**locals())
 
 
 @classify._predict
@@ -749,17 +738,7 @@ def predict(
         # ['on the stove',
         #  'in the freezer']
     """
-    return predict_proba(
-        prompts,
-        completions,
-        model_and_tokenizer,
-        prior=prior,
-        end_of_prompt=end_of_prompt,
-        discount_completions=discount_completions,
-        log_marginal_probs_completions=log_marginal_probs_completions,
-        show_progress_bar=show_progress_bar,
-        batch_size=batch_size,
-    )
+    return predict_proba(**locals())
 
 
 @classify._predict_examples
@@ -824,9 +803,4 @@ def predict_examples(
         # ['Clarice Starling',
         #  'Kevin Conroy']
     """
-    return predict_proba_examples(
-        examples,
-        model_and_tokenizer,
-        show_progress_bar=show_progress_bar,
-        batch_size=batch_size,
-    )
+    return predict_proba_examples(**locals())

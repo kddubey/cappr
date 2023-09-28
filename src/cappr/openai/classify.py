@@ -122,6 +122,7 @@ def log_probs_conditional(
     end_of_prompt: str = " ",
     show_progress_bar: Optional[bool] = None,
     ask_if_ok: bool = False,
+    **kwargs,
 ) -> Union[list[list[float]], list[list[list[float]]]]:
     """
     Log-probabilities of each completion token conditional on each prompt and previous
@@ -448,14 +449,7 @@ def predict_proba(
         pred_probs[1,0]
         # 0.1
     """
-    return log_probs_conditional(
-        prompts,
-        completions,
-        model,
-        end_of_prompt=end_of_prompt,
-        show_progress_bar=show_progress_bar,
-        ask_if_ok=ask_if_ok,
-    )
+    return log_probs_conditional(**locals())
 
 
 @classify._predict_proba_examples
@@ -532,9 +526,7 @@ def predict_proba_examples(
         pred_probs[1,1]
         # 0.75
     """
-    return log_probs_conditional_examples(
-        examples, model, show_progress_bar=show_progress_bar, ask_if_ok=ask_if_ok
-    )
+    return log_probs_conditional_examples(**locals())
 
 
 @classify._predict
@@ -639,17 +631,7 @@ def predict(
         # ['the product is difficult to use',
         #  'the product is great']
     """
-    return predict_proba(
-        prompts,
-        completions,
-        model,
-        prior=prior,
-        end_of_prompt=end_of_prompt,
-        discount_completions=discount_completions,
-        log_marginal_probs_completions=log_marginal_probs_completions,
-        show_progress_bar=show_progress_bar,
-        ask_if_ok=ask_if_ok,
-    )
+    return predict_proba(**locals())
 
 
 @classify._predict_examples
@@ -711,6 +693,4 @@ def predict_examples(
         # ['he dropped a hammer on his foot',
         #  'the liquid in the bottle poured out']
     """
-    return predict_proba_examples(
-        examples, model, show_progress_bar=show_progress_bar, ask_if_ok=ask_if_ok
-    )
+    return predict_proba_examples(**locals())
