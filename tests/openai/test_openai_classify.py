@@ -3,6 +3,7 @@ Unit and integration tests for tests `cappr.openai.classify`.
 """
 from __future__ import annotations
 import os
+import re
 import sys
 
 import pytest
@@ -115,31 +116,75 @@ def test_log_probs_conditional(prompts, completions, model):
     expected = [[[10, 11], [10]], [[5, 6], [5]], [[5, 6], [5]], [[8, 9], [8]]]
     assert log_probs_conditional == expected
 
+    # Test bad prompts input - empty
+    with pytest.raises(ValueError, match="prompts must be non-empty."):
+        classify.log_probs_conditional([], completions, model)
+
+    # Test bad prompts input - non-ordered
+    with pytest.raises(TypeError, match="prompts must be an ordered collection."):
+        classify.log_probs_conditional(set(prompts), completions, model)
+
+    # Test bad completions input - empty
+    with pytest.raises(ValueError, match="completions must be non-empty."):
+        classify.log_probs_conditional(prompts, [], model)
+
+    # Test bad completions input - non-ordered
+    with pytest.raises(TypeError, match="completions must be an ordered collection."):
+        classify.log_probs_conditional(prompts, set(completions), model)
+
+    # Test bad completions input - pure string
+    with pytest.raises(TypeError, match="completions cannot be a string."):
+        classify.log_probs_conditional(prompts, completions[0], model)
+
 
 def test_log_probs_conditional_examples(examples, model):
     log_probs_conditional = classify.log_probs_conditional_examples(examples, model)
     expected = [[[2], [2]], [[14, 15, 16, 17]], [[1, 2], [1], [1, 2, 3]]]
     assert log_probs_conditional == expected
 
+    # Test bad examples input - non-ordered
+    with pytest.raises(TypeError, match="examples must be an ordered collection."):
+        classify.log_probs_conditional_examples(set(examples), model)
+
+    # Test bad examples input - empty
+    with pytest.raises(ValueError, match="examples must be non-empty."):
+        classify.log_probs_conditional_examples([], model)
+
 
 def test_predict_proba(prompts, completions, model):
     _test.predict_proba(classify.predict_proba, prompts, completions, model)
+
+    # Test prior
+    prior = [1 / len(completions)] * len(completions)
+    _test.predict_proba(
+        classify.predict_proba, prompts, completions, model, prior=prior
+    )
 
     # Test discount_completions > 0.0
     _test.predict_proba(
         classify.predict_proba, prompts, completions, model, discount_completions=1.0
     )
 
-    # Test bad prior input. TODO: standardize for other inputs
-    prior = [1 / len(completions)] * len(completions)
+    # Test discount_completions > 0.0 with prior
+    _test.predict_proba(
+        classify.predict_proba,
+        prompts,
+        completions,
+        model,
+        prior=prior,
+        discount_completions=1.0,
+    )
+
+    # Test bad prior input - wrong size
     prior_bad = prior + [0]
-    expected_error_msg = (
-        "completions and prior are different lengths: "
-        f"{len(completions)}, {len(prior_bad)}."
+    expected_error_msg = re.escape(
+        f"Expected prior to have length {len(completions)} (the number of "
+        f"completions), got {len(prior_bad)}."
     )
     with pytest.raises(ValueError, match=expected_error_msg):
         classify.predict_proba(prompts, completions, model, prior=prior_bad)
 
+    # Test bad prior input - not a probability distr
     prior_bad = prior[:-1] + [0]
     expected_error_msg = "prior must sum to 1."
     with pytest.raises(ValueError, match=expected_error_msg):

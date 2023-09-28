@@ -2,6 +2,7 @@
 Unit tests `cappr.utils.classify`.
 """
 from __future__ import annotations
+from typing import Any
 
 import numpy as np
 import pytest
@@ -24,6 +25,22 @@ def test___agg_log_probs_vectorized():
     log_probs = [[[2, 2], [1]], [[1 / 2, 1 / 2], [4]]]
     log_probs_agg = classify._agg_log_probs_vectorized(log_probs, func=np.sum)
     assert np.allclose(log_probs_agg, np.exp([[4, 1], [1, 4]]))
+
+
+@pytest.mark.parametrize(
+    "sequence_and_depth_expected",
+    (
+        (0, 0),
+        ([0, 1], 1),
+        ([[0, 1], [2, 3]], 2),
+        ([[[0, 1], [2]], [[4, 5], [6]]], 3),  # jagged. np.shape would raise an error
+    ),
+)
+def test__sequence_depth(sequence_and_depth_expected: tuple[Any, int]):
+    sequence, depth_expected = sequence_and_depth_expected
+    depth_observed = classify._sequence_depth(sequence)
+    assert isinstance(depth_observed, int)
+    assert depth_observed == depth_expected
 
 
 @pytest.mark.parametrize("likelihoods", ([[4, 1], [1, 4]],))

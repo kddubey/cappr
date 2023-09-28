@@ -99,25 +99,25 @@ def _agg_log_probs(
     ]
 
 
-def _is_sequence(object) -> bool:
-    # Should catch most objects we care about: lists, tuples, arrays, tensors. No sets.
-    try:
-        len(object)
-        object[0]
-    except:
-        return False
-    else:
-        return True
-
-
 def _sequence_depth(sequence) -> int:
     """
-    Like `len(np.shape(sequence))` but `sequence` can be any object.
+    Like `len(np.shape(sequence))` but `sequence` can be more jagged. It can't be nested
+    inconsistently though, since we'll just check the first element.
     """
-    if _is_sequence(sequence):
-        return 1 + max(_sequence_depth(item) for item in sequence)
-    else:
-        return 0
+
+    def _is_sliceable(object) -> bool:
+        try:
+            object[0:0]
+        except:
+            return False
+        else:
+            return True
+
+    depth = 0
+    while _is_sliceable(sequence):
+        depth += 1
+        sequence = sequence[0]
+    return depth
 
 
 def agg_log_probs(
@@ -152,7 +152,7 @@ def agg_log_probs(
     """
     # 1. Determine the dimensionality of log_probs. The aggregation computation assumes
     #    a 3-D input, so we'll wrap it if it's 2-D.
-    depth = _sequence_depth(log_probs[0]) + 1  # for efficiency, just check the first
+    depth = _sequence_depth(log_probs)
     if depth not in {2, 3}:
         raise ValueError(
             f"log_probs is expected to be 2-D or 3-D. Got {depth} dimensions."
@@ -224,7 +224,7 @@ def posterior_prob(
         )
     normalize = np.array(normalize, dtype=bool)
     if check_prior:
-        _check.prior(prior)
+        _check.prior(prior, expected_length=likelihoods.shape[axis])
 
     # Apply Bayes' rule, w/ optional normalization per row
     if prior is None:
@@ -255,16 +255,16 @@ def _wrap_call_unwrap(
 
 def _log_probs_conditional(log_probs_conditional):
     """
-    Decorator which does basic input checking, and allows for `prompts` to be a single
-    string for a `log_probs_conditional` function.
+    Decorator which does input checking, and allows for `prompts` to be a single string
+    for a `log_probs_conditional` function.
     """
 
     @wraps(log_probs_conditional)
     def wrapper(
         prompts: Union[str, Sequence[str]], completions: Sequence[str], *args, **kwargs
     ) -> list[list[list[float]]]:
-        # TODO: check prompts is a str or non-empty sequence of strings
-        # TODO: check completions is a non-empty sequence of strings
+        _check.nonempty_and_ordered(prompts, variable_name="prompts")
+        _check.completions(completions)
         return _wrap_call_unwrap(
             str, prompts, log_probs_conditional, completions, *args, **kwargs
         )
@@ -274,7 +274,7 @@ def _log_probs_conditional(log_probs_conditional):
 
 def _log_probs_conditional_examples(log_probs_conditional_examples):
     """
-    Decorator which does basic input checking, and allows for `examples` to be a single
+    Decorator which does input checking, and allows for `examples` to be a single
     `Example` for a `log_probs_conditional_examples` function.
     """
 
@@ -284,7 +284,8 @@ def _log_probs_conditional_examples(log_probs_conditional_examples):
     def wrapper(
         examples: Union[Example, Sequence[Example]], *args, **kwargs
     ) -> list[list[list[float]]]:
-        # TODO: check examples is not an empty sequence
+        if not isinstance(examples, Example):
+            _check.nonempty_and_ordered(examples, variable_name="examples")
         return _wrap_call_unwrap(
             Example, examples, log_probs_conditional_examples, *args, **kwargs
         )
@@ -355,12 +356,7 @@ def _predict_proba(log_probs_conditional):
         # Check inputs before making expensive model calls
         # Check the prior
         prior = kwargs.get("prior", None)
-        _check.prior(prior)
-        if prior is not None and len(completions) != len(prior):
-            raise ValueError(
-                "completions and prior are different lengths: "
-                f"{len(completions)}, {len(prior)}."
-            )
+        _check.prior(prior, expected_length=len(completions))
 
         # Check normalization
         normalize = kwargs.get("normalize", True)

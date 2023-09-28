@@ -37,16 +37,16 @@ class Example:
     ------
     TypeError
         if `prompt` is not a string
+    ValueError
+        if `prompt` is empty
     TypeError
-        if `completions` is not a sequence of strings
+        if `completions` is not a sequence
+    ValueError
+        if `completions` is empty
     TypeError
-        if `prior` is not None, or it isn't a sequence
+        if `prior` is not None, or it isn't a sequence or numpy array
     ValueError
-        if `prior` is a sequence but isn't 1-D
-    ValueError
-        if `prior` is a sequence but doesn't sum to 1
-    ValueError
-        if `prior` is a sequence but `completions` and `prior` are different lengths
+        if `prior` is not a 1-D probability distribution over `completions`
     """
 
     prompt: str
@@ -59,14 +59,7 @@ class Example:
         # Check inputs here so that fxns of Example don't need to check
         if not isinstance(self.prompt, str):
             raise TypeError("prompt must be a string.")
-        if isinstance(self.completions, str) or not isinstance(
-            self.completions, Sequence
-        ):
-            raise TypeError("completions must be a Sequence of strings.")
-        _check.prior(self.prior)
-        if self.prior is not None and len(self.completions) != len(self.prior):
-            raise ValueError(
-                "completions and prior are different lengths: "
-                f"{len(self.completions)}, {len(self.prior)}."
-            )
+        _check.nonempty_and_ordered(self.prompt, variable_name="prompt")
+        _check.completions(self.completions)
+        _check.prior(self.prior, expected_length=len(self.completions))
         _check.normalize(self.completions, self.normalize)
