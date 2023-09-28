@@ -59,6 +59,7 @@ class _DollarCostPer1kTokens:
 
 
 _MODEL_TO_COST_PER_1K_TOKENS = {
+    "gpt-3.5-turbo": _DollarCostPer1kTokens(prompt=0.0015, completion=0.002),
     "gpt-3.5-turbo-instruct": _DollarCostPer1kTokens(prompt=0.0015, completion=0.002),
     "babbage-002": _DollarCostPer1kTokens(prompt=0.0004, completion=0.0004),
     "davinci-002": _DollarCostPer1kTokens(prompt=0.002, completion=0.002),
@@ -218,8 +219,9 @@ class _UserCanceled(Exception):
 def gpt_complete(
     texts: Sequence[str],
     model: Model,
-    ask_if_ok: bool = False,
+    show_progress_bar: Optional[bool] = None,
     progress_bar_desc: str = "log-probs",
+    ask_if_ok: bool = False,
     max_tokens: int = 0,
     **openai_completion_kwargs,
 ) -> list[Mapping[str, Any]]:
@@ -241,12 +243,15 @@ def gpt_complete(
         these are passed as the `prompt` argument in a text completion request
     model : Model
         which text completion model to use
+    show_progress_bar: bool, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 texts
+    progress_bar_desc: str, optional
+        description of the progress bar if shown, by default ``'log-probs'``
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
-    progress_bar_desc: str, optional
-        description of the progress bar that's displayed, by default ``'log-probs'``
     max_tokens : int, optional
         maximum number of tokens to generate, by default 0
     **openai_completion_kwargs
@@ -266,7 +271,11 @@ def gpt_complete(
     if ask_if_ok:
         _ = _openai_api_call_is_ok(texts, model, max_tokens=max_tokens)
     choices = []
-    with tqdm(total=len(texts), desc=progress_bar_desc) as progress_bar:
+    total = len(texts)
+    disable = not (
+        show_progress_bar or total >= _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
+    )
+    with tqdm(total=total, desc=progress_bar_desc, disable=disable) as progress_bar:
         for texts_batch in _batch.constant(texts, _batch_size):
             response = openai_method_retry(
                 openai.Completion.create,
@@ -283,6 +292,7 @@ def gpt_complete(
 def gpt_chat_complete(
     texts: Sequence[str],
     model: str = "gpt-3.5-turbo",
+    show_progress_bar: Optional[bool] = None,
     ask_if_ok: bool = False,
     system_msg: str = "You are an assistant which classifies text.",
     max_tokens: int = 5,
@@ -308,6 +318,9 @@ def gpt_chat_complete(
         ``{"role": "user", "content": text}``
     model : str, optional
         one of the chat model names, by default "gpt-3.5-turbo"
+    show_progress_bar: bool, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 texts
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
@@ -335,8 +348,12 @@ def gpt_chat_complete(
         texts = [texts]
     if ask_if_ok:
         _ = _openai_api_call_is_ok(texts, model, max_tokens=max_tokens)
+    total = len(texts)
+    disable = not (
+        show_progress_bar or total >= _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
+    )
     choices = []
-    for text in tqdm(texts, total=len(texts), desc="Completing chats"):
+    for text in tqdm(texts, total=total, desc="Completing chats", disable=disable):
         messages = [
             {"role": "system", "content": system_msg},
             {"role": "user", "content": text},

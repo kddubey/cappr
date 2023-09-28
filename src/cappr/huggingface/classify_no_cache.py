@@ -29,6 +29,7 @@ def token_logprobs(
     texts: Sequence[str],
     model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     end_of_prompt: str = " ",
+    show_progress_bar: Optional[bool] = None,
     batch_size: int = 32,
     **kwargs,
 ) -> list[list[float]]:
@@ -45,6 +46,9 @@ def token_logprobs(
     end_of_prompt : str, optional
         This string gets added to the beginning of each text. It's important to set this
         if you're using the discount feature. Otherwise, set it to "". By default " "
+    show_progress_bar: bool, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 texts
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -57,7 +61,13 @@ def token_logprobs(
         `texts[text_idx]`. If `texts[text_idx]` is a single token, then
         `log_probs[text_idx]` is `[None]`.
     """
-    return hf.classify.token_logprobs(texts, model_and_tokenizer, batch_size=batch_size)
+    return hf.classify.token_logprobs(
+        texts,
+        model_and_tokenizer,
+        end_of_prompt=end_of_prompt,
+        show_progress_bar=show_progress_bar,
+        batch_size=batch_size,
+    )
 
 
 def _keys_values_prompts(
@@ -249,6 +259,7 @@ def log_probs_conditional(
     completions: Sequence[str],
     model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     end_of_prompt: str = " ",
+    show_progress_bar: Optional[bool] = None,
     batch_size: int = 32,
 ) -> Union[list[list[float]], list[list[list[float]]]]:
     """
@@ -266,6 +277,9 @@ def log_probs_conditional(
         an instantiated model and its corresponding tokenizer
     end_of_prompt : str, optional
         the string to tack on at the end of every prompt, by default " "
+    show_progress_bar: bool, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 prompts
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -330,7 +344,9 @@ def log_probs_conditional(
             batchable_arg="prompts",
             progress_bar_desc="conditional log-probs (no cache)",
         )
-        def log_probs_completions_batch(prompts, batch_size=batch_size):
+        def log_probs_completions_batch(
+            prompts, show_progress_bar=show_progress_bar, batch_size=batch_size
+        ):
             logits, encodings = _logits_completions_given_prompts(
                 model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
             )
@@ -344,6 +360,7 @@ def log_probs_conditional(
 def log_probs_conditional_examples(
     examples: Union[Example, Sequence[Example]],
     model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
+    show_progress_bar: Optional[bool] = None,
     batch_size: int = 32,
 ) -> Union[list[list[float]], list[list[list[float]]]]:
     """
@@ -357,6 +374,9 @@ def log_probs_conditional_examples(
         completions
     model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
+    show_progress_bar: bool, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 examples
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -427,7 +447,9 @@ def log_probs_conditional_examples(
             batchable_arg="examples",
             progress_bar_desc="conditional log-probs (no cache)",
         )
-        def log_probs_completions_batch(examples, batch_size=batch_size):
+        def log_probs_completions_batch(
+            examples, show_progress_bar=show_progress_bar, batch_size=batch_size
+        ):
             logits, encodings = _logits_completions_given_prompts_examples(
                 model, tokenizer, examples
             )
@@ -450,6 +472,7 @@ def predict_proba(
     normalize: bool = True,
     discount_completions: float = 0.0,
     log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
+    show_progress_bar: Optional[bool] = None,
     batch_size: int = 32,
 ) -> npt.NDArray[np.floating]:
     """
@@ -485,6 +508,9 @@ def predict_proba(
         conditional on previous completion tokens (not prompt tokens). Only used if `not
         discount_completions`. Compute them by passing `completions` and `model` to
         :func:`cappr.huggingface.classify_no_cache.token_logprobs`. By default, None
+    show_progress_bar: bool, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 prompts
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -551,6 +577,7 @@ def predict_proba(
         completions,
         model_and_tokenizer,
         end_of_prompt=end_of_prompt,
+        show_progress_bar=show_progress_bar,
         batch_size=batch_size,
     )
 
@@ -559,6 +586,7 @@ def predict_proba(
 def predict_proba_examples(
     examples: Union[Example, Sequence[Example]],
     model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
+    show_progress_bar: Optional[bool] = None,
     batch_size: int = 32,
 ) -> Union[npt.NDArray[np.floating], list[npt.NDArray[np.floating]]]:
     """
@@ -571,6 +599,9 @@ def predict_proba_examples(
         completions
     model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
+    show_progress_bar: bool, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 examples
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -626,6 +657,7 @@ def predict_proba_examples(
     return log_probs_conditional_examples(
         examples,
         model_and_tokenizer,
+        show_progress_bar=show_progress_bar,
         batch_size=batch_size,
     )
 
@@ -639,6 +671,7 @@ def predict(
     end_of_prompt: str = " ",
     discount_completions: float = 0.0,
     log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
+    show_progress_bar: Optional[bool] = None,
     batch_size: int = 32,
 ) -> Union[str, list[str]]:
     """
@@ -668,6 +701,9 @@ def predict(
         conditional on previous completion tokens (not prompt tokens). Only used if `not
         discount_completions`. Compute them by passing `completions` and `model` to
         :func:`cappr.huggingface.classify_no_cache.token_logprobs`. By default, None
+    show_progress_bar: bool, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 prompts
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -721,6 +757,7 @@ def predict(
         end_of_prompt=end_of_prompt,
         discount_completions=discount_completions,
         log_marginal_probs_completions=log_marginal_probs_completions,
+        show_progress_bar=show_progress_bar,
         batch_size=batch_size,
     )
 
@@ -729,6 +766,7 @@ def predict(
 def predict_examples(
     examples: Union[Example, Sequence[Example]],
     model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
+    show_progress_bar: Optional[bool] = None,
     batch_size: int = 32,
 ) -> Union[str, list[str]]:
     """
@@ -741,6 +779,9 @@ def predict_examples(
         completions
     model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
+    show_progress_bar: bool, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 examples
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -786,5 +827,6 @@ def predict_examples(
     return predict_proba_examples(
         examples,
         model_and_tokenizer,
+        show_progress_bar=show_progress_bar,
         batch_size=batch_size,
     )

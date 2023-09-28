@@ -4,31 +4,29 @@ Batch lists into sublists of constant or variable sizes, and batchify functions.
 from __future__ import annotations
 from functools import wraps
 import inspect
-from typing import Sequence
+from typing import Any, Optional, Sequence
 
 import numpy as np
 from tqdm.auto import tqdm
 
 
+MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR = 5
+
+
 def constant(lst: list, size: int):
     """
-    TODO: numpy docstring
-
     Generates sublists in the order of `lst` which partition `lst`. All sublists (except
     potentially the last) have length `size`.
     """
     if size <= 0:
         raise ValueError("size must be positive.")
     lst = list(lst)  # 0-index whatever was passed, or fully evaluate generator
-    n = len(lst)
-    for ndx in range(0, n, size):
-        yield lst[ndx : (ndx + size)]
+    for idx in range(0, len(lst), size):
+        yield lst[idx : (idx + size)]
 
 
 def variable(lst: list, sizes: Sequence[int]):
     """
-    TODO: numpy docstring
-
     Generates sublists in the order of `lst` which partition `lst`. The `i`'th generated
     sublist has length `sizes[i]`.
     """
@@ -47,10 +45,10 @@ def variable(lst: list, sizes: Sequence[int]):
         yield lst[start:stop]
 
 
-def _kwarg_name_to_value(func):
+def _kwarg_name_to_value(func) -> dict[str, Any]:
     """
-    Returns a dictionary mapping keyword arguments in the signature of `func`
-    to their default values.
+    Returns a dictionary mapping keyword arguments to their default values `func`'s
+    signature.
     """
     # ty https://stackoverflow.com/a/12627202/18758987
     signature = inspect.signature(func)
@@ -61,31 +59,49 @@ def _kwarg_name_to_value(func):
     }
 
 
-def batchify(batchable_arg: str, batch_size: int = 32, progress_bar_desc: str = ""):
+def batchify(
+    batchable_arg: str,
+    batch_size: int = 32,
+    progress_bar_desc: str = "",
+    show_progress_bar: Optional[bool] = None,
+):
     """
-    TODO: numpy docstring
-
     Returns a decorator which runs the decorated function in batches along its
     `batchable_arg`, returning a list of the function's outputs for each batch.
 
     If the function includes a `'batch_size'` keyword argument, then its value is used
     as the batch size instead of the decorator's default `batch_size`.
-    TODO: allow non-kwarg too.
     """
 
     def decorator(func):
         _arg_names = inspect.getfullargspec(func).args
         batchable_arg_idx = _arg_names.index(batchable_arg)
-        batch_size_default = _kwarg_name_to_value(func).get("batch_size", batch_size)
+        _kwargs_signature = _kwarg_name_to_value(func)
+        batch_size_default: int = _kwargs_signature.get("batch_size", batch_size)
+        show_progress_bar_default: Optional[bool] = _kwargs_signature.get(
+            "show_progress_bar", show_progress_bar
+        )
 
         @wraps(func)
         def wrapper(*args, **kwargs):
+            # set up batching
             batchable: Sequence = args[batchable_arg_idx]
-            size = kwargs.get("batch_size", batch_size_default)
+            batch_size: int = kwargs.get("batch_size", batch_size_default)
+            args = list(args)  # needs to be mutable to modify the batch argument value
+            # set up progress bar
+            show_progress_bar: Optional[bool] = kwargs.get(
+                "show_progress_bar", show_progress_bar_default
+            )
+            total = len(batchable)
+            disable = not (
+                show_progress_bar or total >= MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
+            )
+            # run func along batches of batchable
             outputs = []
-            args = list(args)  # need to modify the batch argument value
-            with tqdm(total=len(batchable), desc=progress_bar_desc) as progress_bar:
-                for batch_ in constant(batchable, size):
+            with tqdm(
+                total=total, desc=progress_bar_desc, disable=disable
+            ) as progress_bar:
+                for batch_ in constant(batchable, batch_size):
                     args[batchable_arg_idx] = batch_
                     outputs.append(func(*args, **kwargs))
                     progress_bar.update(len(batch_))
@@ -98,8 +114,6 @@ def batchify(batchable_arg: str, batch_size: int = 32, progress_bar_desc: str = 
 
 def flatten(batchified_func):
     """
-    TODO: numpy docstring
-
     Decorates a `cappr.utils._batch.batchify`d function. Flattens the output.
     """
 

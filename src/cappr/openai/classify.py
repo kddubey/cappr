@@ -11,13 +11,17 @@ import numpy as np
 import numpy.typing as npt
 import tiktoken
 
-from cappr.utils import _batch, classify
+from cappr.utils import _batch, _check, classify
 from cappr import Example
 from cappr import openai
 
 
 def token_logprobs(
-    texts: Sequence[str], model: openai.api.Model, ask_if_ok: bool = False, **kwargs
+    texts: Sequence[str],
+    model: openai.api.Model,
+    ask_if_ok: bool = False,
+    show_progress_bar: Optional[bool] = None,
+    **kwargs,
 ) -> list[list[float]]:
     """
     For each text, compute each token's log-probability conditional on all previous
@@ -35,6 +39,9 @@ def token_logprobs(
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
+    show_progress_bar: bool, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 texts
 
     Returns
     -------
@@ -43,15 +50,30 @@ def token_logprobs(
         `token_idx` of `texts[text_idx]` conditional on all previous tokens in
         `texts[text_idx]`. If `texts[text_idx]` is a single token, then
         `log_probs[text_idx]` is `[None]`.
+
+    Raises
+    ------
+    TypeError
+        if `texts` is a string
+    TypeError
+        if `texts` is not a sequence
+    ValueError
+        if `texts` is empty
     """
+    # Input checks
+    if isinstance(texts, str):
+        raise TypeError("texts cannot be a string. It must be a sequence of strings.")
+    _check.nonempty_and_ordered(texts, variable_name="texts")
+
     # Need to handle texts which are single tokens. Set their logprobs to [None]
     tokenizer = tiktoken.encoding_for_model(model)
     num_tokens = [len(tokens) for tokens in tokenizer.encode_batch(texts)]
     idxs_multiple_tokens = [i for i, length in enumerate(num_tokens) if length > 1]
     choices = openai.api.gpt_complete(
         texts=[texts[i] for i in idxs_multiple_tokens],
-        ask_if_ok=ask_if_ok,
         model=model,
+        ask_if_ok=ask_if_ok,
+        show_progress_bar=show_progress_bar,
         # rest must be hard-coded
         max_tokens=0,
         logprobs=1,
@@ -98,6 +120,7 @@ def log_probs_conditional(
     completions: Sequence[str],
     model: openai.api.Model,
     end_of_prompt: str = " ",
+    show_progress_bar: Optional[bool] = None,
     ask_if_ok: bool = False,
 ) -> Union[list[list[float]], list[list[list[float]]]]:
     """
@@ -117,6 +140,9 @@ def log_probs_conditional(
         https://platform.openai.com/docs/models/model-endpoint-compatibility
     end_of_prompt : str, optional
         the string to tack on at the end of every prompt, by default " "
+    show_progress_bar: bool, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 prompt-completion combinations
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
@@ -180,7 +206,9 @@ def log_probs_conditional(
         for prompt in prompts
         for completion in completions
     ]
-    log_probs = token_logprobs(texts, model=model, ask_if_ok=ask_if_ok)
+    log_probs = token_logprobs(
+        texts, model=model, show_progress_bar=show_progress_bar, ask_if_ok=ask_if_ok
+    )
     # Since log_probs is a flat list, we'll need to batch them by the size and order of
     # completions to fulfill the spec.
     return [
@@ -193,6 +221,7 @@ def log_probs_conditional(
 def log_probs_conditional_examples(
     examples: Union[Example, Sequence[Example]],
     model: openai.api.Model,
+    show_progress_bar: Optional[bool] = None,
     ask_if_ok: bool = False,
 ) -> Union[list[list[float]], list[list[list[float]]]]:
     """
@@ -207,6 +236,9 @@ def log_probs_conditional_examples(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
+    show_progress_bar: bool, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 prompt-completion combinations
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
@@ -274,7 +306,9 @@ def log_probs_conditional_examples(
         for example in examples
         for completion in example.completions
     ]
-    log_probs_all = token_logprobs(texts, model=model, ask_if_ok=ask_if_ok)
+    log_probs_all = token_logprobs(
+        texts, model=model, show_progress_bar=show_progress_bar, ask_if_ok=ask_if_ok
+    )
     # Flatten completions in same order as examples were flattened
     completions_all = [
         example.end_of_prompt + completion
@@ -301,6 +335,7 @@ def predict_proba(
     normalize: bool = True,
     discount_completions: float = 0.0,
     log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
+    show_progress_bar: Optional[bool] = None,
     ask_if_ok: bool = False,
 ) -> npt.NDArray[np.floating]:
     """
@@ -338,6 +373,9 @@ def predict_proba(
         conditional on previous completion tokens (not prompt tokens). Only used if `not
         discount_completions`. Compute them by passing `completions` and `model` to
         :func:`cappr.openai.classify.token_logprobs`. By default, None
+    show_progress_bar: bool, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 prompt-completion combinations
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
@@ -415,6 +453,7 @@ def predict_proba(
         completions,
         model,
         end_of_prompt=end_of_prompt,
+        show_progress_bar=show_progress_bar,
         ask_if_ok=ask_if_ok,
     )
 
@@ -423,6 +462,7 @@ def predict_proba(
 def predict_proba_examples(
     examples: Union[Example, Sequence[Example]],
     model: openai.api.Model,
+    show_progress_bar: Optional[bool] = None,
     ask_if_ok: bool = False,
 ) -> Union[npt.NDArray[np.floating], list[npt.NDArray[np.floating]]]:
     """
@@ -437,6 +477,9 @@ def predict_proba_examples(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
+    show_progress_bar: bool, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 prompt-completion combinations
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
@@ -489,7 +532,9 @@ def predict_proba_examples(
         pred_probs[1,1]
         # 0.75
     """
-    return log_probs_conditional_examples(examples, model, ask_if_ok=ask_if_ok)
+    return log_probs_conditional_examples(
+        examples, model, show_progress_bar=show_progress_bar, ask_if_ok=ask_if_ok
+    )
 
 
 @classify._predict
@@ -501,6 +546,7 @@ def predict(
     end_of_prompt: str = " ",
     discount_completions: float = 0.0,
     log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
+    show_progress_bar: Optional[bool] = None,
     ask_if_ok: bool = False,
 ) -> Union[str, list[str]]:
     """
@@ -532,6 +578,9 @@ def predict(
         conditional on previous completion tokens (not prompt tokens). Only used if `not
         discount_completions`. Compute them by passing `completions` and `model` to
         :func:`cappr.openai.classify.token_logprobs`. By default, None
+    show_progress_bar: bool, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 prompt-completion combinations
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
@@ -598,6 +647,7 @@ def predict(
         end_of_prompt=end_of_prompt,
         discount_completions=discount_completions,
         log_marginal_probs_completions=log_marginal_probs_completions,
+        show_progress_bar=show_progress_bar,
         ask_if_ok=ask_if_ok,
     )
 
@@ -606,6 +656,7 @@ def predict(
 def predict_examples(
     examples: Union[Example, Sequence[Example]],
     model: openai.api.Model,
+    show_progress_bar: Optional[bool] = None,
     ask_if_ok: bool = False,
 ) -> Union[str, list[str]]:
     """
@@ -620,6 +671,9 @@ def predict_examples(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
+    show_progress_bar: bool, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 texts
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
@@ -657,4 +711,6 @@ def predict_examples(
         # ['he dropped a hammer on his foot',
         #  'the liquid in the bottle poured out']
     """
-    return predict_proba_examples(examples, model, ask_if_ok=ask_if_ok)
+    return predict_proba_examples(
+        examples, model, show_progress_bar=show_progress_bar, ask_if_ok=ask_if_ok
+    )
