@@ -20,11 +20,9 @@ def test_agg_log_probs():
     assert np.allclose(log_probs_agg[1], np.exp([5, 6 + 7 + 8, 9 + 10]))
 
 
-def test__agg_log_probs_from_constant_completions():
+def test___agg_log_probs_vectorized():
     log_probs = [[[2, 2], [1]], [[1 / 2, 1 / 2], [4]]]
-    log_probs_agg = classify._agg_log_probs_from_constant_completions(
-        log_probs, func=np.sum
-    )
+    log_probs_agg = classify._agg_log_probs_vectorized(log_probs, func=np.sum)
     assert np.allclose(log_probs_agg, np.exp([[4, 1], [1, 4]]))
 
 

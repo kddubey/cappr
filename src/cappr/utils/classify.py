@@ -14,7 +14,7 @@ import numpy.typing as npt
 from cappr.utils import _check
 
 
-def _agg_log_probs_from_constant_completions(
+def _agg_log_probs_vectorized(
     log_probs: Sequence[Sequence[Sequence[float]]],
     func: Callable[[Sequence[float]], float] = np.mean,
 ) -> npt.NDArray[np.floating]:
@@ -150,26 +150,26 @@ def agg_log_probs(
 
             probs[i][j] = exp(func(log_probs[i][j]))
     """
-
-    depth = _sequence_depth(log_probs[0]) + 1  # check the first element is sufficient
+    # 1. Determine the dimensionality of log_probs. The aggregation computation assumes
+    #    a 3-D input, so we'll wrap it if it's 2-D.
+    depth = _sequence_depth(log_probs[0]) + 1  # for efficiency, just check the first
     if depth not in {2, 3}:
         raise ValueError(
             f"log_probs is expected to be 2-D or 3-D. Got {depth} dimensions."
         )
-    if depth == 2:  # make it 3-D for no computational cost, some software eng benefit
-        log_probs = [log_probs]
+    log_probs = [log_probs] if depth == 2 else log_probs
 
+    # 2. Run the aggregation computation, vectorizing if possible.
     try:
-        likelihoods = _agg_log_probs_from_constant_completions(log_probs, func)
+        likelihoods = _agg_log_probs_vectorized(log_probs, func)
     except (
         ValueError,  # log_probs is jagged
         TypeError,  # func doesn't take an axis argument
     ):
         likelihoods = _agg_log_probs(log_probs, func)
 
-    if depth == 2:  # it's a single prompt
-        return likelihoods[0]
-    return likelihoods
+    # 3. If we wrapped it, unwrap it for user convencience.
+    return likelihoods[0] if depth == 2 else likelihoods
 
 
 def posterior_prob(
@@ -248,12 +248,9 @@ def _wrap_call_unwrap(
     multiple inputs.
     """
     is_single_input = isinstance(input, type_indicating_singleness)
-    if is_single_input:
-        input = [input]  # wrap
-    log_probs_completions = log_probs_conditional_func(input, *args, **kwargs)  # call
-    if is_single_input:
-        return log_probs_completions[0]  # unwrap
-    return log_probs_completions
+    input = [input] if is_single_input else input
+    log_probs_completions = log_probs_conditional_func(input, *args, **kwargs)
+    return log_probs_completions[0] if is_single_input else log_probs_completions
 
 
 def _log_probs_conditional(log_probs_conditional):
@@ -313,7 +310,7 @@ def _discount(
     if not discount_completions:
         return log_probs_completions
 
-    # log Pr(completion token i | completion token :i) for each completion
+    # log Pr(completion token i | completion tokens :i) for each completion
     if log_marginal_probs_completions is None:
         log_marginal_probs_completions = token_logprobs_func(
             completions, *model_args, **kwargs
@@ -321,11 +318,14 @@ def _discount(
     for x in log_marginal_probs_completions:
         if x[0] is None:
             x[0] = 0  # no discount for the first token
+
     # pre-multiply by the discount amount
     log_marginal_probs_completions_discounted = [
         discount_completions * np.array(log_marginal_probs_completion)
         for log_marginal_probs_completion in log_marginal_probs_completions
     ]
+
+    # add discount
     if is_single_input:
         return [
             np.array(log_probs_completions[completion_idx])
@@ -377,13 +377,14 @@ def _predict_proba(log_probs_conditional):
                 "because discount_completions was not set."
             )
 
-        # Do the expensive computation
+        # Do the expensive model calls
         log_probs_completions = log_probs_conditional(
             prompts, completions, *args, **kwargs
         )
 
-        # Maybe apply discount
         is_single_input = isinstance(prompts, str)
+
+        # Maybe apply discount
         if discount_completions:
             log_probs_completions = _discount(
                 getattr(getmodule(log_probs_conditional), "token_logprobs"),

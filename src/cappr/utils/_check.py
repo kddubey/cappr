@@ -21,6 +21,9 @@ def prior(prior: Optional[Sequence[float]]):
 
 
 def normalize(completions: Sequence[str], normalize: bool):
+    """
+    Raises a `ValueError` if `len(completions) == 1 and normalize`.
+    """
     if len(completions) == 1 and normalize:
         raise ValueError(
             "Setting normalize=True when there's only 1 completion causes the "
