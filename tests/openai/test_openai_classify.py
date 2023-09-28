@@ -116,23 +116,23 @@ def test_log_probs_conditional(prompts, completions, model):
     expected = [[[10, 11], [10]], [[5, 6], [5]], [[5, 6], [5]], [[8, 9], [8]]]
     assert log_probs_conditional == expected
 
-    # Test bad prompts input - empty
+    # Test bad prompts - empty
     with pytest.raises(ValueError, match="prompts must be non-empty."):
         classify.log_probs_conditional([], completions, model)
 
-    # Test bad prompts input - non-ordered
+    # Test bad prompts - non-ordered
     with pytest.raises(TypeError, match="prompts must be an ordered collection."):
         classify.log_probs_conditional(set(prompts), completions, model)
 
-    # Test bad completions input - empty
+    # Test bad completions - empty
     with pytest.raises(ValueError, match="completions must be non-empty."):
         classify.log_probs_conditional(prompts, [], model)
 
-    # Test bad completions input - non-ordered
+    # Test bad completions - non-ordered
     with pytest.raises(TypeError, match="completions must be an ordered collection."):
         classify.log_probs_conditional(prompts, set(completions), model)
 
-    # Test bad completions input - pure string
+    # Test bad completions - string
     with pytest.raises(TypeError, match="completions cannot be a string."):
         classify.log_probs_conditional(prompts, completions[0], model)
 
@@ -142,11 +142,11 @@ def test_log_probs_conditional_examples(examples, model):
     expected = [[[2], [2]], [[14, 15, 16, 17]], [[1, 2], [1], [1, 2, 3]]]
     assert log_probs_conditional == expected
 
-    # Test bad examples input - non-ordered
+    # Test bad examples - non-ordered
     with pytest.raises(TypeError, match="examples must be an ordered collection."):
         classify.log_probs_conditional_examples(set(examples), model)
 
-    # Test bad examples input - empty
+    # Test bad examples - empty
     with pytest.raises(ValueError, match="examples must be non-empty."):
         classify.log_probs_conditional_examples([], model)
 

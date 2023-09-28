@@ -44,6 +44,8 @@ class Example:
     ValueError
         if `completions` is empty
     TypeError
+        if `end_of_prompt` is not a string
+    TypeError
         if `prior` is not None, or it isn't a sequence or numpy array
     ValueError
         if `prior` is not a 1-D probability distribution over `completions`
@@ -59,7 +61,9 @@ class Example:
         # Check inputs here so that fxns of Example don't need to check
         if not isinstance(self.prompt, str):
             raise TypeError("prompt must be a string.")
-        _check.nonempty_and_ordered(self.prompt, variable_name="prompt")
+        _check.nonempty(self.prompt, variable_name="prompt")
         _check.completions(self.completions)
+        if not isinstance(self.end_of_prompt, str):
+            raise TypeError("end_of_prompt must be a string.")
         _check.prior(self.prior, expected_length=len(self.completions))
         _check.normalize(self.completions, self.normalize)

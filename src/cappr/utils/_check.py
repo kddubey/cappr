@@ -1,5 +1,7 @@
 """
-Shared input checks.
+Shared input checks. These check conditions that would cause silent and annoying
+failures. For example, inputting an unordered iterable will cause outputs like predicted
+probabilities to be meaningless.
 """
 from __future__ import annotations
 from typing import Optional, Sequence
@@ -22,6 +24,7 @@ def _is_reversible(object) -> bool:
 
 
 def ordered(object: Sequence, variable_name: str):
+    # This check isn't perfect, but it works well enough.
     if not _is_reversible(object):
         raise TypeError(
             f"{variable_name} must be an ordered collection. Consider converting it to "
@@ -29,9 +32,13 @@ def ordered(object: Sequence, variable_name: str):
         )
 
 
-def nonempty_and_ordered(object: Sequence, variable_name: str):
+def nonempty(object: Sequence, variable_name: str):
     if len(object) == 0:
         raise ValueError(f"{variable_name} must be non-empty.")
+
+
+def nonempty_and_ordered(object: Sequence, variable_name: str):
+    nonempty(object, variable_name)
     ordered(object, variable_name)
 
 
