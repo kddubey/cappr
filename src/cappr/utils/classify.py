@@ -53,9 +53,9 @@ def _agg_log_probs_from_constant_completions(
             category=np.VisibleDeprecationWarning,
             message="Creating an ndarray from ragged nested sequences",
         )
-        # Intentionally raise an error if there are a non-constant # of tokens, because
-        # vectorization is not possible in this case. In older versions of numpy, this
-        # error is just a warning.
+        # If there are a non-constant # of tokens, vectorization is not possible. In
+        # older versions of numpy, this error is just a warning. So catch the warning
+        # and raise it as an error.
         try:
             array_list = [
                 np.array(
@@ -69,7 +69,7 @@ def _agg_log_probs_from_constant_completions(
         except:
             raise ValueError(
                 "log_probs has a constant # of completions, but there are a "
-                "non-constant # of tokens."
+                "non-constant # of tokens. Vectorization is not possible."
             )
     # Now apply the vectorized function to each array in the list
     likelihoods: npt.NDArray[np.floating] = np.exp(

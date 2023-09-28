@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import logging
 import os
 import time
-from typing import Any, Callable, Literal, Mapping, Optional, Sequence, get_args
+from typing import Any, Callable, Literal, Mapping, Optional, Sequence, Union
 
 import openai
 import tiktoken
@@ -23,7 +23,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 end_of_prompt = "\n\n###\n\n"
 # https://platform.openai.com/docs/guides/fine-tuning/data-formatting
-# kinda annoying that they don't let you use their special tokens.
+# kinda annoying that they don't let you use special tokens
 
 
 Model = Literal[
@@ -43,26 +43,118 @@ Model = Literal[
 
 @dataclass(frozen=True)
 class _DollarCostPer1kTokens:
-    prompt: float = None
-    completion: float = None
+    """
+    Represents the cost of processing prompt and completion text.
+
+    Parameters
+    ----------
+    prompt : float | None
+        dollar cost for inputting 1k prompt tokens. `None` means cost is unknown.
+    completion: float | None
+        dollar cost for generating 1k completion tokens. `None` means cost is unknown.
+    """
+
+    prompt: Optional[float]
+    completion: Optional[float]
 
 
-_costs = [
-    _DollarCostPer1kTokens(0.0015, 0.002),
-    _DollarCostPer1kTokens(0.0004, 0.0004),
-    _DollarCostPer1kTokens(0.002, 0.002),
-    _DollarCostPer1kTokens(0.0004, 0.0004),
-    _DollarCostPer1kTokens(0.0005, 0.0005),
-    _DollarCostPer1kTokens(0.002, 0.002),
-    _DollarCostPer1kTokens(0.02, 0.02),
-    _DollarCostPer1kTokens(0.02, 0.02),
-]
-# sampling is so inefficient that they really gotta pull this cheese on me lol
+_MODEL_TO_COST_PER_1K_TOKENS = {
+    "gpt-3.5-turbo-instruct": _DollarCostPer1kTokens(prompt=0.0015, completion=0.002),
+    "babbage-002": _DollarCostPer1kTokens(prompt=0.0004, completion=0.0004),
+    "davinci-002": _DollarCostPer1kTokens(prompt=0.002, completion=0.002),
+    "text-ada-001": _DollarCostPer1kTokens(prompt=0.0004, completion=0.0004),
+    "text-babbage-001": _DollarCostPer1kTokens(prompt=0.0005, completion=0.0005),
+    "text-curie-001": _DollarCostPer1kTokens(prompt=0.002, completion=0.002),
+    "text-davinci-002": _DollarCostPer1kTokens(prompt=0.02, completion=0.02),
+    "text-davinci-003": _DollarCostPer1kTokens(prompt=0.02, completion=0.02),
+}
 # https://openai.com/api/pricing/
 # TODO: figure out how to get this automatically from openai, if possible
-model_to_cost_per_1k: dict[Model, _DollarCostPer1kTokens] = dict(
-    zip(get_args(Model), _costs)
-)
+
+
+def _openai_api_call_is_ok(
+    texts: list[str],
+    model: Model,
+    max_tokens: int = 0,
+    cost_per_1k_tokens_prompt: Optional[float] = None,
+    cost_per_1k_tokens_completion: Optional[float] = None,
+) -> tuple[int, int, Union[str, int]]:
+    """
+    After displaying the cost (usually an upper bound) of hitting the OpenAI API
+    text completion endpoint, prompt the user to manually input ``y`` or ``n`` to
+    indicate whether the program can proceed.
+
+    Parameters
+    ----------
+    texts : list[str]
+        texts or prompts inputted to the `model` OpenAI API call
+    model : Model
+        name of the OpenAI API text completion model
+    max_tokens : int, optional
+        maximum number of tokens to generate, by default 0
+    cost_per_1k_tokens_prompt : Optional[float], optional
+        OpenAI API dollar cost for processing 1k prompt tokens. If unset,
+        `cappr.openai.api._MODEL_TO_COST_PER_1K_TOKENS[model]["prompt"]` is used. If
+        it's still unknown, the cost will be displayed as `unknown`. By default, None
+    cost_per_1k_tokens_completion : Optional[float], optional
+        OpenAI API dollar cost for processing 1k completion tokens. If unset,
+        `cappr.openai.api._MODEL_TO_COST_PER_1K_TOKENS[model]["completion"]` is used. If
+        it's still unknown, the cost will be displayed as `unknown`. By default, None
+
+    Returns
+    -------
+    tuple[int, int, int | str]
+        - number of prompt tokens, i.e., the number of tokens in `texts`
+        - upper bound on number of completion tokens, i.e., `len(texts) * max_tokens`
+        - if the `model`'s costs are known, the dollar cost of having it process
+        `texts`. Else, a string which is a URL to OpenAI's pricing page.
+
+    Raises
+    ------
+    _UserCanceled
+        if the user inputs ``n`` when prompted to give the go-ahead
+    """
+    texts = list(texts)
+    try:
+        tokenizer = tiktoken.encoding_for_model(model)
+    except KeyError:  # that's fine, we just need an approximation
+        tokenizer = tiktoken.get_encoding("gpt2")
+
+    _dollar_cost_unknown = _DollarCostPer1kTokens(prompt=None, completion=None)
+
+    # prompts
+    num_tokens_prompts = sum(len(tokens) for tokens in tokenizer.encode_batch(texts))
+    cost_per_1k_tokens_prompt = (
+        cost_per_1k_tokens_prompt
+        or _MODEL_TO_COST_PER_1K_TOKENS.get(model, _dollar_cost_unknown).prompt
+    )
+    if cost_per_1k_tokens_prompt is None:
+        cost = None
+    else:
+        cost = num_tokens_prompts * cost_per_1k_tokens_prompt / 1_000
+
+    # completions
+    num_tokens_completions = len(texts) * max_tokens  # upper bound
+    cost_per_1k_tokens_completion = (
+        cost_per_1k_tokens_completion
+        or _MODEL_TO_COST_PER_1K_TOKENS.get(model, _dollar_cost_unknown).completion
+    )
+    if cost is not None and cost_per_1k_tokens_completion is not None:
+        cost += num_tokens_completions * cost_per_1k_tokens_completion / 1_000
+        cost = round(cost, 2)
+    else:
+        cost = "unknown (see https://openai.com/api/pricing/)"
+
+    num_tokens_total = num_tokens_prompts + num_tokens_completions
+    output = None
+    while output not in {"y", "n"}:
+        output = input(
+            f"This API call will cost about ${cost} (≤{num_tokens_total:_} tokens). "
+            "Proceed? (y/n): "
+        )
+    if output == "n":
+        raise _UserCanceled("No API requests will be submitted.")
+    return num_tokens_prompts, num_tokens_completions, cost  # for testing purposes
 
 
 def openai_method_retry(
@@ -113,95 +205,14 @@ def openai_method_retry(
             num_tries += 1
             logger.info(f"openai error: {e}")
             logger.info(f"Try {num_tries}. Sleeping for {sleep_sec} sec.")
-            time.sleep(sleep_sec)
             exception = e  # allow it to be referenced later
+            time.sleep(sleep_sec)
     logger.error(f"Max retries exceeded. openai error: {exception}")
     raise exception
 
 
 class _UserCanceled(Exception):
     pass
-
-
-def _openai_api_call_is_ok(
-    texts: list[str],
-    model: Model,
-    max_tokens: int = 0,
-    cost_per_1k_tokens_prompt: Optional[float] = None,
-    cost_per_1k_tokens_completion: Optional[float] = None,
-) -> str:
-    """
-    After displaying the cost (usually an upper bound) of hitting the OpenAI API
-    text completion endpoint, prompt the user to manually input ``y`` or ``n`` to
-    indicate whether the program can proceed.
-
-    Parameters
-    ----------
-    texts : list[str]
-        texts or prompts inputted to the `model` OpenAI API call
-    model : Model
-        name of the OpenAI API text completion model
-    max_tokens : int, optional
-        maximum number of tokens to generate, by default 0
-    cost_per_1k_tokens_prompt : Optional[float], optional
-        OpenAI API dollar cost for processing 1k prompt tokens. If unset,
-        `cappr.openai.api.model_to_cost_per_1k[model]["prompt"]` is used. If it's still
-        unknown, the cost will be displayed as `unknown`. By default, None
-    cost_per_1k_tokens_completion : Optional[float], optional
-        OpenAI API dollar cost for processing 1k completion tokens. If unset,
-        `cappr.openai.api.model_to_cost_per_1k[model]["completion"]` is used. If it's
-        still unknown, the cost will be displayed as `unknown`. By default, None
-
-    Returns
-    -------
-    str
-        the input prompt made to the user
-
-    Raises
-    ------
-    _UserCanceled
-        if the user inputs ``n`` when prompted to give the go-ahead
-    """
-    texts = list(texts)
-    try:
-        tokenizer = tiktoken.encoding_for_model(model)
-    except KeyError:  # that's fine, we just need an approximation
-        tokenizer = tiktoken.get_encoding("gpt2")
-
-    # prompts
-    num_tokens_prompts = sum(len(tokens) for tokens in tokenizer.encode_batch(texts))
-    cost_per_1k_tokens_prompt = (
-        cost_per_1k_tokens_prompt
-        or model_to_cost_per_1k.get(model, _DollarCostPer1kTokens()).prompt
-    )
-    if cost_per_1k_tokens_prompt is None:
-        cost = None
-    else:
-        cost = num_tokens_prompts * cost_per_1k_tokens_prompt / 1_000
-
-    # completions
-    num_tokens_completions = len(texts) * max_tokens  # upper bound
-    cost_per_1k_tokens_completion = (
-        cost_per_1k_tokens_completion
-        or model_to_cost_per_1k.get(model, _DollarCostPer1kTokens()).completion
-    )
-    if cost is not None and cost_per_1k_tokens_completion is not None:
-        cost += num_tokens_completions * cost_per_1k_tokens_completion / 1_000
-        cost = round(cost, 2)
-    else:
-        cost = "unknown (see https://openai.com/api/pricing/)"
-
-    num_tokens_total = num_tokens_prompts + num_tokens_completions
-    output = None
-    input_message = (
-        f"This API call will cost about ${cost} (≤{num_tokens_total:_} tokens). "
-        "Proceed? (y/n): "
-    )
-    while output not in {"y", "n"}:
-        output = input(input_message)
-    if output == "n":
-        raise _UserCanceled("No API requests will be submitted.")
-    return input_message  # for testing purposes
 
 
 def gpt_complete(

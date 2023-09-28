@@ -34,7 +34,7 @@ import _test
     scope="module",
     params=[
         "sshleifer/tiny-gpt2",
-        # "anton-l/gpt-j-tiny-random",  # not crucial. can uncomment as needed
+        "anton-l/gpt-j-tiny-random",  # this one is quite big and slow
         "Maykeye/TinyLLama-v0",
     ],
 )

@@ -23,37 +23,41 @@ def test_openai_method_retry():
 
 
 def test__openai_api_call_is_ok(monkeypatch):
+    # Inputs
     texts = ["cherry", "coke"]  # tokenized: [[331, 5515], [1030, 441]]
     model = "gpt-3.5-turbo-instruct"  # hard-coded so that tokenization is always same
-    num_tokens_prompts = 4
+    max_tokens = 3  # number of completion tokens per prompt
+    cost_per_1k_tokens_prompt = 1  # make it somewhat big to avoid numerical issues
+    cost_per_1k_tokens_completion = 2
+
+    # Expected outputs
+    num_tokens_prompts_expected = 4
+    num_tokens_completions_expected = len(texts) * max_tokens
+    cost_expected = round(
+        (
+            (num_tokens_prompts_expected * cost_per_1k_tokens_prompt)
+            + (num_tokens_completions_expected * cost_per_1k_tokens_completion)
+        )
+        / 1_000,
+        2,
+    )
 
     # Mimic the user seeing the prompt and entering y
     monkeypatch.setattr("builtins.input", lambda _: "y")
-    max_tokens = 5  # number of completion tokens per prompt
-    cost_per_1k_tokens_prompt = 1  # make it somewhat big to avoid numerical issues
-    cost_per_1k_tokens_completion = 2
-    input_prompt_observed = api._openai_api_call_is_ok(
+    (
+        num_tokens_prompts_observed,
+        num_tokens_completions_observed,
+        cost_observed,
+    ) = api._openai_api_call_is_ok(
         texts,
         model,
         max_tokens=max_tokens,
         cost_per_1k_tokens_prompt=cost_per_1k_tokens_prompt,
         cost_per_1k_tokens_completion=cost_per_1k_tokens_completion,
     )
-    num_tokens_completions = len(texts) * max_tokens
-    num_tokens_total = num_tokens_prompts + num_tokens_completions
-    cost = round(
-        (
-            (num_tokens_prompts * cost_per_1k_tokens_prompt)
-            + (num_tokens_completions * cost_per_1k_tokens_completion)
-        )
-        / 1_000,
-        2,
-    )
-    input_prompt_expected = (
-        f"This API call will cost about ${cost} (≤{num_tokens_total:_} tokens). "
-        "Proceed? (y/n): "
-    )
-    assert input_prompt_observed == input_prompt_expected
+    assert num_tokens_completions_observed == num_tokens_completions_expected
+    assert num_tokens_prompts_observed == num_tokens_prompts_expected
+    assert cost_observed == cost_expected
 
     # Mimic the user seeing the prompt and entering n
     monkeypatch.setattr("builtins.input", lambda _: "n")

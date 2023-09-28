@@ -158,9 +158,8 @@ Again, let's use `huggingface` to predict probabilities.
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
-
-from cappr import Example
 from cappr.huggingface.classify import predict_proba_examples
+from cappr import Example
 
 # Load a model and its corresponding tokenizer
 model_name = "gpt2"
