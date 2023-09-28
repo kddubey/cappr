@@ -99,17 +99,41 @@ def _agg_log_probs(
     ]
 
 
+def _is_sequence(object) -> bool:
+    # Should catch most objects we care about: lists, tuples, arrays, tensors. No sets.
+    try:
+        len(object)
+        object[0]
+    except:
+        return False
+    else:
+        return True
+
+
+def _sequence_depth(sequence) -> int:
+    """
+    Like `len(np.shape(sequence))` but `sequence` can be any object.
+    """
+    if _is_sequence(sequence):
+        return 1 + max(_sequence_depth(item) for item in sequence)
+    else:
+        return 0
+
+
 def agg_log_probs(
-    log_probs: Sequence[Sequence[Sequence[float]]],
+    log_probs: Union[Sequence[Sequence[float]], Sequence[Sequence[Sequence[float]]]],
     func: Callable[[Sequence[float]], float] = np.mean,
-) -> list[list[float]]:
+) -> Union[list[float], list[list[float]]]:
     """
     Aggregate token log-probabilities along the last dimension into probabilities.
 
     Parameters
     ----------
-    log_probs : Sequence[Sequence[Sequence[float]]]
-        nested sequences where token log-probabilities are in the last dimension
+    log_probs : Sequence[Sequence[float]] | Sequence[Sequence[Sequence[float]]]
+        nested sequences where token log-probabilities are in the last dimension. A 2-D
+        sequence corresponds to inputting a single prompt string or
+        :class:`cappr.Example` object. A 3-D sequence corresponds to inputting multiple
+        prompt strings or :class:`cappr.Example` objects
     func : Callable[[Sequence[float]], float], optional
         function which aggregates a sequence of token log-probabilities into a single
         log-probability. If the function is vectorized, it must take an ``axis``
@@ -117,18 +141,35 @@ def agg_log_probs(
 
     Returns
     -------
-    probs: list[list[float]]
-        Lists of probabilities where::
+    probs: list[float] | list[list[float]]
+        If `log_probs` is 2-D, then `probs` is a list of probabilities where::
+
+            probs[j] = exp(func(log_probs[j]))
+
+        If `log_probs` is 3-D, then `probs` is a list of list of probabilities where::
 
             probs[i][j] = exp(func(log_probs[i][j]))
     """
+
+    depth = _sequence_depth(log_probs[0]) + 1  # check the first element is sufficient
+    if depth not in {2, 3}:
+        raise ValueError(
+            f"log_probs is expected to be 2-D or 3-D. Got {depth} dimensions."
+        )
+    if depth == 2:  # make it 3-D for no computational cost, some software eng benefit
+        log_probs = [log_probs]
+
     try:
-        return _agg_log_probs_from_constant_completions(log_probs, func)
+        likelihoods = _agg_log_probs_from_constant_completions(log_probs, func)
     except (
         ValueError,  # log_probs is jagged
         TypeError,  # func doesn't take an axis argument
     ):
-        return _agg_log_probs(log_probs, func)
+        likelihoods = _agg_log_probs(log_probs, func)
+
+    if depth == 2:  # it's a single prompt
+        return likelihoods[0]
+    return likelihoods
 
 
 def posterior_prob(
@@ -144,7 +185,7 @@ def posterior_prob(
     Parameters
     ----------
     likelihoods : npt.ArrayLike[float]
-        2-D array of probabilities of data given a hypothesis
+        1-D or 2-D array of probabilities of data given a hypothesis
     axis : int
         the axis along which the probability distribution should be defined, e.g.,
         `axis=0` if `likelihoods` is 1-D
@@ -160,7 +201,7 @@ def posterior_prob(
     Returns
     -------
     posterior_probs : npt.NDArray[np.floating]
-        2-D array of probabilities of a hypothesis given data. Its shape is the same as
+        array of probabilities of a hypothesis given data. Its shape is the same as
         `likelihood.shape`
 
     Raises
@@ -195,10 +236,70 @@ def posterior_prob(
     return posteriors_unnorm / marginals
 
 
+def _wrap_call_unwrap(
+    type_indicating_singleness: type,
+    input,
+    log_probs_conditional_func: Callable,
+    *args,
+    **kwargs,
+):
+    """
+    Handles single inputs for a `log_probs_conditional_func` call which only takes
+    multiple inputs.
+    """
+    is_single_input = isinstance(input, type_indicating_singleness)
+    if is_single_input:
+        input = [input]  # wrap
+    log_probs_completions = log_probs_conditional_func(input, *args, **kwargs)  # call
+    if is_single_input:
+        return log_probs_completions[0]  # unwrap
+    return log_probs_completions
+
+
+def _log_probs_conditional(log_probs_conditional):
+    """
+    Decorator which does basic input checking, and allows for `prompts` to be a single
+    string for a `log_probs_conditional` function.
+    """
+
+    @wraps(log_probs_conditional)
+    def wrapper(
+        prompts: Union[str, Sequence[str]], completions: Sequence[str], *args, **kwargs
+    ) -> list[list[list[float]]]:
+        # TODO: check prompts is a str or non-empty sequence of strings
+        # TODO: check completions is a non-empty sequence of strings
+        return _wrap_call_unwrap(
+            str, prompts, log_probs_conditional, completions, *args, **kwargs
+        )
+
+    return wrapper
+
+
+def _log_probs_conditional_examples(log_probs_conditional_examples):
+    """
+    Decorator which does basic input checking, and allows for `examples` to be a single
+    `Example` for a `log_probs_conditional_examples` function.
+    """
+
+    from cappr import Example
+
+    @wraps(log_probs_conditional_examples)
+    def wrapper(
+        examples: Union[Example, Sequence[Example]], *args, **kwargs
+    ) -> list[list[list[float]]]:
+        # TODO: check examples is not an empty sequence
+        return _wrap_call_unwrap(
+            Example, examples, log_probs_conditional_examples, *args, **kwargs
+        )
+
+    return wrapper
+
+
 def _discount(
     token_logprobs_func,
     completions: Sequence[str],
-    log_probs_completions: list[list[list[float]]],
+    log_probs_completions: Union[list[list[float]], list[list[list[float]]]],
+    is_single_input: bool,
     *model_args,  # rest are kwarg-only, and must come from the og function's kwargs
     discount_completions: float,
     log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
@@ -207,7 +308,7 @@ def _discount(
     """
     Highly experimental feature: discount completion given prompt probabilities by
     completion probabilities. Useful when particular completions are getting
-    over-predicted.
+    over-predicted. Currently isn't used by `_examples` functions.
     """
     if not discount_completions:
         return log_probs_completions
@@ -225,6 +326,12 @@ def _discount(
         discount_completions * np.array(log_marginal_probs_completion)
         for log_marginal_probs_completion in log_marginal_probs_completions
     ]
+    if is_single_input:
+        return [
+            np.array(log_probs_completions[completion_idx])
+            + log_marginal_probs_completions_discounted[completion_idx]
+            for completion_idx in range(len(completions))
+        ]
     return [
         [
             np.array(log_probs_prompt_completions[completion_idx])
@@ -238,16 +345,15 @@ def _discount(
 def _predict_proba(log_probs_conditional):
     """
     Decorator which converts a `log_probs_condtional` function call into a
-    `predict_proba` call. The decorated `predict_proba` function should take a `prior`
-    keyword argument.
+    `predict_proba` call.
     """
 
     @wraps(log_probs_conditional)
     def wrapper(
-        prompts: Sequence[str], completions: Sequence[str], *args, **kwargs
+        prompts: Union[str, Sequence[str]], completions: Sequence[str], *args, **kwargs
     ) -> npt.NDArray[np.floating]:
-        # Check the inputs before hitting any APIs ($$)
-        # First the prior
+        # Check inputs before making expensive model calls
+        # Check the prior
         prior = kwargs.get("prior", None)
         _check.prior(prior)
         if prior is not None and len(completions) != len(prior):
@@ -277,18 +383,21 @@ def _predict_proba(log_probs_conditional):
         )
 
         # Maybe apply discount
+        is_single_input = isinstance(prompts, str)
         if discount_completions:
             log_probs_completions = _discount(
                 getattr(getmodule(log_probs_conditional), "token_logprobs"),
                 completions,
                 log_probs_completions,
+                is_single_input,
                 *args,
                 **kwargs,
             )
 
         # Aggregate probs
         likelihoods = agg_log_probs(log_probs_completions)
-        return posterior_prob(likelihoods, axis=1, prior=prior, normalize=normalize)
+        axis = 0 if is_single_input else 1
+        return posterior_prob(likelihoods, axis=axis, prior=prior, normalize=normalize)
 
     return wrapper
 
@@ -299,16 +408,26 @@ def _predict_proba_examples(log_probs_conditional_examples):
     `predict_proba_examples` call.
     """
 
+    from cappr import Example  # done locally to avoid circular import lol
+
     @wraps(log_probs_conditional_examples)
     def wrapper(
-        examples, *args, **kwargs
-    ) -> Union[list[npt.NDArray[np.floating]], npt.NDArray[np.floating]]:
+        examples: Union[Example, Sequence[Example]], *args, **kwargs
+    ) -> Union[npt.NDArray[np.floating], list[npt.NDArray[np.floating]]]:
         log_probs_completions = log_probs_conditional_examples(
             examples, *args, **kwargs
         )
         likelihoods = agg_log_probs(log_probs_completions)
+        if isinstance(examples, Example):
+            return posterior_prob(
+                likelihoods,
+                axis=0,
+                prior=examples.prior,
+                normalize=examples.normalize,
+                check_prior=False,  # already checked during example construction
+            )
 
-        # Determine whether vectorization is possible for posterior probability calc
+        # Determine whether vectorization is possible for the posterior probability calc
         num_completions_per_prompt = [len(example.completions) for example in examples]
         normalize = [example.normalize for example in examples]
         num_completions_per_prompt_set = set(num_completions_per_prompt)
@@ -356,11 +475,23 @@ def _predict(predict_proba_func):
 
     @wraps(predict_proba_func)
     def wrapper(
-        prompts: Sequence[str], completions: Sequence[str], *args, **kwargs
+        prompts: Union[str, Sequence[str]], completions: Sequence[str], *args, **kwargs
     ) -> list[str]:
+        if len(completions) == 1:
+            raise ValueError(
+                "completions only has one completion. predict will trivially return "
+                "back this completion. Perhaps you meant to call predict_proba instead "
+                "of predict."
+            )
         pred_probs: npt.NDArray = predict_proba_func(
             prompts, completions, *args, **kwargs
         )
+        num_dimensions = pred_probs.ndim
+        if isinstance(prompts, str):
+            # User convenience: prompts was a single string, so pred_probs is 1-D
+            assert num_dimensions == 1
+            return completions[pred_probs.argmax()]
+        assert num_dimensions == 2
         pred_class_idxs = pred_probs.argmax(axis=1)
         return [completions[pred_class_idx] for pred_class_idx in pred_class_idxs]
 
@@ -373,23 +504,30 @@ def _predict_examples(predict_proba_examples_func):
     `predict_examples` call.
     """
 
+    from cappr import Example  # done locally to avoid circular import lol
+
     @wraps(predict_proba_examples_func)
-    def wrapper(examples, *args, **kwargs) -> list[str]:
+    def wrapper(
+        examples: Union[Example, Sequence[Example]], *args, **kwargs
+    ) -> list[str]:
         pred_probs: Union[
-            list[npt.NDArray[np.floating]], npt.NDArray[np.floating]
+            npt.NDArray[np.floating], list[npt.NDArray[np.floating]]
         ] = predict_proba_examples_func(examples, *args, **kwargs)
-        # If it's an array, we can call .argmax on the whole thing, which is faster
+        if isinstance(examples, Example):
+            # User convenience: examples is a singleton
+            assert pred_probs.ndim == 1  # double check
+            pred_class_idx = pred_probs.argmax()
+            return examples.completions[pred_class_idx]
         try:
+            # If it's an array, we can call .argmax on the whole thing, which is faster
             pred_class_idxs = pred_probs.argmax(axis=1)
         except (
             AttributeError,  # no argmax attr
             TypeError,  # no axis kwarg
         ):
             pred_class_idxs = [
-                np.argmax(example_pred_probs) for example_pred_probs in pred_probs
+                example_pred_probs.argmax() for example_pred_probs in pred_probs
             ]
-            # Decided against example_pred_probs.argmax(). If this decorator gets
-            # surfaced, then it should work out-of-the-box with any sequence of floats.
         return [
             example.completions[pred_class_idx]
             for example, pred_class_idx in zip(examples, pred_class_idxs)

@@ -57,8 +57,9 @@ For example, say we're integrating Anthropic's
 from cappr.utils import classify
 
 
+@classify._log_probs_conditional
 def log_probs_conditional(
-    prompts: Sequence[str],
+    prompts: str | Sequence[str],
     completions: Sequence[str],
     model: str,
     **kwargs,
@@ -74,7 +75,7 @@ def log_probs_conditional(
 
 @classify._predict_proba
 def predict_proba(
-    prompts: Sequence[str],
+    prompts: str | Sequence[str],
     completions: Sequence[str],
     model: str,
     **kwargs,
@@ -84,7 +85,7 @@ def predict_proba(
 
 @classify._predict
 def predict(
-    prompts: Sequence[str],
+    prompts: str | Sequence[str],
     completions: Sequence[str],
     model: str,
     **kwargs,
@@ -111,7 +112,7 @@ class _BaseLMClassifier(ABC):
     @abstractmethod
     def log_probs_conditional(
         cls,
-        prompts: Sequence[str],
+        prompts: str | Sequence[str],
         completions: Sequence[str],
         model: str,
         **kwargs,
@@ -121,7 +122,7 @@ class _BaseLMClassifier(ABC):
     @classmethod
     def predict_proba(
         cls,
-        prompts: Sequence[str],
+        prompts: str | Sequence[str],
         completions: Sequence[str],
         model: str,
         **kwargs,
@@ -139,7 +140,7 @@ class _BaseLMClassifier(ABC):
     @classmethod
     def predict(
         cls,
-        prompts: Sequence[str],
+        prompts: str | Sequence[str],
         completions: Sequence[str],
         model: str,
         **kwargs,

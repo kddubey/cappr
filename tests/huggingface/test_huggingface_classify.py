@@ -7,7 +7,7 @@ really should test that).
 from __future__ import annotations
 import os
 import sys
-from typing import Mapping
+from typing import Mapping, Optional, Union
 
 import pytest
 
@@ -34,7 +34,7 @@ import _test
     scope="module",
     params=[
         "sshleifer/tiny-gpt2",
-        "anton-l/gpt-j-tiny-random",
+        # "anton-l/gpt-j-tiny-random",  # not crucial. can uncomment as needed
         "Maykeye/TinyLLama-v0",
     ],
 )
@@ -304,26 +304,18 @@ def _test_logits(
 
 
 def _test_log_probs(
-    log_probs_completions_slow: list[list[list[float]]],
-    log_probs_completions_fast: list[list[list[float]]],
+    log_probs_completions_slow: Union[list[list[float]], list[list[list[float]]]],
+    log_probs_completions_fast: Union[list[list[float]], list[list[list[float]]]],
     expected_len: int,
-    num_completions_per_prompt: list[int],
+    num_completions_per_prompt: Optional[list[int]],
     atol,
 ):
     """
     Tests that the conditional token log-probabilities are the right shape and are
     numerically close.
     """
-    # Test lengths before zipping. Note transitivity
-    assert len(log_probs_completions_slow) == len(log_probs_completions_fast)
-    assert len(log_probs_completions_fast) == expected_len
-    assert len(log_probs_completions_slow) == len(num_completions_per_prompt)
-    zipped_outer = zip(
-        log_probs_completions_slow,
-        log_probs_completions_fast,
-        num_completions_per_prompt,
-    )
-    for log_probs_slow, log_probs_fast, num_completions in zipped_outer:
+
+    def test_single_input(log_probs_slow, log_probs_fast, num_completions):
         assert len(log_probs_fast) == num_completions
         assert len(log_probs_slow) == num_completions
         zipped_inner = zip(log_probs_slow, log_probs_fast)
@@ -335,6 +327,24 @@ def _test_log_probs(
                 torch.tensor(log_probs_tokens_fast),
                 atol=atol,
             )
+
+    if num_completions_per_prompt is None:
+        # there's only one prompt and it was fed by itself, not in a Sequence.
+        test_single_input(
+            log_probs_completions_slow, log_probs_completions_fast, expected_len
+        )
+    else:
+        # Test lengths before zipping
+        assert len(log_probs_completions_slow) == len(log_probs_completions_fast)
+        assert len(log_probs_completions_fast) == expected_len
+        assert len(log_probs_completions_slow) == len(num_completions_per_prompt)
+        zipped_outer = zip(
+            log_probs_completions_slow,
+            log_probs_completions_fast,
+            num_completions_per_prompt,
+        )
+        for log_probs_slow, log_probs_fast, num_completions in zipped_outer:
+            test_single_input(log_probs_slow, log_probs_fast, num_completions)
 
 
 def _function_kwargs(function_kwargs: dict, non_args: tuple[str] = ("self", "atol")):
@@ -350,7 +360,7 @@ def _function_kwargs(function_kwargs: dict, non_args: tuple[str] = ("self", "ato
 ########################################################################################
 
 
-@pytest.mark.parametrize("prompts", (["a b c", "c"],))
+@pytest.mark.parametrize("prompts", (["a b c", "c"], "prompts can be a single string"))
 @pytest.mark.parametrize(
     "completions",
     (
@@ -375,6 +385,9 @@ class TestPromptsCompletions:
         Tests that encodings have the right shape and that logits are numerically close.
         If this test fails, all of the tests below will fail.
         """
+        # for this function, prompts can't be a single string
+        if isinstance(prompts, str):
+            return
         kwargs = _function_kwargs(locals())
         slow_out = slow._logits_completions_given_prompts(**kwargs)
         fast_out = fast._logits_completions_given_prompts(**kwargs)
@@ -386,14 +399,20 @@ class TestPromptsCompletions:
         self, prompts, completions, model_and_tokenizer, end_of_prompt, batch_size, atol
     ):
         kwargs = _function_kwargs(locals())
+        if isinstance(prompts, str):
+            expected_len = len(completions)
+            num_completions_per_prompt = None
+        else:
+            expected_len = len(prompts)
+            num_completions_per_prompt = [len(completions)] * len(prompts)
         log_probs_completions_slow = slow.log_probs_conditional(**kwargs)
         log_probs_completions_fast = fast.log_probs_conditional(**kwargs)
         _test_log_probs(
             log_probs_completions_slow,
             log_probs_completions_fast,
-            expected_len=len(prompts),
-            num_completions_per_prompt=[len(completions)] * len(prompts),
-            atol=atol,
+            expected_len,
+            num_completions_per_prompt,
+            atol,
         )
 
     @pytest.mark.parametrize("discount_completions", (0.0, 1.0))
@@ -461,6 +480,10 @@ class TestPromptsCompletions:
             Ex("a great", ["thing.", "shout"]),
             Ex("out to", ["open", "source, yo."]),
         ],
+        ############################ Test singleton example ############################
+        Ex("lonesome", ["singleton", "example"]),
+        ################### Test singleton example single completion ###################
+        Ex("lonely", ["loner"], normalize=False),
     ),
 )
 class TestExamples:
@@ -475,6 +498,9 @@ class TestExamples:
         Tests that encodings have the right shape and that logits are numerically close.
         If this test fails, all of the tests below will fail.
         """
+        # for this helper function, examples can't be an Example
+        if isinstance(examples, Ex):
+            return
         kwargs = _function_kwargs(locals())
         slow_out = slow._logits_completions_given_prompts_examples(**kwargs)
         fast_out = fast._logits_completions_given_prompts_examples(**kwargs)
@@ -486,16 +512,22 @@ class TestExamples:
         self, examples: list[Ex], model_and_tokenizer, batch_size, atol
     ):
         kwargs = _function_kwargs(locals())
+        if isinstance(examples, Ex):
+            expected_len = len(examples.completions)
+            num_completions_per_prompt = None
+        else:
+            expected_len = len(examples)
+            num_completions_per_prompt = [
+                len(example.completions) for example in examples
+            ]
         log_probs_completions_slow = slow.log_probs_conditional_examples(**kwargs)
         log_probs_completions_fast = fast.log_probs_conditional_examples(**kwargs)
         _test_log_probs(
             log_probs_completions_slow,
             log_probs_completions_fast,
-            expected_len=len(examples),
-            num_completions_per_prompt=[
-                len(example.completions) for example in examples
-            ],
-            atol=atol,
+            expected_len,
+            num_completions_per_prompt,
+            atol,
         )
 
     def test_predict_proba_examples(self, examples, model_and_tokenizer, atol):
@@ -520,6 +552,13 @@ class TestExamples:
 
     def test_predict_examples(self, examples, model_and_tokenizer):
         kwargs = _function_kwargs(locals())
+        if (
+            isinstance(examples, Ex)
+            and len(examples.completions) == 1
+            and examples.normalize
+        ):
+            # not a valid input for this function. it's fine for predict_proba_examples
+            return
         # Test form of output
         _test.predict_examples(fast.predict_examples, **kwargs)
         _test.predict_examples(slow.predict_examples, **kwargs)

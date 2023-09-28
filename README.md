@@ -36,15 +36,11 @@ This is a tweet about a movie: "Oppenheimer was pretty good. But 3 hrs...cmon No
 This tweet contains the following criticism:
 """.strip("\n")
 
-class_names = ("bad message", "too long", "unfunny")
+completions = ("bad message", "too long", "unfunny")
 
-preds = predict(
-    prompts=[prompt],
-    completions=class_names,
-    model="text-ada-001",
-)
-print(preds)
-# ['too long']
+pred = predict(prompt, completions, model="text-ada-001")
+print(pred)
+# 'too long'
 ```
 
 Notice that the completions can contain many tokens.
@@ -73,21 +69,17 @@ Specifically, this model must be able to be loaded using
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from cappr.huggingface.classify import predict
 
-prompt = "Which planet is closer to the Sun: Mercury or Earth?"
-class_names = ("Mercury", "Earth")
-
 # Load a model and its corresponding tokenizer
 model_name = "gpt2"
 model = AutoModelForCausalLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-preds = predict(
-    prompts=[prompt],
-    completions=class_names,
-    model_and_tokenizer=(model, tokenizer),
-)
-print(preds)
-# ['Mercury']
+prompt = "Which planet is closer to the Sun: Mercury or Earth?"
+completions = ("Mercury", "Earth")
+
+pred = predict(prompt, completions, model_and_tokenizer=(model, tokenizer))
+print(pred)
+# 'Mercury'
 ```
 
 For an example with Llama 2, see the notebook
@@ -114,6 +106,11 @@ instead of the class.
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from cappr.huggingface.classify import predict_proba
 
+# Load a model and its corresponding tokenizer
+model_name = "gpt2"
+model = AutoModelForCausalLM.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
 prompts = [
     "Stephen Curry is a",
     "Martina Navratilova was a",
@@ -125,11 +122,6 @@ prompts = [
 class_names = ("basketball player", "tennis player", "scientist")
 prior =       (      1/6,                1/6,            2/3    )
 # Say I expect most of my data to have scientists
-
-# Load a model and its corresponding tokenizer
-model_name = "gpt2"
-model = AutoModelForCausalLM.from_pretrained(model_name)
-tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 # Run CAPPr
 pred_probs = predict_proba(
@@ -170,6 +162,11 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from cappr import Example
 from cappr.huggingface.classify import predict_proba_examples
 
+# Load a model and its corresponding tokenizer
+model_name = "gpt2"
+model = AutoModelForCausalLM.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
 # Create a sequence of Example objects representing your classification tasks
 examples = [
     Example(
@@ -182,11 +179,6 @@ examples = [
         prior=      (     1/3      ,      2/3     ,      0      ),
     ),
 ]
-
-# Load a model and its corresponding tokenizer
-model_name = "gpt2"
-model = AutoModelForCausalLM.from_pretrained(model_name)
-tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 # Run CAPPr
 pred_probs = predict_proba_examples(examples, model_and_tokenizer=(model, tokenizer))

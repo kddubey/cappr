@@ -243,21 +243,22 @@ def _logits_to_log_probs_completions(
     ]
 
 
+@classify._log_probs_conditional
 def log_probs_conditional(
-    prompts: Sequence[str],
+    prompts: Union[str, Sequence[str]],
     completions: Sequence[str],
     model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     end_of_prompt: str = " ",
     batch_size: int = 32,
-) -> list[list[list[float]]]:
+) -> Union[list[list[float]], list[list[list[float]]]]:
     """
     Log-probabilities of each completion token conditional on each prompt and previous
     completion tokens.
 
     Parameters
     ----------
-    prompts : Sequence[str]
-        strings, where, e.g., each contains the text you want to classify
+    prompts : str | Sequence[str]
+        string(s), where, e.g., each contains the text you want to classify
     completions : Sequence[str]
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
@@ -271,11 +272,17 @@ def log_probs_conditional(
 
     Returns
     -------
-    log_probs_completions : list[list[list[float]]]
+    log_probs_completions : list[list[float]] | list[list[list[float]]]
+        If `prompts` is a string, then a 2-D list is returned:
+        `log_probs_completions[completion_idx][completion_token_idx]` is the
+        log-probability of the completion token in `completions[completion_idx]`,
+        conditional on `prompt + end_of_prompt` and previous completion tokens.
+
+        If `prompts` is a sequence of strings, then a 3-D list is returned:
         `log_probs_completions[prompt_idx][completion_idx][completion_token_idx]` is the
         log-probability of the completion token in `completions[completion_idx]`,
-        conditional on `prompts[prompt_idx] + end_of_prompt` and previous
-        completion tokens.
+        conditional on `prompts[prompt_idx] + end_of_prompt` and previous completion
+        tokens.
 
     Note
     ----
@@ -333,19 +340,20 @@ def log_probs_conditional(
         return list(_batch.constant(log_probs_completions, size=len(completions)))
 
 
+@classify._log_probs_conditional_examples
 def log_probs_conditional_examples(
-    examples: Sequence[Example],
+    examples: Union[Example, Sequence[Example]],
     model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     batch_size: int = 32,
-) -> list[list[list[float]]]:
+) -> Union[list[list[float]], list[list[list[float]]]]:
     """
     Log-probabilities of each completion token conditional on each prompt and previous
     completion tokens.
 
     Parameters
     ----------
-    examples : Sequence[Example]
-        `Example` objects, where each contains a prompt and its set of possible
+    examples : Example | Sequence[Example]
+        `Example` object(s), where each contains a prompt and its set of possible
         completions
     model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
@@ -355,7 +363,15 @@ def log_probs_conditional_examples(
 
     Returns
     -------
-    log_probs_completions : list[list[list[float]]]
+    log_probs_completions : list[list[float]] | list[list[list[float]]]
+        If `examples` is a :class:`cappr.Example`, then a 2-D list is returned:
+        `log_probs_completions[completion_idx][completion_token_idx]` is the
+        log-probability of the completion token in
+        `example.completions[completion_idx]`, conditional on `example.prompt +
+        example.end_of_prompt` and previous completion tokens.
+
+        If `examples` is a sequence of :class:`cappr.Example` objects, then a 3-D list
+        is returned:
         `log_probs_completions[example_idx][completion_idx][completion_token_idx]` is
         the log-probability of the completion token in
         `examples[example_idx].completions[completion_idx]`, conditional on
@@ -426,7 +442,7 @@ def log_probs_conditional_examples(
 
 @classify._predict_proba
 def predict_proba(
-    prompts: Sequence[str],
+    prompts: Union[str, Sequence[str]],
     completions: Sequence[str],
     model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     prior: Optional[Sequence[float]] = None,
@@ -441,8 +457,8 @@ def predict_proba(
 
     Parameters
     ----------
-    prompts : Sequence[str]
-        strings, where, e.g., each contains the text you want to classify
+    prompts : str | Sequence[str]
+        string(s), where, e.g., each contains the text you want to classify
     completions : Sequence[str]
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
@@ -476,10 +492,15 @@ def predict_proba(
     Returns
     -------
     pred_probs : npt.NDArray[np.floating]
-        Array with shape `(len(prompts), len(completions))`.
-        `pred_probs[prompt_idx, completion_idx]` is the model's estimate of the
-        probability that `completions[completion_idx]` comes after
-        `prompts[prompt_idx] + end_of_prompt`.
+        If `prompts` is a string, then an array with shape `len(completions),` is
+        returned: `pred_probs[completion_idx]` is the model's estimate of the
+        probability that `completions[completion_idx]` comes after `prompt +
+        end_of_prompt`.
+
+        If `prompts` is a sequence of strings, then an array with shape `(len(prompts),
+        len(completions))` is returned: `pred_probs[prompt_idx, completion_idx]` is the
+        model's estimate of the probability that `completions[completion_idx]` comes
+        after `prompts[prompt_idx] + end_of_prompt`.
 
     Note
     ----
@@ -536,17 +557,17 @@ def predict_proba(
 
 @classify._predict_proba_examples
 def predict_proba_examples(
-    examples: Sequence[Example],
+    examples: Union[Example, Sequence[Example]],
     model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     batch_size: int = 32,
-) -> Union[list[npt.NDArray[np.floating]], npt.NDArray[np.floating]]:
+) -> Union[npt.NDArray[np.floating], list[npt.NDArray[np.floating]]]:
     """
     Predict probabilities of each completion coming after each prompt.
 
     Parameters
     ----------
-    examples : Sequence[Example]
-        `Example` objects, where each contains a prompt and its set of possible
+    examples : Example | Sequence[Example]
+        `Example` object(s), where each contains a prompt and its set of possible
         completions
     model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
@@ -556,13 +577,19 @@ def predict_proba_examples(
 
     Returns
     -------
-    pred_probs : list[npt.NDArray[np.floating]] | npt.NDArray[np.floating]
-        `pred_probs[example_idx][completion_idx]` is the model's estimate of the
-        probability that `examples[example_idx].completions[completion_idx]` comes after
-        `examples[example_idx].prompt + examples[example_idx].end_of_prompt`.
+    pred_probs : npt.NDArray[np.floating] | list[npt.NDArray[np.floating]]
+        If `examples` is an :class:`cappr.Example`, then an array with shape
+        `(len(example.completions),)` is returned: `pred_probs[completion_idx]` is the
+        model's estimate of the probability that `example.completions[completion_idx]`
+        comes after `example.prompt + example.end_of_prompt`.
 
-        If the number of completions per example is a constant `k`, then an array with
-        shape `(len(examples), k)` is returned instead of a list of 1-D arrays.
+        If `examples` is a sequence of :class:`cappr.Example` objects, then a list with
+        length `len(examples)` is returned: `pred_probs[example_idx][completion_idx]` is
+        the model's estimate of the probability that
+        `examples[example_idx].completions[completion_idx]` comes after
+        `examples[example_idx].prompt + examples[example_idx].end_of_prompt`. If the
+        number of completions per example is a constant `k`, then an array with shape
+        `(len(examples), k)` is returned instead of a list of 1-D arrays.
 
     Example
     -------
@@ -605,7 +632,7 @@ def predict_proba_examples(
 
 @classify._predict
 def predict(
-    prompts: Sequence[str],
+    prompts: Union[str, Sequence[str]],
     completions: Sequence[str],
     model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     prior: Optional[Sequence[float]] = None,
@@ -613,14 +640,14 @@ def predict(
     discount_completions: float = 0.0,
     log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
     batch_size: int = 32,
-) -> list[str]:
+) -> Union[str, list[str]]:
     """
     Predict which completion is most likely to follow each prompt.
 
     Parameters
     ----------
-    prompts : Sequence[str]
-        strings, where, e.g., each contains the text you want to classify
+    prompts : str | Sequence[str]
+        string(s), where, e.g., each contains the text you want to classify
     completions : Sequence[str]
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
@@ -647,10 +674,13 @@ def predict(
 
     Returns
     -------
-    preds : list[str]
-        List with length `len(prompts)`.
-        `preds[prompt_idx]` is the completion in `completions` which is predicted to
-        follow `prompts[prompt_idx] + end_of_prompt`.
+    preds : str | list[str]
+        If `prompts` is a string, then the completion from `completions` which is
+        predicted to most likely follow `prompt + end_of_prompt` is returned.
+
+        If `prompts` is a sequence of strings, then a list with length `len(prompts)` is
+        returned. `preds[prompt_idx]` is the completion in `completions` which is
+        predicted to follow `prompts[prompt_idx] + end_of_prompt`.
 
     Note
     ----
@@ -697,17 +727,17 @@ def predict(
 
 @classify._predict_examples
 def predict_examples(
-    examples: Sequence[Example],
+    examples: Union[Example, Sequence[Example]],
     model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     batch_size: int = 32,
-) -> list[str]:
+) -> Union[str, list[str]]:
     """
     Predict which completion is most likely to follow each prompt.
 
     Parameters
     ----------
-    examples : Sequence[Example]
-        `Example` objects, where each contains a prompt and its set of possible
+    examples : Example | Sequence[Example]
+        `Example` object(s), where each contains a prompt and its set of possible
         completions
     model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
@@ -717,10 +747,14 @@ def predict_examples(
 
     Returns
     -------
-    preds : list[str]
-        List with length `len(examples)`.
-        `preds[example_idx]` is the completion in `examples[example_idx].completions`
-        which is predicted to follow
+    preds : str | list[str]
+        If `examples` is an :class:`cappr.Example`, then the completion from
+        `example.completions` which is predicted to most likely follow `example.prompt +
+        example.end_of_prompt` is returned.
+
+        If `examples` is a sequence of :class:`cappr.Example` objects, then a list with
+        length `len(examples)` is returned: `preds[example_idx]` is the completion in
+        `examples[example_idx].completions` which is predicted to most likely follow
         `examples[example_idx].prompt + examples[example_idx].end_of_prompt`.
 
     Example
