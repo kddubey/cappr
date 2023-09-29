@@ -14,7 +14,7 @@ def _is_reversible(object) -> bool:
     if hasattr(object, "__reversed__"):
         return True
     # Some objects don't have the attribute, but still can be reversible, like a tuple.
-    # reversed(object) is a generator, so checking this is still cheap.
+    # reversed(object) is often a generator, so checking this is often cheap.
     try:
         reversed(object)
     except TypeError:

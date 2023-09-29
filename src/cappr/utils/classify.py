@@ -237,20 +237,16 @@ def posterior_prob(
 
 
 def _wrap_call_unwrap(
-    type_indicating_singleness: type,
-    input,
-    log_probs_conditional_func: Callable,
-    *args,
-    **kwargs,
+    type_indicating_singleness: type, input, func: Callable, *args, **kwargs
 ):
     """
-    Handles single inputs for a `log_probs_conditional_func` call which only takes
-    multiple inputs.
+    Handles single inputs for a `func` call which only takes multiple inputs and returns
+    multiple outputs.
     """
     is_single_input = isinstance(input, type_indicating_singleness)
     input = [input] if is_single_input else input
-    log_probs_completions = log_probs_conditional_func(input, *args, **kwargs)
-    return log_probs_completions[0] if is_single_input else log_probs_completions
+    output = func(input, *args, **kwargs)
+    return output[0] if is_single_input else output
 
 
 def _log_probs_conditional(log_probs_conditional):
@@ -263,7 +259,8 @@ def _log_probs_conditional(log_probs_conditional):
     def wrapper(
         prompts: Union[str, Sequence[str]], completions: Sequence[str], *args, **kwargs
     ) -> list[list[list[float]]]:
-        _check.nonempty_and_ordered(prompts, variable_name="prompts")
+        if not isinstance(prompts, str):
+            _check.nonempty_and_ordered(prompts, variable_name="prompts")
         _check.completions(completions)
         return _wrap_call_unwrap(
             str, prompts, log_probs_conditional, completions, *args, **kwargs

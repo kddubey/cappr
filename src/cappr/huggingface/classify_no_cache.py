@@ -1,7 +1,6 @@
 """
 Perform prompt-completion classification using a model which can be loaded via
-``transformers.AutoModelForCausalLM.from_pretrained``. Currently, only PyTorch models
-are supported.
+``transformers.AutoModelForCausalLM.from_pretrained``.
 
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 

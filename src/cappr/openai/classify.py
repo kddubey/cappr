@@ -72,8 +72,8 @@ def token_logprobs(
     choices = openai.api.gpt_complete(
         texts=[texts[i] for i in idxs_multiple_tokens],
         model=model,
-        ask_if_ok=ask_if_ok,
         show_progress_bar=show_progress_bar,
+        ask_if_ok=ask_if_ok,
         # rest must be hard-coded
         max_tokens=0,
         logprobs=1,

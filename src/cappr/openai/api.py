@@ -73,6 +73,10 @@ _MODEL_TO_COST_PER_1K_TOKENS = {
 # TODO: figure out how to get this automatically from openai, if possible
 
 
+class _UserCanceled(Exception):
+    pass
+
+
 def _openai_api_call_is_ok(
     texts: list[str],
     model: Model,
@@ -210,10 +214,6 @@ def openai_method_retry(
             time.sleep(sleep_sec)
     logger.error(f"Max retries exceeded. openai error: {exception}")
     raise exception
-
-
-class _UserCanceled(Exception):
-    pass
 
 
 def gpt_complete(
