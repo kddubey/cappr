@@ -152,6 +152,7 @@ def log_probs_conditional(
     Returns
     -------
     log_probs_completions : list[list[float]] | list[list[list[float]]]
+
         If `prompts` is a string, then a 2-D list is returned:
         `log_probs_completions[completion_idx][completion_token_idx]` is the
         log-probability of the completion token in `completions[completion_idx]`,
@@ -176,23 +177,21 @@ def log_probs_conditional(
         from cappr.openai.classify import log_probs_conditional
 
         # Create data
-        prompts = ['x y', 'a b c']
-        completions = ['z', 'd e']
+        prompts = ["x y", "a b c"]
+        completions = ["z", "d e"]
 
         # Compute
         log_probs_completions = log_probs_conditional(
-                                    prompts,
-                                    completions,
-                                    model='text-ada-001'
-                                )
+            prompts, completions, model="text-ada-001"
+        )
 
         # Outputs (rounded) next to their symbolic representation
 
-        log_probs_completions[0]
+        print(log_probs_completions[0])
         # [[-5.5],        [[log Pr(z | x, y)],
         #  [-8.2, -2.1]]   [log Pr(d | x, y),    log Pr(e | x, y, d)]]
 
-        log_probs_completions[1]
+        print(log_probs_completions[1])
         # [[-11.6],       [[log Pr(z | a, b, c)],
         #  [-0.3, -1.2]]   [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
@@ -248,6 +247,7 @@ def log_probs_conditional_examples(
     Returns
     -------
     log_probs_completions : list[list[float]] | list[list[list[float]]]
+
         If `examples` is a :class:`cappr.Example`, then a 2-D list is returned:
         `log_probs_completions[completion_idx][completion_token_idx]` is the
         log-probability of the completion token in
@@ -280,22 +280,23 @@ def log_probs_conditional_examples(
         from cappr.openai.classify import log_probs_conditional_examples
 
         # Create data
-        examples = [Example(prompt='x y',   completions=('z', 'd e')),
-                    Example(prompt='a b c', completions=('1 2',))]
+        examples = [
+            Example(prompt="x y", completions=("z", "d e")),
+            Example(prompt="a b c", completions=("1 2",)),
+        ]
 
         # Compute
         log_probs_completions = log_probs_conditional_examples(
-                                    examples,
-                                    model='text-ada-001'
-                                )
+            examples, model="text-ada-001"
+        )
 
         # Outputs (rounded) next to their symbolic representation
 
-        log_probs_completions[0] # corresponds to examples[0]
+        print(log_probs_completions[0])  # corresponds to examples[0]
         # [[-5.5],        [[log Pr(z | x, y)],
         #  [-8.2, -2.1]]   [log Pr(d | x, y),    log Pr(e | x, y, d)]]
 
-        log_probs_completions[1] # corresponds to examples[1]
+        print(log_probs_completions[1])  # corresponds to examples[1]
         # [[-11.2, -4.7]]  [[log Pr(1 | a, b, c)], log Pr(2 | a, b, c, 1)]]
     """
     # Little weird. I want my IDE to know that examples is always a Sequence[Example]
@@ -385,14 +386,15 @@ def predict_proba(
     Returns
     -------
     pred_probs : npt.NDArray[np.floating]
+
         If `prompts` is a string, then an array with shape `len(completions),` is
-        returned: `pred_probs[completion_idx]` is the `model`'s estimate of the
+        returned: `pred_probs[completion_idx]` is the model's estimate of the
         probability that `completions[completion_idx]` comes after `prompt +
         end_of_prompt`.
 
         If `prompts` is a sequence of strings, then an array with shape `(len(prompts),
         len(completions))` is returned: `pred_probs[prompt_idx, completion_idx]` is the
-        `model`'s estimate of the probability that `completions[completion_idx]` comes
+        model's estimate of the probability that `completions[completion_idx]` comes
         after `prompts[prompt_idx] + end_of_prompt`.
 
     Note
@@ -408,13 +410,15 @@ def predict_proba(
 
         from cappr.openai.classify import predict_proba
 
-
         # Define a classification task
-        feedback_types = ('the product is too expensive',
-                          'the product uses low quality materials',
-                          'the product is difficult to use',
-                          'the product is great')
-        prior = (2/5, 1/5, 1/5, 1/5) # I already expect customers to say it's expensive
+        feedback_types = (
+            "the product is too expensive",
+            "the product uses low quality materials",
+            "the product is difficult to use",
+            "the product is great",
+        )
+        prior = (2 / 5, 1 / 5, 1 / 5, 1 / 5)
+        # I already expect customers to say it's expensive
 
 
         # Write a prompt
@@ -423,31 +427,31 @@ def predict_proba(
         This product review: {product_review}\n
         is best summarized as:'''
 
-
         # Supply the texts you wanna classify
-        product_reviews = ["I can't figure out how to integrate it into my setup.",
-                           "Yeah it's pricey, but it's definitely worth it."]
-        prompts = [prompt_func(product_review) for product_review in product_reviews]
+        product_reviews = [
+            "I can't figure out how to integrate it into my setup.",
+            "Yeah it's pricey, but it's definitely worth it.",
+        ]
+        prompts = [
+            prompt_func(product_review) for product_review in product_reviews
+        ]
 
-
-        pred_probs = predict_proba(prompts,
-                                   completions=feedback_types,
-                                   model='text-curie-001',
-                                   prior=prior)
-
-        pred_probs = pred_probs.round(1) # just for cleaner output
+        pred_probs = predict_proba(
+            prompts, completions=feedback_types, model="text-curie-001", prior=prior
+        )
+        pred_probs_rounded = pred_probs.round(1)  # just for cleaner output
 
         # predicted probability that 1st product review says it's difficult to use
-        pred_probs[0,2]
-        # 0.9
+        print(pred_probs_rounded[0, 2])
+        # 0.8
 
         # predicted probability that 2nd product review says it's great
-        pred_probs[1,3]
-        # 0.7
+        print(pred_probs_rounded[1, 3])
+        # 0.6
 
         # predicted probability that 2nd product review says it's too expensive
-        pred_probs[1,0]
-        # 0.1
+        print(pred_probs_rounded[1, 0])
+        # 0.2
     """
     return log_probs_conditional(**locals())
 
@@ -482,14 +486,15 @@ def predict_proba_examples(
     Returns
     -------
     pred_probs : npt.NDArray[np.floating] | list[npt.NDArray[np.floating]]
+
         If `examples` is an :class:`cappr.Example`, then an array with shape
         `(len(example.completions),)` is returned: `pred_probs[completion_idx]` is the
-        `model`'s estimate of the probability that `example.completions[completion_idx]`
+        model's estimate of the probability that `example.completions[completion_idx]`
         comes after `example.prompt + example.end_of_prompt`.
 
         If `examples` is a sequence of :class:`cappr.Example` objects, then a list with
         length `len(examples)` is returned: `pred_probs[example_idx][completion_idx]` is
-        the `model`'s estimate of the probability that
+        the model's estimate of the probability that
         `examples[example_idx].completions[completion_idx]` comes after
         `examples[example_idx].prompt + examples[example_idx].end_of_prompt`. If the
         number of completions per example is a constant `k`, then an array with shape
@@ -502,28 +507,35 @@ def predict_proba_examples(
         from cappr import Example
         from cappr.openai.classify import predict_proba_examples
 
-
         # Create data from the premises and alternatives
-        examples = [Example(prompt='The man broke his toe because',
-                            completions=('he got a hole in his sock.',
-                                         'he dropped a hammer on his foot.')),
-                    Example(prompt='I tipped the bottle, so',
-                            completions=('the liquid in the bottle froze.',
-                                         'the liquid in the bottle poured out.'))]
+        examples = [
+            Example(
+                prompt="The man broke his toe because",
+                completions=(
+                    "he got a hole in his sock.",
+                    "he dropped a hammer on his foot."
+                ),
+            ),
+            Example(
+                prompt="I tipped the bottle, so",
+                completions=(
+                    "the liquid in the bottle froze.",
+                    "the liquid in the bottle poured out.",
+                ),
+            ),
+        ]
 
-
-        pred_probs = predict_proba_examples(examples, model='text-curie-001')
-
-        pred_probs = pred_probs.round(2) # just for cleaner output
+        pred_probs = predict_proba_examples(examples, model="text-curie-001")
+        pred_probs_rounded = pred_probs.round(2)  # just for cleaner output
 
         # predicted probability that 'he dropped a hammer on his foot' is the
         # alternative implied by the 1st premise: 'The man broke his toe'
-        pred_probs[0,1]
+        print(pred_probs_rounded[0, 1])
         # 0.53
 
         # predicted probability that 'the liquid in the bottle poured out' is the
         # alternative implied by the 2nd premise: 'I tipped the bottle'
-        pred_probs[1,1]
+        print(pred_probs_rounded[1, 1])
         # 0.75
     """
     return log_probs_conditional_examples(**locals())
@@ -581,6 +593,7 @@ def predict(
     Returns
     -------
     preds : str | list[str]
+
         If `prompts` is a string, then the completion from `completions` which is
         predicted to most likely follow `prompt + end_of_prompt` is returned.
 
@@ -601,13 +614,15 @@ def predict(
 
         from cappr.openai.classify import predict
 
-
         # Define a classification task
-        feedback_types = ('the product is too expensive',
-                          'the product uses low quality materials',
-                          'the product is difficult to use',
-                          'the product is great')
-        prior = (2/5, 1/5, 1/5, 1/5) # I already expect customers to say it's expensive
+        feedback_types = (
+            "the product is too expensive",
+            "the product uses low quality materials",
+            "the product is difficult to use",
+            "the product is great",
+        )
+        prior = (2 / 5, 1 / 5, 1 / 5, 1 / 5)
+        # I already expect customers to say it's expensive
 
 
         # Write a prompt
@@ -618,16 +633,18 @@ def predict(
 
 
         # Supply the texts you wanna classify
-        product_reviews = ["I can't figure out how to integrate it into my setup.",
-                           "Yeah it's pricey, but it's definitely worth it."]
-        prompts = [prompt_func(product_review) for product_review in product_reviews]
+        product_reviews = [
+            "I can't figure out how to integrate it into my setup.",
+            "Yeah it's pricey, but it's definitely worth it.",
+        ]
+        prompts = [
+            prompt_func(product_review) for product_review in product_reviews
+        ]
 
-
-        preds = predict(prompts,
-                        completions=feedback_types,
-                        model='text-curie-001',
-                        prior=prior)
-        preds
+        preds = predict(
+            prompts, completions=feedback_types, model="text-curie-001", prior=prior
+        )
+        print(preds)
         # ['the product is difficult to use',
         #  'the product is great']
     """
@@ -664,6 +681,7 @@ def predict_examples(
     Returns
     -------
     preds : str | list[str]
+
         If `examples` is an :class:`cappr.Example`, then the completion from
         `example.completions` which is predicted to most likely follow `example.prompt +
         example.end_of_prompt` is returned.
@@ -681,15 +699,25 @@ def predict_examples(
         from cappr.openai.classify import predict_examples
 
         # Create data from the premises and alternatives
-        examples = [Example(prompt='The man broke his toe because',
-                            completions=('he got a hole in his sock.',
-                                         'he dropped a hammer on his foot.')),
-                    Example(prompt='I tipped the bottle, so',
-                            completions=('the liquid in the bottle froze.',
-                                         'the liquid in the bottle poured out.'))]
+        examples = [
+            Example(
+                prompt="The man broke his toe because",
+                completions=(
+                    "he got a hole in his sock.",
+                    "he dropped a hammer on his foot."
+                ),
+            ),
+            Example(
+                prompt="I tipped the bottle, so",
+                completions=(
+                    "the liquid in the bottle froze.",
+                    "the liquid in the bottle poured out.",
+                ),
+            ),
+        ]
 
-        preds = predict_examples(examples, model='text-curie-001')
-        preds
+        preds = predict_examples(examples, model="text-curie-001")
+        print(preds)
         # ['he dropped a hammer on his foot',
         #  'the liquid in the bottle poured out']
     """

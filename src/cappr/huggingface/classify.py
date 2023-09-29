@@ -568,6 +568,7 @@ def log_probs_conditional(
     Returns
     -------
     log_probs_completions : list[list[float]] | list[list[list[float]]]
+
         If `prompts` is a string, then a 2-D list is returned:
         `log_probs_completions[completion_idx][completion_token_idx]` is the
         log-probability of the completion token in `completions[completion_idx]`,
@@ -593,27 +594,25 @@ def log_probs_conditional(
         from cappr.huggingface.classify import log_probs_conditional
 
         # Load model and tokenizer
-        model = AutoModelForCausalLM.from_pretrained('gpt2')
-        tokenizer = AutoTokenizer.from_pretrained('gpt2')
+        model = AutoModelForCausalLM.from_pretrained("gpt2")
+        tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
         # Create data
-        prompts = ['x y', 'a b c']
-        completions = ['z', 'd e']
+        prompts = ["x y", "a b c"]
+        completions = ["z", "d e"]
 
         # Compute
         log_probs_completions = log_probs_conditional(
-                                    prompts,
-                                    completions,
-                                    model_and_tokenizer=(model, tokenizer)
-                                )
+            prompts, completions, model_and_tokenizer=(model, tokenizer)
+        )
 
         # Outputs (rounded) next to their symbolic representation
 
-        log_probs_completions[0]
+        print(log_probs_completions[0])
         # [[-4.5],        [[log Pr(z | x, y)],
         #  [-5.6, -3.2]]   [log Pr(d | x, y),    log Pr(e | x, y, d)]]
 
-        log_probs_completions[1]
+        print(log_probs_completions[1])
         # [[-9.7],        [[log Pr(z | a, b, c)],
         #  [-0.2, -0.03]]  [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
@@ -666,6 +665,7 @@ def log_probs_conditional_examples(
     Returns
     -------
     log_probs_completions : list[list[float]] | list[list[list[float]]]
+
         If `examples` is a :class:`cappr.Example`, then a 2-D list is returned:
         `log_probs_completions[completion_idx][completion_token_idx]` is the
         log-probability of the completion token in
@@ -699,26 +699,27 @@ def log_probs_conditional_examples(
         from cappr.huggingface.classify import log_probs_conditional_examples
 
         # Load model and tokenizer
-        model = AutoModelForCausalLM.from_pretrained('gpt2')
-        tokenizer = AutoTokenizer.from_pretrained('gpt2')
+        model = AutoModelForCausalLM.from_pretrained("gpt2")
+        tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
-        # Create data
-        examples = [Example(prompt='x y',   completions=('z', 'd e')),
-                    Example(prompt='a b c', completions=('1 2',))]
+        # Create examples
+        examples = [
+            Example(prompt="x y", completions=("z", "d e")),
+            Example(prompt="a b c", completions=("1 2",)),
+        ]
 
         # Compute
         log_probs_completions = log_probs_conditional_examples(
-                                    examples,
-                                    model_and_tokenizer=(model, tokenizer)
-                                )
+            examples, model_and_tokenizer=(model, tokenizer)
+        )
 
         # Outputs (rounded) next to their symbolic representation
 
-        log_probs_completions[0] # corresponds to examples[0]
+        print(log_probs_completions[0])  # corresponds to examples[0]
         # [[-4.5],        [[log Pr(z | x, y)],
         #  [-5.6, -3.2]]   [log Pr(d | x, y),    log Pr(e | x, y, d)]]
 
-        log_probs_completions[1] # corresponds to examples[1]
+        print(log_probs_completions[1])  # corresponds to examples[1]
         # [[-5.0, -1.7]]  [[log Pr(1 | a, b, c)], log Pr(2 | a, b, c, 1)]]
     """
     with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
@@ -801,6 +802,7 @@ def predict_proba(
     Returns
     -------
     pred_probs : npt.NDArray[np.floating]
+
         If `prompts` is a string, then an array with shape `len(completions),` is
         returned: `pred_probs[completion_idx]` is the model's estimate of the
         probability that `completions[completion_idx]` comes after `prompt +
@@ -827,32 +829,32 @@ def predict_proba(
         from cappr.huggingface.classify import predict_proba
 
         # Load model and tokenizer
-        model = AutoModelForCausalLM.from_pretrained('gpt2')
-        tokenizer = AutoTokenizer.from_pretrained('gpt2')
+        model = AutoModelForCausalLM.from_pretrained("gpt2")
+        tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
         # Define a classification task
-        prompts = ['The tacos are cooking',
-                   'Ice cream is']
-        class_names = ('on the stove', 'in the freezer', 'in the fridge')
-        prior       = (     1/5      ,       2/5       ,       2/5      )
+        prompts = ["The tacos are cooking", "Ice cream is"]
+        class_names = ("on the stove", "in the freezer", "in the fridge")
+        prior = (1 / 5, 2 / 5, 2 / 5)
 
-        pred_probs = predict_proba(prompts,
-                                   completions=class_names,
-                                   model_and_tokenizer=(model, tokenizer),
-                                   prior=prior)
-
-        pred_probs = pred_probs.round(1) # just for cleaner output
+        pred_probs = predict_proba(
+            prompts,
+            completions=class_names,
+            model_and_tokenizer=(model, tokenizer),
+            prior=prior,
+        )
+        pred_probs_rounded = pred_probs.round(1)  # just for cleaner output
 
         # predicted probability that tacos cook on the stove
-        pred_probs[0,0]
+        print(pred_probs_rounded[0, 0])
         # 0.4
 
         # predicted probability that ice cream is in the freezer
-        pred_probs[1,1]
+        print(pred_probs_rounded[1, 1])
         # 0.5
 
         # predicted probability that ice cream is in the fridge
-        pred_probs[1,2]
+        print(pred_probs_rounded[1, 2])
         # 0.4
     """
     return log_probs_conditional(**locals())
@@ -885,6 +887,7 @@ def predict_proba_examples(
     Returns
     -------
     pred_probs : npt.NDArray[np.floating] | list[npt.NDArray[np.floating]]
+
         If `examples` is an :class:`cappr.Example`, then an array with shape
         `(len(example.completions),)` is returned: `pred_probs[completion_idx]` is the
         model's estimate of the probability that `example.completions[completion_idx]`
@@ -907,27 +910,32 @@ def predict_proba_examples(
         from cappr.huggingface.classify import predict_proba_examples
 
         # Load model and tokenizer
-        model = AutoModelForCausalLM.from_pretrained('gpt2')
-        tokenizer = AutoTokenizer.from_pretrained('gpt2')
+        model = AutoModelForCausalLM.from_pretrained("gpt2")
+        tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
-        # Create data
+        # Create examples
         examples = [
-            Example(prompt='Jodie Foster played',
-                    completions=('Clarice Starling', 'Trinity in The Matrix')),
-            Example(prompt='Batman, from Batman: The Animated Series, was played by',
-                    completions=('Kevin Conroy', 'Pete Holmes', 'Spongebob!'),
-                    prior=      (     2/3      ,      1/3     ,      0      ))
+            Example(
+                prompt="Jodie Foster played",
+                completions=("Clarice Starling", "Trinity in The Matrix"),
+            ),
+            Example(
+                prompt="Batman, from Batman: The Animated Series, was played by",
+                completions=("Pete Holmes", "Kevin Conroy", "Spongebob!"),
+                prior=(1 / 3, 2 / 3, 0),
+            ),
         ]
 
-        pred_probs = predict_proba_examples(examples,
-                                            model_and_tokenizer=(model, tokenizer))
+        pred_probs = predict_proba_examples(
+            examples, model_and_tokenizer=(model, tokenizer)
+        )
 
         # predicted probability that Jodie Foster played Clarice Starling, not Trinity
-        pred_probs[0][0]
+        print(pred_probs[0][0])
         # 0.7
 
         # predicted probability that Batman was played by Kevin Conroy
-        pred_probs[0][1]
+        print(pred_probs[1][1])
         # 0.97
     """
     return log_probs_conditional_examples(**locals())
@@ -982,6 +990,7 @@ def predict(
     Returns
     -------
     preds : str | list[str]
+
         If `prompts` is a string, then the completion from `completions` which is
         predicted to most likely follow `prompt + end_of_prompt` is returned.
 
@@ -1004,19 +1013,21 @@ def predict(
         from cappr.huggingface.classify import predict
 
         # Load model and tokenizer
-        model = AutoModelForCausalLM.from_pretrained('gpt2')
-        tokenizer = AutoTokenizer.from_pretrained('gpt2')
+        model = AutoModelForCausalLM.from_pretrained("gpt2")
+        tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
         # Define a classification task
-        prompts = ['The tacos are cooking', 'Ice cream is']
-        class_names = ('on the stove', 'in the freezer', 'in the fridge')
-        prior       = (     1/5      ,       2/5       ,       2/5      )
+        prompts = ["The tacos are cooking", "Ice cream is"]
+        class_names = ("on the stove", "in the freezer", "in the fridge")
+        prior = (1 / 5, 2 / 5, 2 / 5)
 
-        preds = predict(prompts,
-                        completions=class_names,
-                        model_and_tokenizer=(model, tokenizer),
-                        prior=prior)
-        preds
+        preds = predict(
+            prompts,
+            completions=class_names,
+            model_and_tokenizer=(model, tokenizer),
+            prior=prior,
+        )
+        print(preds)
         # ['on the stove',
         #  'in the freezer']
     """
@@ -1050,6 +1061,7 @@ def predict_examples(
     Returns
     -------
     preds : str | list[str]
+
         If `examples` is an :class:`cappr.Example`, then the completion from
         `example.completions` which is predicted to most likely follow `example.prompt +
         example.end_of_prompt` is returned.
@@ -1068,20 +1080,26 @@ def predict_examples(
         from cappr.huggingface.classify import predict_examples
 
         # Load model and tokenizer
-        model = AutoModelForCausalLM.from_pretrained('gpt2')
-        tokenizer = AutoTokenizer.from_pretrained('gpt2')
+        model = AutoModelForCausalLM.from_pretrained("gpt2")
+        tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
-        # Create data
+        # Create examples
         examples = [
-            Example(prompt='Jodie Foster played',
-                    completions=('Clarice Starling', 'Trinity in The Matrix')),
-            Example(prompt='Batman, from Batman: The Animated Series, was played by',
-                    completions=('Kevin Conroy', 'Pete Holmes', 'Spongebob!'),
-                    prior=      (     2/3      ,      1/3     ,      0      ))
+            Example(
+                prompt="Jodie Foster played",
+                completions=("Clarice Starling", "Trinity in The Matrix"),
+            ),
+            Example(
+                prompt="Batman, from Batman: The Animated Series, was played by",
+                completions=("Pete Holmes", "Kevin Conroy", "Spongebob!"),
+                prior=(1 / 3, 2 / 3, 0),
+            ),
         ]
 
-        preds = predict_examples(examples, model_and_tokenizer=(model, tokenizer))
-        preds
+        preds = predict_examples(
+            examples, model_and_tokenizer=(model, tokenizer)
+        )
+        print(preds)
         # ['Clarice Starling',
         #  'Kevin Conroy']
     """

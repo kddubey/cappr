@@ -233,6 +233,9 @@ popular self-hosting is today, that was *almost* a mistake. I say *almost* becau
 would've been too early. Quantized Llama 2 models were only released and supported by
 HuggingFace a few weeks ago.
 
+On a separate note, it's disappointing that OpenAI doesn't support `echo=True,
+logprobs=1` for the highly performant `gpt-3.5-turbo-instruct` model.
+
 
 ## Marketing matters
 

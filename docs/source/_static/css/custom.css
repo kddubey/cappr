@@ -1,6 +1,6 @@
 /* Newlines (\a) and spaces (\20) before each parameter */
 .sig-param::before {
-    content: "\a\20\20\20\20\20\20\20\20";
+    content: "\a\20\20\20\20";
     white-space: pre;
 }
 
@@ -11,7 +11,6 @@ dt em.sig-param:last-of-type::after {
 }
 
 /* To have blue background of width of the block (instead of width of content) */
-dl.class > dt:first-of-type {
+dl.class>dt:first-of-type {
     display: block !important;
 }
-
