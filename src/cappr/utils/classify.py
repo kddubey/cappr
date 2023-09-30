@@ -480,6 +480,9 @@ def _predict(predict_proba_func):
         pred_probs: npt.NDArray = predict_proba_func(
             prompts, completions, *args, **kwargs
         )
+        if not isinstance(completions, Sequence):
+            # We need completions to support __getitem__ by integer index
+            completions = list(completions)
         num_dimensions = pred_probs.ndim
         if isinstance(prompts, str):
             # User convenience: prompts was a single string, so pred_probs is 1-D

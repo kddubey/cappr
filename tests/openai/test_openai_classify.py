@@ -1,11 +1,14 @@
 """
 Unit and integration tests for tests `cappr.openai.classify`.
+TODO: this should instead be structured like test_huggingface_classify.py!
 """
 from __future__ import annotations
 import os
 import re
 import sys
 
+import numpy as np
+import pandas as pd
 import pytest
 import tiktoken
 
@@ -112,9 +115,23 @@ def test__slice_completions(completions, model):
 
 
 def test_log_probs_conditional(prompts, completions, model):
-    log_probs_conditional = classify.log_probs_conditional(prompts, completions, model)
     expected = [[[10, 11], [10]], [[5, 6], [5]], [[5, 6], [5]], [[8, 9], [8]]]
-    assert log_probs_conditional == expected
+
+    # Test plain input
+    _log_probs_conditional = classify.log_probs_conditional(prompts, completions, model)
+    assert _log_probs_conditional == expected
+
+    # Test that you can input a pandas Series w/ an arbitrary index
+    _prompts_series = pd.Series(
+        prompts, index=np.random.choice(len(prompts), size=len(prompts))
+    )
+    _completions_series = pd.Series(
+        completions, index=np.random.choice(len(completions), size=len(completions))
+    )
+    _log_probs_conditional = classify.log_probs_conditional(
+        _prompts_series, _completions_series, model
+    )
+    assert _log_probs_conditional == expected
 
     # Test bad prompts - empty
     with pytest.raises(ValueError, match="prompts must be non-empty."):
@@ -202,6 +219,15 @@ def test_predict_proba_examples(examples: list[Ex], model):
 
 def test_predict(prompts, completions, model):
     _test.predict(classify.predict, prompts, completions, model)
+
+    # Test that you can input a pandas Series w/ an arbitrary index
+    _prompts_series = pd.Series(
+        prompts, index=np.random.choice(len(prompts), size=len(prompts))
+    )
+    _completions_series = pd.Series(
+        completions, index=np.random.choice(len(completions), size=len(completions))
+    )
+    _test.predict(classify.predict, _prompts_series, _completions_series, model)
 
     # test discount_completions > 0.0
     _test.predict(

@@ -190,9 +190,9 @@ def _keys_values_prompts(
             "Gotta use right padding to ensure position IDs are correct. "
             "Run tokenizer.padding_side = 'right' if sensible."
         )
-    if isinstance(prompts, str) or not isinstance(prompts, Sequence):
-        raise TypeError("prompts must be a Sequence of strings.")
-    if isinstance(num_repeats_per_prompt, Sequence):
+    if isinstance(prompts, str):
+        raise TypeError("prompts must be a sequence of strings, not a string itself.")
+    if not isinstance(num_repeats_per_prompt, int):
         if not len(prompts) == len(num_repeats_per_prompt):
             raise ValueError(
                 "If num_repeats_per_prompt is a Sequence, then it must be the same "
@@ -216,7 +216,7 @@ def _keys_values_prompts(
         must_repeat: bool = (num_repeats_per_prompt > 1).any()
 
     # Batch inference prompts
-    prompts = list(prompts)  # 0-index in case it's a Series or something
+    prompts = list(prompts)  # tokenizer requires list
     encodings: BatchEncoding = tokenizer(prompts, return_tensors="pt", padding=True).to(
         model.device
     )
@@ -286,13 +286,10 @@ def _blessed_helper(
             "Gotta use right padding to ensure position IDs are correct. "
             "Run tokenizer.padding_side = 'right' if sensible."
         )
-    if isinstance(prompts, str) or not isinstance(prompts, Sequence):
-        raise TypeError("prompts must be a Sequence of strings.")
-    if isinstance(completions, str) or not isinstance(completions, Sequence):
-        raise TypeError("completions must be a Sequence of strings.")
+    _check.completions(completions)
 
     # Prepare completion data
-    completions = list(completions)  # 0-index in case it's a Series or something
+    completions = list(completions)  # tokenizer requires list
     # For Llama (and probably others) we don't want the completions to start w/ a bos
     # token <s> b/c we need to mimic sending the prompt + completion together.
     # For example, if 'a b' is the prompt and 'c' is the completion, the encoding

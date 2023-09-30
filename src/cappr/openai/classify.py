@@ -195,11 +195,6 @@ def log_probs_conditional(
         # [[-11.6],       [[log Pr(z | a, b, c)],
         #  [-0.3, -1.2]]   [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
-    # str / non-Sequence[str] inputs silently, wastefully, and irreparably fail
-    if isinstance(prompts, str) or not isinstance(prompts, Sequence):
-        raise TypeError("prompts must be a Sequence of strings.")
-    if isinstance(completions, str) or not isinstance(completions, Sequence):
-        raise TypeError("completions must be a Sequence of strings.")
     # Flat list of prompts and their completions. Will post-process
     texts = [
         prompt + end_of_prompt + completion

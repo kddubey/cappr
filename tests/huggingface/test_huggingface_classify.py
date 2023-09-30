@@ -9,6 +9,8 @@ import os
 import sys
 from typing import Mapping, Optional, Union
 
+import numpy as np
+import pandas as pd
 import pytest
 
 import torch
@@ -360,15 +362,22 @@ def _function_kwargs(function_kwargs: dict, non_args: tuple[str] = ("self", "ato
 ########################################################################################
 
 
-@pytest.mark.parametrize("prompts", (["a b c", "c"], "prompts can be a single string"))
+@pytest.mark.parametrize(
+    "prompts",
+    (
+        ["a b c", "c"],
+        "prompts can be a single string",
+        pd.Series(["prompts can", "be a", "Series"], index=np.random.choice(3, size=3)),
+    ),
+)
 @pytest.mark.parametrize(
     "completions",
     (
-        ["d", "e f g h i"],
-        ######################## Next set of completions to test #######################
-        ["d e f", "1 2", "O O"],
+        ["d e f g", "1 2", "O"],
         ######################## Test Single-token optimization ########################
         ["d", "e", "f"],
+        ########################### Test pandas Series input ###########################
+        pd.Series(["completions as", "a", "Series"], index=np.random.choice(3, size=3)),
     ),
 )
 @pytest.mark.parametrize("end_of_prompt", (" ",))  # TODO: expand

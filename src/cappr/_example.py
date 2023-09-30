@@ -63,6 +63,10 @@ class Example:
             raise TypeError("prompt must be a string.")
         _check.nonempty(self.prompt, variable_name="prompt")
         _check.completions(self.completions)
+        # If completions is a pandas Series, __getitem__ and __contains__ are on the
+        # Series index, not its values. To avoid such issues, just convert completions
+        # to a tuple. Re-setting an attribute in a frozen object requires this call:
+        object.__setattr__(self, "completions", tuple(self.completions))
         if not isinstance(self.end_of_prompt, str):
             raise TypeError("end_of_prompt must be a string.")
         _check.prior(self.prior, expected_length=len(self.completions))

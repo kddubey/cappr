@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from cappr import Example
@@ -27,8 +28,17 @@ def test___post_init__(prompt, completions, end_of_prompt, prior, normalize):
         prior=prior,
         normalize=normalize,
     )
-    # Valid Example
+    # Valid Examples
     Example(**kwargs_valid)
+    Example(
+        **modify_kwargs(
+            kwargs_valid,
+            completions=pd.Series(
+                completions,
+                index=np.random.choice(len(completions), size=len(completions)),
+            ),
+        )
+    )
 
     # Invalid Examples
 

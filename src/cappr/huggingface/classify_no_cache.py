@@ -18,7 +18,7 @@ import numpy.typing as npt
 import torch
 from transformers import BatchEncoding, PreTrainedTokenizerBase
 
-from cappr.utils import _batch, classify
+from cappr.utils import _batch, _check, classify
 from cappr import Example
 from cappr import huggingface as hf
 from cappr.huggingface._utils import PreTrainedModelForCausalLM
@@ -136,9 +136,9 @@ def _keys_values_prompts(
     """
     if not tokenizer.padding_side == "right":
         raise ValueError("Gotta use right padding to ensure position IDs are correct.")
-    if isinstance(prompts, str) or not isinstance(prompts, Sequence):
-        raise TypeError("prompts must be a Sequence of strings.")
-    if isinstance(num_completions_per_prompt, Sequence):
+    if isinstance(prompts, str):
+        raise TypeError("prompts must be a sequence of strings, not a string itself.")
+    if not isinstance(num_completions_per_prompt, int):
         if not len(prompts) == len(num_completions_per_prompt):
             raise ValueError(
                 "If num_completions_per_prompt is a Sequence, then it must be the same "
@@ -180,6 +180,7 @@ def _prompts_offsets(
         num_completions_per_prompt, torch.Tensor
     ):
         num_completions_per_prompt = torch.tensor(num_completions_per_prompt)
+    prompts = list(prompts)  # tokenizer requires list
     offsets: torch.Tensor = (
         tokenizer(prompts, return_tensors="pt", padding=True)
         .attention_mask.sum(dim=1)
@@ -199,10 +200,9 @@ def _logits_completions_given_prompts(
     completions: Sequence[str],
     end_of_prompt: str = " ",
 ):
-    if isinstance(prompts, str) or not isinstance(prompts, Sequence):
-        raise TypeError("prompts must be a Sequence of strings.")
-    if isinstance(completions, str) or not isinstance(completions, Sequence):
-        raise TypeError("completions must be a Sequence of strings.")
+    if isinstance(prompts, str):
+        raise TypeError("prompts must be a sequence of strings, not a string itself.")
+    _check.completions(completions)
     texts = [
         prompt + end_of_prompt + completion
         for prompt in prompts

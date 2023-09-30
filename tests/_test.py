@@ -101,7 +101,9 @@ def predict_proba_examples(
 
 
 def predict(
-    predict_func: Callable[[Sequence[str], Sequence[str], Any], list[str]],
+    predict_func: Callable[
+        [Union[str, Sequence[str]], Sequence[str], Any], Union[str, list[str]]
+    ],
     prompts: Union[str, Sequence[str]],
     completions: Sequence[str],
     *args,
@@ -112,6 +114,9 @@ def predict(
     with length `len(prompts)`, and that each element is in `completions`.
     """
     preds = predict_func(prompts, completions, *args, **kwargs)
+    # If completions is a pandas Series, then __contains__ checks the Series index, not
+    # the values! Just convert to tuple.
+    completions = tuple(completions)
     if isinstance(prompts, str):
         assert isinstance(preds, str)
         assert preds in completions
@@ -121,7 +126,9 @@ def predict(
 
 
 def predict_examples(
-    predict_examples_func: Callable[[Sequence[Example], Any], list[str]],
+    predict_examples_func: Callable[
+        [Union[Example, Sequence[Example]], Any], Union[str, list[str]]
+    ],
     examples: Union[Example, Sequence[Example]],
     *args,
     **kwargs,
