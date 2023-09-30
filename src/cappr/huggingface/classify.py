@@ -13,8 +13,10 @@ So far, CAPPr has been tested for correctness on the following architectures:
 
 - GPT-2
 - GPT-J
+- GPT-NeoX (including StableLM)
 - Llama
-- Llama 2 (chat, raw, and its GPTQd versions).
+- Llama 2 (chat, raw, and its GPTQd versions)
+- Mistral.
 
 .. warning:: This module doesn't work with ``transformers.BartForCausalLM``, among
              others probably.

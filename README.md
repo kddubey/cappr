@@ -86,10 +86,12 @@ For an example with Llama 2, see the notebook
 or
 [`demos/llama2/quick_check_correctness.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama2/quick_check_correctness.ipynb).
 So far, CAPPr has been tested for correctness on the following architectures:
-  - GPT-2
-  - GPT-J
-  - Llama
-  - Llama 2 (chat, raw, and its GPTQd versions).
+- GPT-2
+- GPT-J
+- GPT-NeoX (including StableLM)
+- Llama
+- Llama 2 (chat, raw, and its GPTQd versions)
+- Mistral.
 
 Raise an issue to lmk that you don't see your architecture on this list.
 

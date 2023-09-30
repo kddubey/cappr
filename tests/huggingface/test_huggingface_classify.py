@@ -38,49 +38,49 @@ import _test
         "sshleifer/tiny-gpt2",
         "anton-l/gpt-j-tiny-random",  # this one is quite big and slow
         "Maykeye/TinyLLama-v0",
+        # "openaccess-ai-collective/tiny-mistral",  # waiting for transformers==4.33.4
+        "hf-internal-testing/tiny-random-GPTNeoXModel",
     ],
 )
-def model_name(request) -> str:
+def model_name(request: pytest.FixtureRequest) -> str:
     return request.param
 
 
 @pytest.fixture(scope="module")
-def model(model_name) -> PreTrainedModelForCausalLM:
+def model(model_name: str) -> PreTrainedModelForCausalLM:
     model: PreTrainedModelForCausalLM = AutoModelForCausalLM.from_pretrained(model_name)
-    # Set up the model as expected.
-    model.eval()
+    contexts_model = [context(model) for context in hf._utils._DEFAULT_CONTEXTS_MODEL]
+    for context in contexts_model:
+        context.__enter__()
     return model
 
 
 @pytest.fixture(scope="module")
-def tokenizer(model_name) -> PreTrainedTokenizerBase:
+def tokenizer(model_name: str) -> PreTrainedTokenizerBase:
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    # Set up the tokenizer as expected.
-    # These things are done in cappr.huggingface._utils.set_up_model_and_tokenizer.
-    if tokenizer.pad_token_id is None:
-        # allow padding -> allow batching
-        tokenizer.pad_token_id = tokenizer.eos_token_id
-    tokenizer.padding_side = "right"
-    if hasattr(tokenizer, "add_eos_token"):
-        tokenizer.add_eos_token = False
+    contexts_tokenizer = [
+        context(tokenizer) for context in hf._utils._DEFAULT_CONTEXTS_TOKENIZER
+    ]
+    for context in contexts_tokenizer:
+        context.__enter__()
     return tokenizer
 
 
 @pytest.fixture(scope="module")
 def model_and_tokenizer(
-    model_name,
+    model_name: str,
 ) -> tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]:
     # This input is directly from a user, so we can't assume the model and tokenizer are
-    # set up correctly. For testing, that means we shouldn't just do:
+    # set up correctly. For testing, that means we shouldn't just return the fixtures:
     # return model, tokenizer
-    # Instead, load them from scratch:
+    # Instead, load them from scratch like a user would:
     model: PreTrainedModelForCausalLM = AutoModelForCausalLM.from_pretrained(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     return model, tokenizer
 
 
 @pytest.fixture(scope="module")
-def atol():
+def atol() -> float:
     # Reading through some transformers tests, it looks like 1e-3 is considered
     # close-enough for hidden states. See, e.g.,
     # https://github.com/huggingface/transformers/blob/main/tests/models/gpt2/test_modeling_gpt2.py#L250
@@ -126,7 +126,7 @@ def test_set_up_model_and_tokenizer(model_and_tokenizer):
 
     # Enter the context
     with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
-        pass
+        model, tokenizer = model_and_tokenizer
 
     # Exit the context. No attributes should have changed.
     assert model.training == model_attribute_to_old_value["training"]
@@ -138,18 +138,26 @@ def test_set_up_model_and_tokenizer(model_and_tokenizer):
 
 
 @pytest.mark.parametrize(
-    "texts", (["a", "fistful of", "tokens more", "the good, the bad, and the tokens."],)
+    "texts",
+    (["a b", "c d e"], ["a fistful", "of tokens", "for a few", "tokens more"]),
 )
-@pytest.mark.parametrize("batch_size", (10, 3))
+@pytest.mark.parametrize("batch_size", (2, 1))
 def test_token_logprobs(
-    texts, model_and_tokenizer, batch_size, model, tokenizer, atol, end_of_prompt=" "
+    texts, model_and_tokenizer, batch_size, atol, end_of_prompt=" "
 ):
     """
     Tests that the model's token log probabilities are correct by testing against an
-    unbatched and carefully/manually indexed result.
+    unbatched and carefully, manually indexed result.
     """
-    log_probs = fast.token_logprobs(texts, model_and_tokenizer, batch_size=batch_size)
+    log_probs_texts_observed = fast.token_logprobs(
+        texts, model_and_tokenizer, batch_size=batch_size
+    )
 
+    # The first logprob of every text must be None b/c no CausalLM estimates Pr(token)
+    for log_prob_observed in log_probs_texts_observed:
+        assert log_prob_observed[0] is None
+
+    # Gather un-batched un-sliced log probs for the expected result
     # bleh
     if (
         end_of_prompt == " "
@@ -158,37 +166,48 @@ def test_token_logprobs(
         )
     ):
         end_of_prompt = ""
-    texts = [end_of_prompt + text for text in texts]
-
-    # Gather un-batched data to compare against as the expected result
-    texts_log_probs = []
-    texts_input_ids = []
+    _texts_log_probs = []
+    _texts_input_ids = []
     for text in texts:
         # the correct expected result requires that we use the model() and tokenizer()
         # fixtures b/c they're set up correctly
-        logits, _encoding = hf._utils.logits_texts([text], model, tokenizer)
+        with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
+            model, tokenizer = model_and_tokenizer
+            _logits, _encoding = hf._utils.logits_texts(
+                [end_of_prompt + text], model, tokenizer
+            )
         # grab first index b/c we only gave it 1 text
-        texts_log_probs.append(logits[0].log_softmax(dim=1))
-        texts_input_ids.append(_encoding.input_ids[0])
+        _texts_log_probs.append(_logits[0].log_softmax(dim=1))
+        _texts_input_ids.append(_encoding.input_ids[0])
 
-    # The first logprob of every text must be None b/c no CausalLM estimates Pr(token)
-    for log_prob in log_probs:
-        assert log_prob[0] is None
+    # Slice out log probs for the final expected result
+    log_probs_texts_expected = []
+    for _text_input_ids, _text_log_probs in zip(_texts_input_ids, _texts_log_probs):
+        log_probs_texts_expected.append(
+            [None]  # for the first token, no CausalLM estimates Pr(token)
+            + [  # this token's data contains the next token's log-probability
+                _text_log_probs[i, _text_input_ids[i + 1]]
+                for i in range(0, len(_text_input_ids) - 1)
+            ]
+        )
 
-    # The sizes are the same as the number of tokens
-    assert len(log_probs) == len(texts)  # == len(texts_encodings) => zip is strict
-    for log_prob, input_ids in zip(log_probs, texts_input_ids):
-        assert len(log_prob) == len(input_ids)
+    print(log_probs_texts_observed)
+    print()
+    print(log_probs_texts_expected)
 
-    # Every log prob is correct
-    for log_prob, input_ids, log_probs_expected in zip(
-        log_probs, texts_input_ids, texts_log_probs
+    # Every log prob is correct, and sizes are correct
+    assert len(log_probs_texts_observed) == len(log_probs_texts_expected)
+    for log_probs_text_observed, log_probs_text_expected in zip(
+        log_probs_texts_observed, log_probs_texts_expected
     ):
-        for i in range(0, len(input_ids) - 1):
-            log_prob_expected = log_probs_expected[i, input_ids[i + 1]]
+        assert len(log_probs_text_observed) == len(log_probs_text_expected)
+        # skip the first token b/c its log prob is always None
+        for log_prob_token_observed, log_prob_token_expected in zip(
+            log_probs_text_observed[1:], log_probs_text_expected[1:]
+        ):
             assert torch.isclose(
-                torch.tensor(log_prob[i + 1]),
-                log_prob_expected,
+                torch.tensor(log_prob_token_observed),
+                log_prob_token_expected,
                 atol=atol,
             )
 
