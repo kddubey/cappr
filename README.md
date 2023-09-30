@@ -45,6 +45,7 @@ print(pred)
 Notice that the completions can contain many tokens.
 </details>
 
+
 <details>
 <summary>Extract the final answer from a step-by-step completion</summary>
 
@@ -57,6 +58,7 @@ See this idea in action [here in the
 docs](https://cappr.readthedocs.io/en/latest/4_user_guide.html#select-a-prompt-completion-format).
 CAPPr is **100% guaranteed** to return an output from the list of answers.
 </details>
+
 
 <details>
 <summary>Use a model from the HuggingFace model hub</summary>
@@ -88,7 +90,7 @@ or
 So far, CAPPr has been tested for correctness on the following architectures:
 - GPT-2
 - GPT-J
-- GPT-NeoX (including StableLM)
+- GPT-NeoX (including StableLM, and its instruct and GPTQd versions)
 - Llama
 - Llama 2 (chat, raw, and its GPTQd versions)
 - Mistral.
@@ -97,11 +99,23 @@ Raise an issue to lmk that you don't see your architecture on this list.
 
 </details>
 
+
+<details>
+<summary>Use an AutoGPTQ model</summary>
+
+[`cappr.huggingface`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html)
+seems to work fine with models loaded via
+[`auto_gptq.AutoGPTQForCausalLM.from_quantized`](https://github.com/PanQiWei/AutoGPTQ).
+But I haven't thoroughly tested that. See [this
+notebook](https://github.com/kddubey/cappr/blob/main/demos/auto_gptq.ipynb) for a demo.
+
+</details>
+
+
 <details>
 <summary>Run in batches</summary>
 
-Let's use `huggingface` for this example cuz it's free. And let's predict probabilities
-instead of the class.
+Also, let's predict probabilities instead of the class.
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -151,11 +165,12 @@ print(preds)
 ```
 </details>
 
+
 <details>
 <summary>Run in batches, where each prompt has a different set of possible completions
 </summary>
 
-Again, let's use `huggingface` to predict probabilities.
+Again, let's use `cappr.huggingface` to predict probabilities.
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -201,11 +216,12 @@ print(preds)
 ```
 </details>
 
-More examples are linked [here in the
+
+A few more examples are linked [here in the
 documentation](https://cappr.readthedocs.io/en/latest/5_examples.html).
 
 See
-[`demos/superglue/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb)
+[`demos/llama2/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb)
 for a demonstration of a slightly harder classification task.
 
 
@@ -246,6 +262,7 @@ pip install "cappr[demos]"
 Create a more usable zero-shot text classification interface than
 [classification via sampling (CVS)](https://platform.openai.com/docs/guides/completion/classification).
 
+
 <details>
 <summary>Short</summary>
 
@@ -264,15 +281,20 @@ documentation](https://cappr.readthedocs.io/en/latest/2_motivation.html).
 
 </details>
 
-<details>
-<summary>Unstudied</summary>
 
-I'm curious to see how much easier estimation/discrimination is than generation. In
+<details>
+<summary>Cool</summary>
+
+I'm curious to see how much easier estimation/discrimination is than sampling/generation. In
 [`demos/superglue/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb),
 CVS using OpenAI's `text-curie-001` is less than 50% accurate, while CAPPr is 80%
-accurate.
+accurate. Similar results can be seen in:
+
+- [`demos/llama2/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb)
+- [`demos/auto_gptq.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/auto_gptq.ipynb)
 
 </details>
+
 
 <details>
 <summary>Honest</summary>

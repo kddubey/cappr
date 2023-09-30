@@ -1,6 +1,7 @@
 """
 Perform prompt-completion classification using a model which can be loaded via
-``transformers.AutoModelForCausalLM.from_pretrained``.
+``transformers.AutoModelForCausalLM.from_pretrained`` or
+``auto_gptq.AutoGPTQForCausalLM.from_quantized``.
 
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 
@@ -13,7 +14,7 @@ So far, CAPPr has been tested for correctness on the following architectures:
 
 - GPT-2
 - GPT-J
-- GPT-NeoX (including StableLM)
+- GPT-NeoX (including StableLM, and its instruct and GPTQd versions)
 - Llama
 - Llama 2 (chat, raw, and its GPTQd versions)
 - Mistral.
