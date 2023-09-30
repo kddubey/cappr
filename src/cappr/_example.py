@@ -49,6 +49,8 @@ class Example:
         if `prior` is not None, or it isn't a sequence or numpy array
     ValueError
         if `prior` is not a 1-D probability distribution over `completions`
+    ValueError
+        if `normalize` is True but there's only one completion in `completions`
     """
 
     prompt: str
