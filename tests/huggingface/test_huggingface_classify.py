@@ -191,10 +191,6 @@ def test_token_logprobs(
             ]
         )
 
-    print(log_probs_texts_observed)
-    print()
-    print(log_probs_texts_expected)
-
     # Every log prob is correct, and sizes are correct
     assert len(log_probs_texts_observed) == len(log_probs_texts_expected)
     for log_probs_text_observed, log_probs_text_expected in zip(
