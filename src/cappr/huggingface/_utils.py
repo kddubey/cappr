@@ -63,6 +63,9 @@ class _tokenizer_pad:
         self.pad_token_id = tokenizer.pad_token_id
 
     def __enter__(self):
+        # Note: PreTrainedTokenizerBase is smart about setting auxiliary attributes,
+        # e.g., it updates tokenizer.special_tokens_map after setting
+        # tokenizer.pad_token_id.
         if self.pad_token_id is None:
             self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
 
@@ -110,6 +113,8 @@ class _tokenizer_dont_add_eos_token:
 
 _DEFAULT_CONTEXTS_MODEL = (_model_eval_mode,)
 "Model settings: set the model in eval mode."
+
+
 _DEFAULT_CONTEXTS_TOKENIZER = (
     _tokenizer_pad,
     _tokenizer_pad_on_right,
@@ -138,13 +143,13 @@ def set_up_model_and_tokenizer(
 
     init_contexts_model = [context(model) for context in contexts_tokenizer]
     init_contexts_tokenizer = [context(tokenizer) for context in contexts_model]
-    int_contexts = init_contexts_model + init_contexts_tokenizer
-    for init_context in int_contexts:
+    init_contexts = init_contexts_model + init_contexts_tokenizer
+    for init_context in init_contexts:
         init_context.__enter__()
 
     yield
 
-    for init_context in int_contexts:
+    for init_context in init_contexts:
         init_context.__exit__()
 
 
@@ -200,8 +205,8 @@ def logits_to_log_probs(
     # logits.shape is (# texts, max # tokens in texts, vocab size)
     log_probs = F.log_softmax(logits, dim=2)
 
-    # Only keep the log-prob from the vocab dimension whose index is is the
-    # next token's input ID.
+    # Only keep the log-prob from the vocab dimension whose index is is the next token's
+    # input ID.
     # input_ids.shape is (# texts, max # tokens in texts)
     return (
         log_probs[:, :logits_end_idx, :]

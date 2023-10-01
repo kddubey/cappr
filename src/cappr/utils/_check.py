@@ -10,10 +10,12 @@ import numpy as np
 
 
 def _is_reversible(object) -> bool:
-    # First, cheaply check if it implements __reversed__
-    if hasattr(object, "__reversed__"):
-        return True
-    # Some objects don't have the attribute, but still can be reversible, like a tuple.
+    # Returns True for:
+    # - list, tuple, dict keys, dict values
+    # - numpy array, torch Tensor
+    # - pandas and polars Series
+    # Returns False for:
+    # - set
     # reversed(object) is often a generator, so checking this is often cheap.
     try:
         reversed(object)
