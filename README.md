@@ -1,4 +1,4 @@
-# CAPPr: zero-shot text classification using autoregressive language models
+# CAPPr: get your LLM to pick the right category
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/)
 [![Documentation Status](https://readthedocs.org/projects/cappr/badge/?version=latest)](https://cappr.readthedocs.io/en/latest/?badge=latest)
@@ -7,15 +7,9 @@
 [![PyPI - Package Version](https://img.shields.io/pypi/v/cappr?logo=pypi&style=flat&color=orange)](https://pypi.org/project/cappr/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Perform zero-shot text classification by estimating the probability that an inputted
-completion comes after an inputted prompt. Hence the name:
-
-> **C**ompletion<br>
-  **A**fter<br>
-  **P**rompt<br>
-  **Pr**obability<br>
-
-The method is fleshed out in my [question on Cross Validated](https://stats.stackexchange.com/q/601159/337906).
+CAPPr performs text classification. No training. No post-processing. Just pick the right
+choice given a list of choices. Or compute the probability of a completion given a
+prompt. Squeeze more out of open source LLMs.
 
 
 ## Usage
@@ -230,26 +224,22 @@ for a demonstration of a slightly harder classification task.
 https://cappr.readthedocs.io
 
 
-## Setup
+## Installation
 
-If you intend on using OpenAI models, [sign up for the OpenAI API
-here](https://platform.openai.com/signup), and then set the environment variable
-`OPENAI_API_KEY`. For zero-shot classification, OpenAI models are currently far ahead of
-others. But using them will cost ya 💰!
-
-Install with `pip`:
-
-```
-pip install cappr
-```
-
-(Optional) Install requirements for HuggingFace models
+To use HuggingFace models:
 
 ```
 pip install "cappr[hf]"
 ```
 
-(Optional) Install requirements for running
+Or, to use OpenAI models, [sign up](https://platform.openai.com/signup) for the OpenAI
+API, set the environment variable `OPENAI_API_KEY`, and then
+
+```
+pip install cappr
+```
+
+(Optional) Install requirements for running the repo's
 [`demos`](https://github.com/kddubey/cappr/tree/main/demos)
 
 ```
@@ -259,19 +249,22 @@ pip install "cappr[demos]"
 
 ## Motivation
 
-Create a more usable zero-shot text classification interface than
-[classification via sampling (CVS)](https://platform.openai.com/docs/guides/completion/classification).
+Minimize engineering complexity.
 
+Current approaches, based on generating text, require the following workflow:
+1. Design a prompt which asks the model to output exactly one choice from a given set of
+   choices
+2. Given this prompt, figure out how often the model doesn't output one of the given
+   choices—call this an "invalid" output
+3. Figure out how to post-processes invalid outputs, depending on the way they look. Or
+   give up, and figure out how to get your application to gracefully fail on an invalid
+   output
+4. Figure out if you need to tweak the text generation strategy, loop back to step (2).
 
-<details>
-<summary>Short</summary>
+This workflow is not scalable, and is not necessary. CAPPr is guaranteed to output
+exactly one choice from a given set of choices. As a result, your work is reduced to a
+simpler version of step (1).
 
-With CVS, your job is to write up your classification task in a `prompt` string, and
-then write custom code to post-process arbitrary `completion`/output strings.
-
-With CAPPr, your job starts and stops at writing up your classification task as a
-`{prompt}{end_of_prompt}{completion}` string.
-</details>
 
 <details>
 <summary>Long</summary>
@@ -285,13 +278,9 @@ documentation](https://cappr.readthedocs.io/en/latest/2_motivation.html).
 <details>
 <summary>Cool</summary>
 
-I'm curious to see how much easier estimation/discrimination is than sampling/generation. In
-[`demos/superglue/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb),
-CVS using OpenAI's `text-curie-001` is less than 50% accurate, while CAPPr is 80%
-accurate. Similar results can be seen in:
-
-- [`demos/llama2/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb)
-- [`demos/auto_gptq.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/auto_gptq.ipynb)
+A handful of experiments suggest that CAPPr squeezes more out of smaller LLMs. See [this
+page of the
+documentation](https://cappr.readthedocs.io/en/latest/7_future_research.html).
 
 </details>
 
@@ -299,24 +288,33 @@ accurate. Similar results can be seen in:
 <details>
 <summary>Honest</summary>
 
-Keep myself busy
+am bored. am unemployed.
 
 </details>
 
 
-## Results
+## Performance
 
 <details>
 <summary>
 Statistical performance
 </summary>
 
-Not too shabby. TODO: summary table comparing CVS vs. CAPPr vs. few-shot methods like
-SetFit and PET.
+Not too shabby. TODO: summary table comparing competing methods.
 
 [2 SuperGLUE datasets](https://github.com/kddubey/cappr/blob/main/demos/superglue)
 
 [RAFT zero-shot training sets](https://github.com/kddubey/cappr/blob/main/demos/raft)
+
+For HuggingFace models, see
+
+- the 4 GB [Llama 2 COPA
+  demo](https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb)
+- and this (minimal but surprising) 3 GB [StableLM
+  demo](https://github.com/kddubey/cappr/blob/main/demos/auto_gptq.ipynb).
+
+I'll evaluate Llama 2 or Mistral 7B on a few more datasets.
+
 </details>
 
 
@@ -351,10 +349,28 @@ notebook](https://github.com/kddubey/cappr/blob/main/demos/computational_analysi
 </details>
 
 
+## How it works
+
+You input a `prompt` string and a set of candidate `completion` strings such that the
+string `{prompt} {completion}` is a naturally flowing thought. CAPPr picks the
+`completion` which is mostly likely to follow `prompt` by computing the:
+
+> **C**ompletion<br>
+  **A**fter<br>
+  **P**rompt<br>
+  **Pr**obability<br>
+
+The method is fleshed out in my [question on Cross
+Validated](https://stats.stackexchange.com/q/601159/337906).
+
+
 ## Related work
 
-The idea behind CAPPr is very well known. There are many papers where averaging token
-log-probabilities is a useful subroutine. Here are some papers which focus on this idea.
+The CAPPr computation is well-known; you'll find it as a subroutine in papers from GPT-2
+to Self-Consistency. This implementation includes a few computational and statistical
+optimizations, while maintaining a simple interface.
+
+Below are some papers which focus on the idea of aggregating token probabilities.
 
 While [benchmarking this
 method](https://github.com/kddubey/cappr/blob/main/demos/superglue/wsc.ipynb) on the
@@ -374,12 +390,10 @@ assumed to come from masked language models like BERT.
 
 ## Local development
 
-(If you're on a Windows system, some of the commands below will be different.)
-
 ### Setup
 
 1. Create a new Python 3.8+ virtual environment. Activate the venv. I use
-   [`virtualenvwrapper`](https://virtualenvwrapper.readthedocs.io/en/latest/). For
+   [`virtualenvwrapper`](https://virtualenvwrapper.readthedocs.io/en/latest/). For this
    example, let's create a virtual environment called `cappr`
    using Python's native `venv`:
 
@@ -393,7 +407,8 @@ assumed to come from masked language models like BERT.
    python -m pip install wheel --upgrade pip
    ```
 
-2. `cd` to wherever you store projects, and clone the repo (or fork it and clone that) there
+2. `cd` to wherever you store projects, and clone the repo (or fork it and clone that)
+   there
 
     ```bash
     cd your/projects
@@ -402,7 +417,7 @@ assumed to come from masked language models like BERT.
     ```
 
 3. `cd` to the repo and install this package in editable mode, along with development
-   requirements (**ensure your venv is activated**)
+   requirements (after ensuring that your venv is activated!)
 
    ```
    cd cappr
@@ -417,6 +432,8 @@ assumed to come from masked language models like BERT.
   * Set Python formatting to `black`.
   * [Rewrap](https://stkb.github.io/Rewrap/). Enable Auto Wrap.
 
+And set the vertical line ruler to 88.
+
 ### Testing
 
 From the repo home directory `cappr`:
@@ -427,7 +444,7 @@ pytest
 
 Note that a few small transformers will be downloaded to your computer.
 
-If a code change could affect statistical performance, then additionally test
+Sometimes I get paranoid about bigger code changes. So consider additionally testing
 statistical performance by running an appropriate demo in
 [`demos`](https://github.com/kddubey/cappr/tree/main/demos).
 
@@ -456,7 +473,7 @@ automatically published on PyPI.
 
 ## Todo
 
-Idk how to use GitHub projects, but I've put TODOs here:
+I'm dumping TODOs here:
 
 [Code changes](https://github.com/users/kddubey/projects/1/views/1)
 

@@ -6,17 +6,14 @@ CAPPr Docs
 .. |gittycat| image:: _static/github-mark.png
               :scale: 10%
 
-Perform zero-shot text classification by estimating the probability that an inputted
-completion comes after an inputted prompt. Hence the name:
+CAPPr performs text classification. No training. No post-processing. Just pick the right
+choice given a list of choices. Or compute the probability of a completion given a
+prompt. Squeeze more out of open source LLMs.
 
    | **C**\ompletion
    | **A**\fter
    | **P**\rompt
    | **Pr**\obability
-
-The method is fleshed out in my `question on Cross Validated`_.
-
-.. _question on Cross Validated: https://stats.stackexchange.com/q/601159/337906
 
 .. note:: This package is in early stages, and the method needs to be evaluated on more
           datasets.

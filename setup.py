@@ -20,9 +20,9 @@ requirements_openai = [
 ]
 
 requirements_huggingface = [
-    "sentencepiece>=0.1.99",
+    "sentencepiece>=0.1.99",  # for Llama tokenizers. cappr should work out-of-the-box
     "torch>=1.12.1",
-    "transformers>=4.31.0",
+    "transformers>=4.31.0",  # high version b/c Llama
 ]
 
 requirements_demos = [
@@ -52,7 +52,7 @@ with open("README.md", mode="r", encoding="utf-8") as f:
 setup(
     name="cappr",
     version=version,
-    description="Zero-shot text classification using autoregressive language models.",
+    description="Get your LLM to pick the right category.",
     long_description=readme,
     long_description_content_type="text/markdown",
     url="https://github.com/kddubey/cappr/",

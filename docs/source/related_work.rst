@@ -1,8 +1,11 @@
 Related work
 ============
 
-The idea behind CAPPr is very well known. There are many papers where averaging token
-log-probabilities is a useful subroutine. Here are some papers which focus on this idea.
+The CAPPr computation is well-known; you'll find it as a subroutine in papers from GPT-2
+to Self-Consistency. This implementation includes a few computational and statistical
+optimizations, while maintaining a simple interface.
+
+Below are some papers which focus on the idea of aggregating token probabilities.
 
 While `benchmarking this method`_ on the Winograd Schema Challenge, I found that
 `this paper`_\ [#]_ is very similar.
