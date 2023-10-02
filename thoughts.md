@@ -148,7 +148,7 @@ class _BaseLMClassifier(ABC):
         pred_probs = cls.predict_proba(prompts, completions, model, **kwargs)
         pred_completions = [
             completions[completion_idx]
-            for completion_idx in pred_probs.argmax(axis=1)
+            for completion_idx in pred_probs.argmax(axis=-1)
         ]
         return pred_completions
 ```
@@ -234,7 +234,8 @@ would've been too early. Quantized Llama 2 models were only released and support
 HuggingFace a few weeks ago.
 
 On a separate note, it's disappointing that OpenAI doesn't support `echo=True,
-logprobs=1` for the highly performant `gpt-3.5-turbo-instruct` model.
+logprobs=1` for the highly performant `gpt-3.5-turbo-instruct` model. I'll be focusing
+more on open source models.
 
 
 ## Marketing matters

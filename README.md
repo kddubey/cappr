@@ -78,9 +78,7 @@ print(pred)
 ```
 
 For an example with Llama 2, see the notebook
-[`demos/llama2/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb)
-or
-[`demos/llama2/quick_check_correctness.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama2/quick_check_correctness.ipynb).
+[`demos/llama2/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb).
 So far, CAPPr has been tested for correctness on the following architectures:
 - GPT-2
 - GPT-J
@@ -149,7 +147,7 @@ print(pred_probs.round(1))
 #  [0.8 0.2 0. ]]
 
 # For each prompt, which completion is most likely?
-pred_class_idxs = pred_probs.argmax(axis=1)
+pred_class_idxs = pred_probs.argmax(axis=-1)
 preds = [class_names[pred_class_idx] for pred_class_idx in pred_class_idxs]
 print(preds)
 # ['basketball player',

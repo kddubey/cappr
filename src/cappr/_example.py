@@ -11,8 +11,8 @@ class Example:
     """
     Represents a single prompt-completion classification example.
 
-    This data structure is useful when different classification examples may belong to
-    a different set of classes.
+    This data structure is only useful if different classification examples may belong
+    to a different set of classes, and you want to run the model in batches.
 
     Parameters
     ----------
