@@ -102,16 +102,16 @@ Iterate on the training dataset
 -------------------------------
 
 Evaluate your first prompt-completion format on the training dataset. Examine failure
-cases. Iterate the prompt and/or language model, and evaluate.
+cases. Iterate the format and/or language model and/or prior, and evaluate.
 
 Be disciplined and vigilant about not seeing or evaluating on the test dataset until
-you've finalized your selections for a prompt-completion format and a langauge model.
+you've finalized your selections for a format, langauge model, and prior.
 
 
 If necessary, bring out the big guns
 ------------------------------------
 
-Sometimes, you'll find that your task is just too difficult for your model and the CAPPr
+Sometimes, you'll find that your task is too difficult for a smaller model and the CAPPr
 method. In that case, consider upgrading the model. The most OP solution is to get a
 chain-of-thought completion from GPT-4 or Claude 2, and then have a cheap model classify
 the answer from this completion using CAPPr. See `this section of the documentation
@@ -123,13 +123,13 @@ money.
 Evaluate on the test dataset once
 ---------------------------------
 
-After you have fully specified everything about how your system is going to work, run
-that system on the test dataset. When you're asked for performance metrics, report the
-ones from this dataset.
+After fully specifying everything about how your system is going to work, run that
+system on the test dataset. When you're asked for performance metrics, report the ones
+from this dataset.
 
-Alongside your evaluation code, include some type of highly secure verification that you
-only evaluated once, e.g., a PNG signature in an HTML Jupyter cell (as done in the last
-section in the `OpenAI COPA demo`_):
+Alongside your evaluation code, include some type of *highly* secure verification that
+you only evaluated once, e.g., a PNG image of a signature in an HTML Jupyter cell (as
+done in the last section in the `OpenAI COPA demo`_):
 
 .. _OpenAI COPA demo: https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb
 

@@ -25,14 +25,14 @@ And yes, you'll likely need to do a bit of prompt engineering. But if you can wr
 sentence, you can write a prompt. It's mostly a matter of trial and error. (Here's an
 `external guide`_ if you'd like to survey research in this field.\ [3]_) Empirically,
 the impact of the prompt-completion format on accuracy depends on the quality of the
-language model. For larger, instruction-trained models, the format is not too
-consequential (they've seen it all!). For smaller, less instruction-trained models, it
-can be critical to get the format right.
+language model. For larger, instruction-trained models, the format is not as
+consequential. For smaller, less instruction-trained models, it can be critical to get
+the format right.
 
 .. _external guide: https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/
 
 Feel free to `open an issue`_ if you're having trouble with writing a prompt. It's not
-always an easy task, and models can be surprisingly finicky.
+always an easy task. Models can be surprisingly finicky.
 
 .. _open an issue: https://github.com/kddubey/cappr/issues
 
@@ -54,10 +54,10 @@ an example:
 .. code:: python
 
    prompts = [
-      "Stephen Curry is a",
-      "Martina Navratilova was a",
-      "Dexter, from the TV Series Dexter's Laboratory, is a",
-      "LeBron James is a",
+       "Stephen Curry is a",
+       "Martina Navratilova was a",
+       "Dexter, from the TV Series Dexter's Laboratory, is a",
+       "LeBron James is a",
    ]
    end_of_prompt = " "
 
@@ -66,12 +66,12 @@ an example:
 
    # What strings will CAPPr see?
    for i, prompt in enumerate(prompts):
-      print(f"For prompt {i + 1}")
-      print("------------")
-      for completion in class_names:
-         print(f"{prompt}{end_of_prompt}{completion}")
-      print()
-   
+       print(f"For prompt {i + 1}")
+       print("------------")
+       for completion in class_names:
+           print(f"{prompt}{end_of_prompt}{completion}")
+       print()
+
    # For prompt 1
    # ------------
    # Stephen Curry is a basketball player
@@ -131,7 +131,7 @@ successful format for instruction-trained models, which was pulled from `this de
 .. code:: python
 
    def prompt_yes_or_no(text: str) -> str:
-      return f"""
+       return f"""
    The following sentence was taken from a medical case report:
    {text}
    Does the sentence describe an adverse effect of a pharmaceutical drug or
@@ -143,14 +143,14 @@ successful format for instruction-trained models, which was pulled from `this de
 
    medical_case_report = """
    We describe the case of a 10-year-old girl with two epileptic seizures and
-   subcontinuous spike-waves during sleep, who presented unusual side-effects related
-   to clobazam (CLB) monotherapy.
+   subcontinuous spike-waves during sleep, who presented unusual side-effects
+   related to clobazam (CLB) monotherapy.
    """
 
    prompt = prompt_yes_or_no(medical_case_report)
    for completion in completions:
-      print(f"{prompt}{end_of_prompt}{completion}")
-      print()
+       print(f"{prompt}{end_of_prompt}{completion}")
+       print()
 
 
 Examples
@@ -166,7 +166,7 @@ Multiple Choice
 Big, instruction-trained models are good at answering multiple choice questions, because
 they've been trained to do so. One caveat is that the number of choices shouldn't be
 more than five, because multiple choice question formats seen during training are
-usually limited to the letters from school exams: (A), (B), (C), (D), (E). And ensure
+usually limited to the letters from school exams: (A), (B), (C), (D), (E). Also, ensure
 that the system prompt/message is explicit about answering with one of the letters.
 Here's an example of the system prompt used for the `COPA demo`_:
 
@@ -175,9 +175,9 @@ Here's an example of the system prompt used for the `COPA demo`_:
 .. code:: python
 
    system_prompt_copa = (
-      "Identify the cause or effect of a premise given two choices. Each choice "
-      "is identified by a letter, A or B.\n"
-      "Respond only with the letter corresponding to the correct cause or effect."
+       "Identify the cause or effect of a premise given two choices. Each choice "
+       "is identified by a letter, A or B.\n"
+       "Respond only with the letter corresponding to the correct cause or effect."
    )
 
 
@@ -185,21 +185,22 @@ Here's a little utility function which automatically writes out the letters and 
 
 .. code:: python
 
-   from string import ascii_uppercase
+   from string import ascii_uppercase as alphabet
 
-   def multiple_choice(*choices) -> str:
-      if len(choices) > len(ascii_uppercase):
-         raise ValueError("There are more choices than letters.")
-      return "\n".join(
-         [f"{letter}. {choice}" for letter, choice in zip(ascii_uppercase, choices)]
-      )
+    def multiple_choice(*choices) -> str:
+        if len(choices) > len(alphabet):
+            raise ValueError("There are more choices than letters.")
+        letters_and_choices = [
+            f"{letter}. {choice}" for letter, choice in zip(alphabet, choices)
+        ]
+        return "\n".join(letters_and_choices)
 
    choices = [
-      "Don't Wanna Know",
-      "Shit",
-      "All Time Low",
-      "Welcome to the Internet",
-      "Bezos II",
+       "Don't Wanna Know",
+       "Shit",
+       "All Time Low",
+       "Welcome to the Internet",
+       "Bezos II",
    ]
    print(multiple_choice(*choices))
 
@@ -239,18 +240,18 @@ Here's an example:
    from cappr.openai.api import gpt_chat_complete
    from cappr.openai.classify import predict
 
-   # task: pick the next prereq to take
+   # Task for a student in school: pick the next prereq to take
    class_to_prereqs = {
-      "CS-101": "no prerequisites",
-      "CS-102": "CS-101, MATH-101",
-      "MATH-101": "no prerequisites",
-      "MATH-102": "MATH-101",
-      "ML-101": "CS-101, MATH-102, STAT-101",
-      "STAT-101": "MATH-101",
-      "STAT-102": "STAT-101, MATH-102",
+       "CS-101": "no prerequisites",
+       "CS-102": "CS-101, MATH-101",
+       "MATH-101": "no prerequisites",
+       "MATH-102": "MATH-101",
+       "ML-101": "CS-101, MATH-102, STAT-101",
+       "STAT-101": "MATH-101",
+       "STAT-102": "STAT-101, MATH-102",
    }
    class_to_prereqs_str = "\n".join(
-      f"{class_}: {prereqs}" for class_, prereqs in class_to_prereqs.items()
+       f"{class_}: {prereqs}" for class_, prereqs in class_to_prereqs.items()
    )
 
    prompt_raw = f"""
@@ -270,9 +271,9 @@ Here's an example:
       prompt_step_by_step,
       model="gpt-4",
       system_msg=(
-         "You are a computer scientist mentoring a student. End your response to "
-         "the student's question with the final answer, which is the name of a "
-         "course."
+          "You are a computer scientist mentoring a student. End your response to "
+          "the student's question with the final answer, which is the name of a "
+          "course."
       ),
       max_tokens=1_000,
       temperature=0,
@@ -291,9 +292,9 @@ Here's an example:
    '''
 
    answer = predict(
-      prompt_answer,
-      completions=class_to_prereqs.keys(),
-      model="text-ada-001",
+       prompt_answer,
+       completions=class_to_prereqs.keys(),
+       model="text-ada-001",
    )
 
    print(answer)
@@ -306,7 +307,7 @@ A note on few-shot prompts
 While all of the examples in the documentation are zero-shot prompts, nothing about
 CAPPr prevents you from using few-shot prompts. Just make sure you're not paying too
 much for a small benefit. And consider that you may not need to label many (or any!)
-examples for few-shot prompting to work well. \ [6]_
+examples for few-shot prompting to work well.\ [6]_
 
 
 Footnotes

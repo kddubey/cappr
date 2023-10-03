@@ -4,11 +4,11 @@ Computational performance
 One concern was that CAPPr requires as many model calls as there are classes. But in the
 CAPPr scheme, we can simply cache each attention block's keys and values for the
 prompts. This feature is already supported by ``AutoModelForCausalLM``\ s. See `this
-code`_ for the implementation. Note that this caching is not implemented for OpenAI
-models, as I can't control their backend. This means that when running
+module`_ for the implementation. Note that this caching is not implemented for OpenAI
+models, as I can't control their backend. So if you're running
 :mod:`cappr.openai.classify` functions, you'll be on the *cappr (no cache)* line :-(
 
-.. _this code: https://github.com/kddubey/cappr/blob/main/src/cappr/huggingface/classify.py
+.. _this module: https://github.com/kddubey/cappr/blob/main/src/cappr/huggingface/classify.py
 
 .. figure:: _static/scaling_classes/batch_size_32.png
    :align: center
@@ -26,6 +26,6 @@ models, as I can't control their backend. This means that when running
 
 .. _GPT-2 (small): https://huggingface.co/gpt2
 
-See the `this notebook`_ for the experiment code which produced the figure above.
+See the `this notebook`_ for the code which produced the figure above.
 
 .. _this notebook: https://github.com/kddubey/cappr/blob/main/demos/computational_analysis.ipynb

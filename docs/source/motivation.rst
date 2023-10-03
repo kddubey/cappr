@@ -24,12 +24,12 @@ example, to classify a product review, CVS code looks like this:
    from cappr import openai
 
    class_names = (
-      "The product is too expensive",
-      "The product uses low quality materials",
-      "The product is difficult to use",
-      "The product isn't working",
-      "The product doesn't look good",
-      "The product is great",
+       "The product is too expensive",
+       "The product uses low quality materials",
+       "The product is difficult to use",
+       "The product isn't working",
+       "The product doesn't look good",
+       "The product is great",
    )
    class_names_str = "\n".join(class_names)
 
@@ -44,10 +44,10 @@ example, to classify a product review, CVS code looks like this:
    """
 
    api_resp = openai.api.gpt_complete(
-      prompt,
-      model="gpt-3.5-turbo-instruct",
-      max_tokens=10,
-      temperature=0,
+       prompt,
+       model="gpt-3.5-turbo-instruct",
+       max_tokens=10,
+       temperature=0,
    )
    completion = api_resp[0]["text"]
    print(repr(completion))
@@ -142,20 +142,20 @@ Let's now run CAPPr on that product review classification task. Also, let's:
    from cappr.openai.classify import predict_proba
 
    class_names = (
-      "The product is too expensive",
-      "The product uses low quality materials",
-      "The product is difficult to use",
-      "The product isn't working",
-      "The product doesn't look good",
-      "The product is great",
+       "The product is too expensive",
+       "The product uses low quality materials",
+       "The product is difficult to use",
+       "The product isn't working",
+       "The product doesn't look good",
+       "The product is great",
    )
    prior = (
-      2 / 7,
-      1 / 7,
-      1 / 7,
-      1 / 7,
-      1 / 7,
-      1 / 7,
+       2 / 7,
+       1 / 7,
+       1 / 7,
+       1 / 7,
+       1 / 7,
+       1 / 7,
    )  # set to None if you don't have a prior
    # 2/7 reflects that perhaps we already expect customers to say it's expensive
 
@@ -168,7 +168,7 @@ Let's now run CAPPr on that product review classification task. Also, let's:
    completions = [class_name.lower() for class_name in class_names]
 
    pred_probs = predict_proba(
-      prompt, completions, model="text-curie-001", prior=prior
+       prompt, completions, model="text-curie-001", prior=prior
    )
 
    print(repr(pred_probs.round(1)))

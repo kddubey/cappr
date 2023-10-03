@@ -1,12 +1,12 @@
-Future research
-===============
+The Misfit Toys Hypothesis
+==========================
 
-I'm curious to see how much statistically easier estimation is than sampling/generation.
-I think estimation could be easier simply because models are trained to maximize
-likelihood; they're trained to produce accurate probabilities. And a fundamental idea
-from machine learning is that good probability estimation does not necessarily imply
-good discrimination. Perhaps there are untapped, smaller, or undertrained models which
-are good at estimation, but not good at discrimination.
+Modern language models undergo two training stages: pretraining, and instruction
+training. When solving a classification task, it's tempting to lean on instruction-style
+prompts in combination with text generation. This combination works incredibly well for
+large, multi-GPU, proprietary models. But what about open source ones? Perhaps there are
+untapped, smaller, or undertrained models which are not good at generating text from
+instructions, but are good at estimating probabilities.
 
 A handful of experiments suggest that CAPPr squeezes more out of smaller LLMs. In the
 `OpenAI COPA demo`_, text generation using OpenAI's ``text-curie-001`` is less than 50%

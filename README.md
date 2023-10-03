@@ -25,7 +25,7 @@ endpoint.
 from cappr.openai.classify import predict
 
 prompt = """
-This is a tweet about a movie: "Oppenheimer was pretty good. But 3 hrs...cmon Nolan."
+Tweet about a movie: "Oppenheimer was pretty good. But 3 hrs...cmon Nolan."
 This tweet contains the following criticism:
 """.strip("\n")
 

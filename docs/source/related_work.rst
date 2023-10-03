@@ -5,7 +5,7 @@ The CAPPr computation is well-known; you'll find it as a subroutine in papers fr
 to Self-Consistency. The ``cappr`` implementation includes a few computational and
 statistical optimizations, while maintaining a simple interface.
 
-Below are some papers which focus on the idea of aggregating token probabilities.
+Here are some papers which focus on the idea of aggregating token probabilities.
 
 While `benchmarking this method`_ on the Winograd Schema Challenge, I found that
 `this paper`_\ [#]_ is very similar.
