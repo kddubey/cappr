@@ -1,6 +1,10 @@
 Select a prompt-completion format
 =================================
 
+   *"If you can dodge a wrench, you can dodge a ball."*
+
+   -- Patches
+
 With CAPPr, your job is to write up your classification task as a string with three
 components:
 
@@ -17,12 +21,13 @@ do any string processing for you; **it just concatenates the three strings and s
 it**! For each completion in your list of possible completions/choices, consider
 printing ``{prompt}{end_of_prompt}{completion}`` to ensure it passes the eye test.
 
-And yes, you'll likely need to do a bit of prompt engineering. It's mostly a matter of
-trial and error. (Here's an `external guide`_ if you'd like to survey research in this
-field.\ [3]_) Empirically, the impact of the prompt-completion format on accuracy
-depends on the quality of the language model. For larger, instruction-trained models,
-the format is not too consequential (they've seen it all!). For smaller, less
-instruction-trained models, it can be critical to get the format right.
+And yes, you'll likely need to do a bit of prompt engineering. But if you can write a
+sentence, you can write a prompt. It's mostly a matter of trial and error. (Here's an
+`external guide`_ if you'd like to survey research in this field.\ [3]_) Empirically,
+the impact of the prompt-completion format on accuracy depends on the quality of the
+language model. For larger, instruction-trained models, the format is not too
+consequential (they've seen it all!). For smaller, less instruction-trained models, it
+can be critical to get the format right.
 
 .. _external guide: https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/
 
@@ -35,7 +40,7 @@ always an easy task, and models can be surprisingly finicky.
 Prompt-completion formats
 -------------------------
 
-Most successful prompts belong to one of three categories: Concat-Class, Yes-No,
+Most successful prompts adhere to one of these three styles: Concat-Class, Yes-No,
 Multiple Choice.
 
 

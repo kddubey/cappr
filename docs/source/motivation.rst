@@ -94,11 +94,12 @@ modify your code in at least 1 of 2 ways:
 These can be nontrivial modifications. Single-token references can sacrifice performance
 when you have quite a few classes, as it's not a typical instruction format. On the
 other hand, single-token transformations sacrifice useful semantics. And finetuning
-usually requires spending too much of your money and data.
+costs too much time, money, and data.
 
-**The fact is: you can endlessley accomodate CVS, but you'll still have to write custom
-code to post-process its arbitrary outputs.** Fundamentally, sampling is not a clean
-solution to a classification problem.
+**The fact is: you can endlessley accomodate text generation, but you'll still have to
+write custom code to post-process its arbitrary outputs.** Fundamentally, sampling is
+not a clean solution to a classification problem.
+
 
 Recap
 -----
@@ -134,7 +135,7 @@ Let's now run CAPPr on that product review classification task. Also, let's:
 
   - Text generation with ``text-curie-001`` typically does not work well for slightly
     complicated tasks, e.g., run that text generation code above with
-    ``model='text-curie-001'``\ .
+    ``model="text-curie-001"``\ .
 
 .. code:: python
 
@@ -156,7 +157,7 @@ Let's now run CAPPr on that product review classification task. Also, let's:
       1 / 7,
       1 / 7,
    )  # set to None if you don't have a prior
-   # the 2/7 reflects that we already expect customers to say it's expensive
+   # 2/7 reflects that perhaps we already expect customers to say it's expensive
 
    product_review = "I can't figure out how to integrate it into my setup."
    prompt = f"""

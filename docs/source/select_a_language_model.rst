@@ -110,15 +110,15 @@ Here's a quick example:
    # 'too long'
 
 CAPPr is currently only compatible with `/v1/completions`_ models (because we can
-request log-probabilities of tokens in an `inputted` completion string). Unfortunately,
-with the exception of ``davinci-002`` and ``babbage-002`` (weak, non-instruction-trained
-models), **OpenAI will deprecate all instruct models on January 4, 2024**.
+request log-probabilities of tokens in an *inputted* string). Unfortunately, with the
+exception of ``davinci-002`` and ``babbage-002`` (weak, non-instruction-trained models),
+**OpenAI will deprecate all instruct models on January 4, 2024**.
 
 .. warning:: While ``gpt-3.5-turbo-instruct`` is compatible with `/v1/completions`_, it
    won't support setting `echo=True` and `logprobs=1` after October 5, 2023. So CAPPr
-   can't support this model. I don't know why they're disabling this setting. CAPPr with
-   this model `may be SOTA for zero-shot COPA`_ (see the very last section). I contacted
-   support. It's low-key kinda sad, yo.
+   can't support this model. I don't know why OpenAI is disabling this setting. CAPPr
+   with this model `may be SOTA for zero-shot COPA`_ (see the very last section). I
+   contacted support. It's low-key kinda sad, yo.
 
 .. _/v1/completions: https://platform.openai.com/docs/models/model-endpoint-compatibility
 

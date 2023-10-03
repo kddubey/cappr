@@ -1,4 +1,145 @@
 A note on workflow
 ==================
 
-Coming soon...
+You've done the hard part of translating a practical problem into a "pick a choice"
+problem that some LLM may be able to solve. Can you deploy this prompt-LLM system now?
+Probably not. Here's what, and how, you need to do.
+
+
+Gather data
+-----------
+
+Without previous experiments or good reason, don't assume that an LLM and your first
+prompt-completion format are going to work well. Instead, gather data like so:
+
+.. list-table:: A bunch of input-output pairs (200 examples)
+   :widths: 3 10 10
+   :header-rows: 1
+
+   * - id
+     - raw user input
+     - correct output index
+   * - 1
+     - "input 1"
+     - 2
+   * - 2
+     - "input 2"
+     - 0
+   * - 3
+     - "input 3"
+     - 0
+   * - ...
+     - ...
+     - ...
+   * - 200
+     - "input 200"
+     - 1
+
+The prompt is a transformation of the **raw user input**. The **correct output index**
+corresponds to the correct output/choice for that input.
+
+In general, you should gather as many of these input-output pairs/examples as is
+feasible. If there are only 2 possible choices (and say accuracy is 90%), then gather at
+least 150 examples.\ [#]_ As the number of possible choices increases, or as accuracy
+gets closer to random guessing, the more examples are needed to evaluate the system.
+
+If you don't have that many input-output examples immediately within reach, then do the
+hard but important work of making them up.\ [#]_ Think carefully about the types of
+inputs you expect to see in production, and their relative frequencies. Make sure every
+choice is included in the dataset. Consider adding a few tricky inputs to understand the
+limits of your system. But don't evaluate anything just yet!
+
+
+Split data into train and test
+------------------------------
+
+Now that you have a nice dataset, before you do anything else, randomly partition the
+dataset into a "training" dataset and a "test" dataset.\ [#]_ The importance of this
+step cannot be overstated.
+
+.. list-table:: training dataset (50 examples)
+   :widths: 3 10 10
+   :header-rows: 1
+
+   * - id
+     - raw user input
+     - correct output index
+   * - 105
+     - "input 105"
+     - 1
+   * - ...
+     - ...
+     - ...
+   * - 27
+     - "input 27"
+     - 0
+
+.. list-table:: test dataset (150 examples)
+   :widths: 3 10 10
+   :header-rows: 1
+
+   * - id
+     - raw user input
+     - correct output index
+   * - 174
+     - "input 174"
+     - 2
+   * - 26
+     - "input 26"
+     - 2
+   * - 91
+     - "input 91"
+     - 1
+   * - ...
+     - ...
+     - ...
+   * - 136
+     - "input 136"
+     - 1
+
+
+Iterate on the training dataset
+-------------------------------
+
+Evaluate your first prompt-completion format on the training dataset. Examine failure
+cases. Iterate the prompt and/or language model, and evaluate.
+
+Be disciplined and vigilant about not seeing or evaluating on the test dataset until
+you've finalized your selections for a prompt-completion format and a langauge model.
+
+
+If necessary, bring out the big guns
+------------------------------------
+
+Sometimes, you'll find that your task is just too difficult for your model and the CAPPr
+method. In that case, consider upgrading the model. The most OP solution is to get a
+chain-of-thought completion from GPT-4 or Claude 2, and then have a cheap model classify
+the answer from this completion using CAPPr. See `this section of the documentation
+<https://cappr.readthedocs.io/en/latest/select_a_prompt_completion_format.html#wrangle-step-by-step-completions>`_
+for an example. Just keep in mind that the big guns cost quite a bit of latency and
+money.
+
+
+Evaluate once on the test dataset
+---------------------------------
+
+After you have fully specified everything about how your system is going to work, run
+that system on the test dataset. When you're asked for performance metrics, report the
+ones from this dataset.
+
+
+Footnotes
+~~~~~~~~~
+
+.. [#] Some quick-and-dirty rationale for this guidance: a Wald 95% confidence interval
+   for the expected accuracy of a binary classifier—which is estimated to be 90%
+   accurate—is (0.84, 0.96) when evaluated on an independent/unseen set of 100 examples.
+   For most applications, that's quite wide.
+
+.. [#] You could technically get an LLM to make them up for you. But depending on your
+    application, the inputs it generates may actually look nothing like what you'll see
+    in production. Use your best judgement.
+
+.. [#] There are some applications where you may not want to *randomly* split the
+    dataset. Perhaps your inputs are grouped, or change with time. In these cases,
+    consider splitting by groups or by time.
