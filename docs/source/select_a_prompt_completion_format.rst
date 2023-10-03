@@ -99,6 +99,9 @@ an example:
 For each prompt, CAPPr will pick the completion which makes the sentence make the most
 sense (according to the model!).
 
+A reasonable hypothesis is that this prompt-completion format is especially well-suited
+to smaller models. See the footnote for a reason for this hypothesis.\ [#]_
+
 Examples
 ++++++++
 
@@ -114,11 +117,8 @@ each of these functions:
 :func:`cappr.openai.classify.predict_examples`
 
 .. warning:: I haven't evaluated CAPPr on completion strings which are longer than 15
-             tokens long. And I don't think CAPPr works well when there are ≥50 possible
+             tokens. And I don't think CAPPr works well when there are ≥50 possible
              completions. Consider these domains uncharted and risky for CAPPr.
-
-A reasonable hypothesis is that this prompt-completion format is especially well-suited
-to smaller models. See the footnote for a reason for this hypothesis.\ [#]_
 
 
 Yes-No
