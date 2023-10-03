@@ -120,12 +120,27 @@ for an example. Just keep in mind that the big guns cost quite a bit of latency 
 money.
 
 
-Evaluate once on the test dataset
+Evaluate on the test dataset once
 ---------------------------------
 
 After you have fully specified everything about how your system is going to work, run
 that system on the test dataset. When you're asked for performance metrics, report the
 ones from this dataset.
+
+Alongside your evaluation code, include some type of highly secure verification that you
+only evaluated once, e.g., a PNG signature in an HTML Jupyter cell (as done in the last
+section in the `OpenAI COPA demo`_):
+
+.. _OpenAI COPA demo: https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb
+
+.. code:: markdown
+
+   <span style="font-family: Baskerville; font-size: 18px;">I solemnly swear I
+   evaluated on the test set once, running only the following cells in sequence
+   once.</span>
+
+   <img src="signature.png" alt="drawing" width="200"/>
+   <div style="width:200px"><hr/></div>
 
 
 Footnotes
