@@ -240,13 +240,13 @@ more on open source models.
 
 ## Marketing matters
 
-The [Walkthrough in my docs](https://cappr.readthedocs.io/en/latest/walkthrough.html) is
-written for ML types, when it should be written broadly for software engineers. What's
-text classification? What are "labeled examples"? What's a prior? Why is a probability
-distribution useful? Docs for other tools answer, or successfully dodge, these questions
-much more effectively. CAPPr could be made way more approachable if the docs are
-re-worded. In the age of LLMs, text classification can be done by any engineer, not just
-ML engineers.
+The first version of the [User Guide in my
+docs](https://cappr.readthedocs.io/en/latest/user_guide.html) was written for ML types,
+when it should be written broadly for software engineers. What's text classification?
+What are "labeled examples"? What's a prior? Why is a probability distribution useful?
+Docs for other tools answer, or successfully dodge, these questions much more
+effectively. CAPPr could be made way more approachable if the docs are re-worded. In the
+age of LLMs, text classification can be done by any engineer, not just ML engineers.
 
 
 ## Pleasant surprises
@@ -259,10 +259,12 @@ cool to demonstrate that CAPPr generally works better for smaller or under-train
 
 Besides the algorithmic stuff, I was pleasantly surprised to find that I loved
 engineering this project from the ground up. Mulling over design decisions and managing
-myself was fun. Writing tests was satisfying and easy using pytest. Writing docs was
-satisfying (and [almost](https://github.com/kddubey/dumpy/tree/main/sphinx_setup) easy)
-using Sphinx. Writing GitHub workflows made releases convenient, and it made my project
-feel way more professional lol. I found [ReWrap](https://stkb.github.io/Rewrap/) and
+myself was fun. The integration with [AutoGPTQ](https://github.com/PanQiWei/AutoGPTQ)
+worked out-of-the-box. Writing tests was satisfying and easy using pytest. Writing docs
+was satisfying (and [almost](https://github.com/kddubey/dumpy/tree/main/sphinx_setup)
+easy) using Sphinx. Writing GitHub workflows made releases convenient, and it made my
+project feel way more professional lol. I found [ReWrap](https://stkb.github.io/Rewrap/)
+and
 [autoDocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring)
 for the first time. I'll be using them for every project from now on. Overall, as a
 result of working on this project, I appreciated open source even more.
