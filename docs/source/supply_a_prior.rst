@@ -3,7 +3,7 @@
 
 A prior is a probability distribution over completions indicating how likely you think
 each completion is *regardless of the prompt*. It nudges language model probabilities
-towards your domain-specific probabilities which are needed to make optimal predictions.
+towards the domain-specific probabilities which are needed to make optimal predictions.
 
 If you have a handful of labeled examples for each possible class, then you may simply
 compute the fraction of examples belonging to each class, e.g.,
