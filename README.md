@@ -326,8 +326,14 @@ documentation](https://cappr.readthedocs.io/en/latest/computational_performance.
 ## How it works
 
 You input a `prompt` string and a set of candidate `completion` strings such that the
-string `{prompt} {completion}` is a naturally flowing thought. CAPPr picks the
-`completion` which is mostly likely to follow `prompt` by computing the:
+string—
+
+```python
+{prompt} {completion}
+```
+
+—is a naturally flowing thought. CAPPr picks the `completion` which is mostly likely to
+follow `prompt` by computing the:
 
 > **C**ompletion<br>
   **A**fter<br>

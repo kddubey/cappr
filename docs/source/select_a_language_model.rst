@@ -46,8 +46,8 @@ You'll need access to beefier hardware to run models from the HuggingFace hub, a
 :mod:`cappr.huggingface` currently locally loads models. HuggingFace Inference Endpoints
 are not yet supported by this package.
 
-:mod:`cappr.huggingface` is not yet compatible with GGML/GGUF models. I think I'm just
-waiting on `this issue`_ in ``ctransformers`` to be resolved.
+:mod:`cappr.huggingface` is not yet compatible with GGML/GGUF models. I'm waiting on
+`this issue`_ in ``ctransformers`` to be resolved.
 
 .. _this issue: https://github.com/marella/ctransformers/issues/150
 
@@ -60,7 +60,7 @@ There are two CAPPr HuggingFace modules. In general, stick to
 
 :mod:`cappr.huggingface.classify` is `much faster`_ than
 :mod:`cappr.huggingface.classify_no_cache` when there are a lot of completions and
-you're running a model in batches of prompts. A downside is that the current
+you're running a model on batches of prompts. A downside is that the current
 implementation takes more RAM, because I rather crudely implemented batching. I'll fix
 that one day.
 
@@ -68,9 +68,8 @@ that one day.
 
 To minimize RAM, use :mod:`cappr.huggingface.classify_no_cache` with ``batch_size=1``.
 This module may also may happen to be compatible with a slightly broader class of
-causal/autoregressive language models. Because the model's forward method is only
-assumed to take in input IDs and the attention mask, and output logits for each input
-ID.
+causal/autoregressive language models. Here, the model is only assumed to input
+token/input IDs + attention mask, and then output logits for each input ID.
 
 
 Examples

@@ -108,9 +108,9 @@ each of these functions:
 
 :func:`cappr.openai.classify.predict_examples`
 
-.. warning:: I haven't evaluated CAPPr on completion strings which are longer than 10
-             tokens long. And I don't think CAPPr works well when there are ≥100
-             possible completions. Consider these areas to be uncharted territory.
+.. warning:: I haven't evaluated CAPPr on completion strings which are longer than 15
+             tokens long. And I don't think CAPPr works well when there are ≥50 possible
+             completions. Consider these domains uncharted and risky for CAPPr.
 
 A reasonable hypothesis is that this prompt-completion format is especially well-suited
 to smaller models. See the footnote for a reason for this hypothesis.\ [#]_
@@ -324,7 +324,7 @@ Footnotes
       B. He dropped a hammer on his foot
       Answer A or B.
 
-   But from pretraining, the model probably has seen sentences like:
+   But from pretraining, the model has probably seen many sentences like:
 
    .. code::
 

@@ -5,8 +5,8 @@ Given—
 
 - a ``prompt`` string
 - an ``end_of_prompt`` string (usually just a whitespace)
-- a list of possible completions (a list of strings)
-- a language model
+- a list of possible completion strings
+- and a language model
 
 —CAPPr picks the completion which is most likely to follow ``{prompt}{end_of_prompt}``
 according to the language model.
