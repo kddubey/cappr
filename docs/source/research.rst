@@ -2,9 +2,12 @@
 Research
 ========
 
+The CAPPr method is fleshed it out in my `question on Cross Validated
+<https://stats.stackexchange.com/q/601159/337906>`_.
+
 .. toctree::
    :maxdepth: 2
 
    related_work
-   6_computational_performance
-   7_future_research
+   computational_performance
+   future_research

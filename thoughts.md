@@ -225,7 +225,7 @@ Automating testing for caching was [even
 trickier](https://github.com/kddubey/cappr/blob/1ed88ad3672686476965b2738563890178f4c4d4/tests/huggingface/test_huggingface_classify.py#L115-L146).
 TBH my current implementation of caching is far from perfect, partly because it batches
 in a misleading way. But it performed [well
-enough](https://cappr.readthedocs.io/en/latest/6_computational_performance.html).
+enough](https://cappr.readthedocs.io/en/latest/computational_performance.html).
 
 A major todo was to make caching compatible with non-GPT-2 HuggingFace models. I tabled
 that because I figured most users would just use OpenAI, not HuggingFace. Seeing how

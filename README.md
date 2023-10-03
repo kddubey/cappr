@@ -1,4 +1,4 @@
-# CAPPr: get your LLM to pick the right category
+# CAPPr: Completion After Prompt Probability
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/)
 [![Documentation Status](https://readthedocs.org/projects/cappr/badge/?version=latest)](https://cappr.readthedocs.io/en/latest/?badge=latest)
@@ -7,8 +7,8 @@
 [![PyPI - Package Version](https://img.shields.io/pypi/v/cappr?logo=pypi&style=flat&color=orange)](https://pypi.org/project/cappr/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-CAPPr performs text classification. No training. No post-processing. Just pick the right
-choice given a list of choices. Or compute the probability of a completion given a
+CAPPr performs text classification. No training. No post-processing. **Just have your
+LLM pick from a list of choices.** Or compute the probability of a completion given a
 prompt. Squeeze more out of open source LLMs.
 
 
@@ -49,7 +49,7 @@ completion is unwieldy. Use CAPPr to extract the final answer from these types o
 completions, given a list of possible answers.
 
 See this idea in action [here in the
-docs](https://cappr.readthedocs.io/en/latest/4_user_guide.html#select-a-prompt-completion-format).
+docs](https://cappr.readthedocs.io/en/latest/select_a_prompt_completion_format.html#wrangle-step-by-step-completions).
 CAPPr is **100% guaranteed** to return an output from the list of answers.
 </details>
 
@@ -82,7 +82,7 @@ For an example with Llama 2, see the notebook
 So far, CAPPr has been tested for correctness on the following architectures:
 - GPT-2
 - GPT-J
-- GPT-NeoX (including StableLM, and its instruct and GPTQd versions)
+- GPT-NeoX (including StableLM, and its tuned/instruct and GPTQd versions)
 - Llama
 - Llama 2 (chat, raw, and its GPTQd versions)
 - Mistral.
@@ -208,10 +208,6 @@ print(preds)
 ```
 </details>
 
-
-A few more examples are linked [here in the
-documentation](https://cappr.readthedocs.io/en/latest/5_examples.html).
-
 See
 [`demos/llama2/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb)
 for a demonstration of a slightly harder classification task.
@@ -259,16 +255,16 @@ Current approaches, based on generating text, require the following workflow:
    output
 4. Figure out if you need to tweak the text generation strategy, loop back to step (2).
 
-This workflow is not scalable, and is not necessary. CAPPr is guaranteed to output
-exactly one choice from a given set of choices. As a result, your work is reduced to a
-simpler version of step (1).
+This workflow is not scalable, and not necessary. CAPPr is guaranteed to output exactly
+one choice from a given set of choices. As a result, your work is reduced to a simpler
+version of step (1).
 
 
 <details>
 <summary>Long</summary>
 
-Please see [this page of the
-documentation](https://cappr.readthedocs.io/en/latest/2_motivation.html).
+See [this page of the
+documentation](https://cappr.readthedocs.io/en/latest/motivation.html).
 
 </details>
 
@@ -278,7 +274,7 @@ documentation](https://cappr.readthedocs.io/en/latest/2_motivation.html).
 
 A handful of experiments suggest that CAPPr squeezes more out of smaller LLMs. See [this
 page of the
-documentation](https://cappr.readthedocs.io/en/latest/7_future_research.html).
+documentation](https://cappr.readthedocs.io/en/latest/future_research.html).
 
 </details>
 
@@ -321,28 +317,8 @@ I'll evaluate Llama 2 or Mistral 7B on a few more datasets.
 Computational performance
 </summary>
 
-One concern was that CAPPr requires as many `model()` calls as there are classes. But in
-the CAPPr scheme, we can simply cache each attention block's keys and values for the
-prompts. This feature is already supported by `AutoModelForCausalLM`s. See [this
-code](https://github.com/kddubey/cappr/blob/main/src/cappr/huggingface/classify.py) for
-the implementation. Note that this caching is not implemented for OpenAI models, as I
-can't control their backend. **This means that when running `cappr.openai` functions,
-you'll be on the *cappr (no cache)* line** :-(
-
-![](/docs/source/_static/scaling_classes/batch_size_32.png)
-
-*Figure 1: [COPA](https://people.ict.usc.edu/~gordon/copa.html) dataset, repeating the
-choices to simulate multi-class classification tasks. [GPT-2
-(small)](https://huggingface.co/gpt2) was run on a Tesla K80 GPU (whatever was free in
-Google Colab in March 2023). 96 classification inputs were processed in batches of size
-32. Each point in the graph is a median of 5 runs. For classification via sampling
-(CVS), exactly 4 tokens were generated for each prompt, which is the number of tokens in
-`'\n\nAnswer A'`. 1-token times are also shown. But for COPA (and other multiple-choice
-style prompts), that may result in lower zero-shot accuracy, as most of the sampled
-choices come after the first token.*
-
-See the [`demos/computational_analysis.ipynb`
-notebook](https://github.com/kddubey/cappr/blob/main/demos/computational_analysis.ipynb).
+See [this page of the
+documentation](https://cappr.readthedocs.io/en/latest/computational_performance.html).
 
 </details>
 
@@ -364,26 +340,8 @@ Validated](https://stats.stackexchange.com/q/601159/337906).
 
 ## Related work
 
-The CAPPr computation is well-known; you'll find it as a subroutine in papers from GPT-2
-to Self-Consistency. This implementation includes a few computational and statistical
-optimizations, while maintaining a simple interface.
-
-Below are some papers which focus on the idea of aggregating token probabilities.
-
-While [benchmarking this
-method](https://github.com/kddubey/cappr/blob/main/demos/superglue/wsc.ipynb) on the
-Winograd Schema Challenge, I found that [this paper](https://arxiv.org/abs/1806.02847)
-is very similar:
-
-> Trinh, Trieu H., and Quoc V. Le. "A simple method for commonsense reasoning." arXiv
-> preprint arXiv:1806.02847 (2018).
-
-[PET with multiple masks](https://arxiv.org/abs/2009.07118) also aggregates token
-probabilities to do prompt-completion classification, but these probabilities are
-assumed to come from masked language models like BERT.
-
-> Schick, Timo, and Hinrich Schütze. "It's not just size that matters: Small language
-> models are also few-shot learners." arXiv preprint arXiv:2009.07118 (2020).
+See [this page of the
+documentation](https://cappr.readthedocs.io/en/latest/related_work.html).
 
 
 ## Local development

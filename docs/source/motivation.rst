@@ -1,10 +1,8 @@
 Motivation
 ==========
 
-Why does this package exist? The short answer is to create a more usable zero-shot text
-classification interface than `classification via sampling`_.
-
-.. _classification via sampling: https://platform.openai.com/docs/guides/completion/classification
+Why does this package exist? The short answer is to create a more usable text
+classification interface.
 
 Now for the long answer, which expands on the meaning of *usable*.
 
@@ -12,13 +10,9 @@ Now for the long answer, which expands on the meaning of *usable*.
 Problem
 -------
 
-There are many ways to do zero-shot text classification. The one that this package is
-competing against is what I'll call **classification via sampling (CVS)**. This method
-is pretty common for large language models (LLMs) like GPT-3+, PaLM, etc. CVS is
-motiviated by the fact that LLMs are great at generating text. It's currently the method
-which the `OpenAI guide on classification`_ covers.
-
-.. _OpenAI guide on classification: https://platform.openai.com/docs/guides/completion/classification
+There are many ways to do text classification. The one that this package is competing
+against is what I'll call **classification via sampling (CVS)**. This method simply has
+an LLM generate text.
 
 To make CVS more concrete, let's work through an example.
 
@@ -50,10 +44,13 @@ example, to classify a product review, CVS code looks like this:
    """
 
    api_resp = openai.api.gpt_complete(
-      texts=[prompt], model="text-davinci-003", max_tokens=10, temperature=0
+      prompt,
+      model="gpt-3.5-turbo-instruct",
+      max_tokens=10,
+      temperature=0,
    )
    completion = api_resp[0]["text"]
-   completion
+   print(repr(completion))
    # '\nThe product is difficult to use'
    # correct!
 
@@ -81,7 +78,7 @@ with the cases where:
   or it's spelled or phrased slightly differently. (These discrepancies typically only
   occur for domain-specific text.)
 
-- The LM phrases its uncertainty in three different ways.
+- The LM says ``"I'm not sure"`` in three different ways.
 
 The OpenAI community knows that this can be challenging, so `they suggest`_ that you
 modify your code in at least 1 of 2 ways:
@@ -103,6 +100,22 @@ usually requires spending too much of your money and data.
 code to post-process its arbitrary outputs.** Fundamentally, sampling is not a clean
 solution to a classification problem.
 
+Recap
+-----
+
+Before moving on to the solution, let's recap the CVS/text-generation workflow:
+
+#. Design a prompt which asks the model to output exactly one choice from a given set of
+   choices
+#. Given this prompt, figure out how often the model doesn't output one of the given
+   choices—call this an "invalid" output
+#. Figure out how to post-processes invalid outputs, depending on the way they look. Or
+   give up, and figure out how to get your application to gracefully fail on an invalid
+   output
+#. Figure out if you need to tweak the text generation strategy, loop back to step (2).
+
+This workflow is not scalable, and not necessary.
+
 
 Solution
 --------
@@ -116,10 +129,12 @@ Let's now run CAPPr on that product review classification task. Also, let's:
 
 - predict a probability distribution over classes (optional)
 
-- replace the expensive ``text-davinci-003`` model call with a ``text-curie-001`` one
+- use a smaller, "dumber" model—``text-curie-001``—to showcase the unique strength of
+  the CAPPr method
 
-  - CVS with ``text-curie-001`` typically does not work well for slightly complicated
-    tasks, e.g., run that CVS code above with ``model='text-curie-001'``\ .
+  - Text generation with ``text-curie-001`` typically does not work well for slightly
+    complicated tasks, e.g., run that text generation code above with
+    ``model='text-curie-001'``\ .
 
 .. code:: python
 
@@ -152,15 +167,19 @@ Let's now run CAPPr on that product review classification task. Also, let's:
    completions = [class_name.lower() for class_name in class_names]
 
    pred_probs = predict_proba(
-      prompts=[prompt], completions=completions, model="text-curie-001", prior=prior
+      prompt, completions, model="text-curie-001", prior=prior
    )
 
-   pred_probs.round(2)
-   # array([[0.08, 0.  , 0.74, 0.11, 0.02, 0.05]])
+   print(repr(pred_probs.round(1)))
+   # array([0.1, 0. , 0.7, 0.1, 0. , 0. ])
 
-   pred_class_idxs = pred_probs.argmax(axis=1)
-   [class_names[pred_class_idx] for pred_class_idx in pred_class_idxs]
-   # ['The product is difficult to use']
+   pred_class_idx = pred_probs.argmax(axis=-1)
+   print(class_names[pred_class_idx])
+   # The product is difficult to use
+   # correct!
+
+CAPPr is guaranteed to output exactly one choice from a given set of choices. As a
+result, your work is reduced to designing a prompt-completion string format.
 
 In the age of large language models, text classification should be boring and easy.
 CAPPr aims to be just that.

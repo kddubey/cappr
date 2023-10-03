@@ -7,9 +7,7 @@ You probably just want the :func:`predict` or :func:`predict_examples` functions
 
 This module is a mirror of :mod:`cappr.huggingface.classify`. The difference is that
 this module **does not** precompute attention block keys and values for prompts. As a
-result, its throughput is lower. But it may happen to be compatible with a slightly
-broader class of causal/autoregressive language models. The model's forward method is
-only assumed take input IDs and the attention mask.
+result, its throughput is lower.
 """
 from __future__ import annotations
 from typing import Mapping, Optional, Sequence, Union

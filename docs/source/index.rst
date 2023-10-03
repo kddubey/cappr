@@ -1,13 +1,13 @@
 CAPPr Docs
-================================
+==========
 
 |gittycat| `GitHub <https://github.com/kddubey/cappr>`_
 
 .. |gittycat| image:: _static/github-mark.png
               :scale: 10%
 
-CAPPr performs text classification. No training. No post-processing. Just pick the right
-choice given a list of choices. Or compute the probability of a completion given a
+CAPPr performs text classification. No training. No post-processing. **Just have your
+LLM pick from a list of choices.** Or compute the probability of a completion given a
 prompt. Squeeze more out of open source LLMs.
 
    | **C**\ompletion
@@ -25,16 +25,16 @@ Get started
 .. toctree::
    :maxdepth: 2
 
-   walkthrough
+   about
 
 
-Package
-=======
+Get going
+=========
 
 .. toctree::
    :maxdepth: 2
 
-   cappr
+   user_guide
 
 
 Details
@@ -44,6 +44,15 @@ Details
    :maxdepth: 2
 
    research
+
+
+Package
+=======
+
+.. toctree::
+   :maxdepth: 2
+
+   cappr
 
 
 Indices and tables

@@ -6,21 +6,11 @@ Perform prompt-completion classification using a model which can be loaded via
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 
 In the implementation, attention block keys and values for prompts are cached and shared
-across completions. See the computational performance `here`_.
-
-.. _here: https://cappr.readthedocs.io/en/latest/6_computational_performance.html
-
-So far, CAPPr has been tested for correctness on the following architectures:
-
-- GPT-2
-- GPT-J
-- GPT-NeoX (including StableLM, and its instruct and GPTQd versions)
-- Llama
-- Llama 2 (chat, raw, and its GPTQd versions)
-- Mistral.
+across completions. If you're running out of RAM even with ``batch_size=1``, try using
+:mod:`cappr.huggingface.classify_no_cache` with ``batch_size=1``.
 
 .. warning:: This module doesn't work with ``transformers.BartForCausalLM``, among
-             others probably.
+             others probably. Consider using :mod:`cappr.huggingface.classify_no_cache`.
 """
 from __future__ import annotations
 from typing import Mapping, Optional, Sequence, Union
