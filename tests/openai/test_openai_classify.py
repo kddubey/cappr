@@ -21,7 +21,7 @@ import _test
 
 
 @pytest.fixture(autouse=True)
-def patch_openai_method_retry(monkeypatch):
+def patch_openai_method_retry(monkeypatch: pytest.MonkeyPatch):
     # During testing, there's never going to be a case where we want to actually hit
     # an OpenAI endpoint!
     def _log_probs(texts: list[str]) -> list[list[float]]:
@@ -50,7 +50,7 @@ def patch_openai_method_retry(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def patch_tokenizer(monkeypatch):
+def patch_tokenizer(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
         "tiktoken.encoding_for_model", lambda _: tiktoken.get_encoding("gpt2")
     )

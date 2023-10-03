@@ -20,6 +20,7 @@ def token_logprobs(
     texts: Sequence[str],
     model: openai.api.Model,
     ask_if_ok: bool = False,
+    api_key: Optional[str] = None,
     show_progress_bar: Optional[bool] = None,
     **kwargs,
 ) -> list[list[float]]:
@@ -39,6 +40,9 @@ def token_logprobs(
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
+    api_key : str, optional
+        your OpenAI API key. By default, it's set to the OpenAI's module attribute
+        ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
     show_progress_bar: bool, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
@@ -74,6 +78,7 @@ def token_logprobs(
         model=model,
         show_progress_bar=show_progress_bar,
         ask_if_ok=ask_if_ok,
+        api_key=api_key,
         # rest must be hard-coded
         max_tokens=0,
         logprobs=1,
@@ -122,6 +127,7 @@ def log_probs_conditional(
     end_of_prompt: str = " ",
     show_progress_bar: Optional[bool] = None,
     ask_if_ok: bool = False,
+    api_key: Optional[str] = None,
     **kwargs,
 ) -> Union[list[list[float]], list[list[list[float]]]]:
     """
@@ -148,6 +154,9 @@ def log_probs_conditional(
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
+    api_key : str, optional
+        your OpenAI API key. By default, it's set to the OpenAI's module attribute
+        ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
 
     Returns
     -------
@@ -202,7 +211,11 @@ def log_probs_conditional(
         for completion in completions
     ]
     log_probs = token_logprobs(
-        texts, model=model, show_progress_bar=show_progress_bar, ask_if_ok=ask_if_ok
+        texts,
+        model=model,
+        show_progress_bar=show_progress_bar,
+        ask_if_ok=ask_if_ok,
+        api_key=api_key,
     )
     # Since log_probs is a flat list, we'll need to batch them by the size and order of
     # completions to fulfill the spec.
@@ -218,6 +231,7 @@ def log_probs_conditional_examples(
     model: openai.api.Model,
     show_progress_bar: Optional[bool] = None,
     ask_if_ok: bool = False,
+    api_key: Optional[str] = None,
 ) -> Union[list[list[float]], list[list[list[float]]]]:
     """
     Log-probabilities of each completion token conditional on each prompt.
@@ -238,6 +252,9 @@ def log_probs_conditional_examples(
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
+    api_key : str, optional
+        your OpenAI API key. By default, it's set to the OpenAI's module attribute
+        ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
 
     Returns
     -------
@@ -304,7 +321,11 @@ def log_probs_conditional_examples(
         for completion in example.completions
     ]
     log_probs_all = token_logprobs(
-        texts, model=model, show_progress_bar=show_progress_bar, ask_if_ok=ask_if_ok
+        texts,
+        model=model,
+        show_progress_bar=show_progress_bar,
+        ask_if_ok=ask_if_ok,
+        api_key=api_key,
     )
     # Flatten completions in same order as examples were flattened
     completions_all = [
@@ -334,6 +355,7 @@ def predict_proba(
     log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
     show_progress_bar: Optional[bool] = None,
     ask_if_ok: bool = False,
+    api_key: Optional[str] = None,
 ) -> npt.NDArray[np.floating]:
     """
     Predict probabilities of each completion coming after each prompt.
@@ -377,6 +399,9 @@ def predict_proba(
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
+    api_key : str, optional
+        your OpenAI API key. By default, it's set to the OpenAI's module attribute
+        ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
 
     Returns
     -------
@@ -457,6 +482,7 @@ def predict_proba_examples(
     model: openai.api.Model,
     show_progress_bar: Optional[bool] = None,
     ask_if_ok: bool = False,
+    api_key: Optional[str] = None,
 ) -> Union[npt.NDArray[np.floating], list[npt.NDArray[np.floating]]]:
     """
     Predict probabilities of each completion coming after each prompt.
@@ -477,6 +503,9 @@ def predict_proba_examples(
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
+    api_key : str, optional
+        your OpenAI API key. By default, it's set to the OpenAI's module attribute
+        ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
 
     Returns
     -------
@@ -547,6 +576,7 @@ def predict(
     log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
     show_progress_bar: Optional[bool] = None,
     ask_if_ok: bool = False,
+    api_key: Optional[str] = None,
 ) -> Union[str, list[str]]:
     """
     Predict which completion is most likely to follow each prompt.
@@ -584,6 +614,9 @@ def predict(
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
+    api_key : str, optional
+        your OpenAI API key. By default, it's set to the OpenAI's module attribute
+        ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
 
     Returns
     -------
@@ -652,6 +685,7 @@ def predict_examples(
     model: openai.api.Model,
     show_progress_bar: Optional[bool] = None,
     ask_if_ok: bool = False,
+    api_key: Optional[str] = None,
 ) -> Union[str, list[str]]:
     """
     Predict which completion is most likely to follow each prompt.
@@ -672,6 +706,9 @@ def predict_examples(
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
+    api_key : str, optional
+        your OpenAI API key. By default, it's set to the OpenAI's module attribute
+        ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
 
     Returns
     -------

@@ -2,6 +2,8 @@
 Unit tests `cappr.openai.api`. Currently pretty barebones.
 """
 from __future__ import annotations
+from typing import Optional
+import os
 
 import openai
 import pytest
@@ -22,7 +24,7 @@ def test_openai_method_retry():
         api.openai_method_retry(openai_method, sleep_sec=0)
 
 
-def test__openai_api_call_is_ok(monkeypatch):
+def test__openai_api_call_is_ok(monkeypatch: pytest.MonkeyPatch):
     # Inputs
     texts = ["cherry", "coke"]  # tokenized: [[331, 5515], [1030, 441]]
     model = "gpt-3.5-turbo-instruct"  # hard-coded so that tokenization is always same
@@ -42,7 +44,7 @@ def test__openai_api_call_is_ok(monkeypatch):
         2,
     )
 
-    # Mimic the user seeing the prompt and entering y
+    # Mimic the user seeing the prompt and entering y for yes, submit the requests
     monkeypatch.setattr("builtins.input", lambda _: "y")
     (
         num_tokens_prompts_observed,
@@ -59,13 +61,41 @@ def test__openai_api_call_is_ok(monkeypatch):
     assert num_tokens_prompts_observed == num_tokens_prompts_expected
     assert cost_observed == cost_expected
 
-    # Mimic the user seeing the prompt and entering n
+    # Mimic the user seeing the prompt and entering n, don't submit the requests
     monkeypatch.setattr("builtins.input", lambda _: "n")
     with pytest.raises(api._UserCanceled):
         api._openai_api_call_is_ok(texts, model)
 
 
-def test_gpt_chat_complete(monkeypatch):
+@pytest.mark.parametrize("user_inputted_api_key", ("sk-oobydoo", None))
+@pytest.mark.parametrize("openai_module_api_key", ("sk-allywag", None))
+@pytest.mark.parametrize("environmt_var_api_key", ("sk-widward", None))
+def test__set_openai_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+    user_inputted_api_key: Optional[str],
+    openai_module_api_key: Optional[str],
+    environmt_var_api_key: Optional[str],
+):
+    monkeypatch.setattr("openai.api_key", openai_module_api_key)
+    if environmt_var_api_key is None:
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    else:
+        monkeypatch.setenv("OPENAI_API_KEY", environmt_var_api_key)
+
+    with api._set_openai_api_key(user_inputted_api_key):
+        # if user_inputted_api_key is None, default to openai_module_api_key. if that's
+        # None, default to the environment variable.
+        expected_openai_api_key = (
+            user_inputted_api_key
+            or openai_module_api_key
+            or os.getenv("OPENAI_API_KEY")
+        )
+        assert openai.api_key == expected_openai_api_key
+
+    assert openai.api_key == openai_module_api_key
+
+
+def test_gpt_chat_complete(monkeypatch: pytest.MonkeyPatch):
     completion_expected = "heyteam howsitgoin"
 
     def mocked(openai_method, messages: list[dict[str, str]], **kwargs):
