@@ -228,15 +228,15 @@ Most models are sensitive to quirky differences between prompts.
 
 **Llama 2 / SentencePiece models**: when using a Concat-Class style prompt, higher
 accuracy may be achieved by abandoning the chat format. See, e.g., the `Llama 2 COPA
-demo`_. Moreover, instead of setting `end_of_prompt=" "`, consider adding this
-whitespace to the end of the ``prompt`` string and set `end_of_prompt=""`.
+demo`_. Moreover, instead of setting ``end_of_prompt=" "``, consider adding this
+whitespace to the end of the ``prompt`` string and set ``end_of_prompt=""``.
 
 I'll update these notes as more quirks are discovered. For now, if you don't already
 have a good feel for the model, consider experimenting with things like:
 
 - using the chat/instruction format or not
 
-- ending the ``prompt`` with ``:`` or not.
+- ending the ``prompt`` with a colon ``:`` or not.
 
 
 Wrangle step-by-step completions

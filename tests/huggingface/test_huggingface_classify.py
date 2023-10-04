@@ -15,6 +15,7 @@ import pytest
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizerBase
+import huggingface_hub as hf_hub
 
 from cappr import Example as Ex
 from cappr.huggingface import classify as fast
@@ -35,11 +36,11 @@ import _test
 @pytest.fixture(
     scope="module",
     params=[
-        "sshleifer/tiny-gpt2",
-        "anton-l/gpt-j-tiny-random",  # quite big and slow
-        "hf-internal-testing/tiny-random-GPTNeoXModel",
+        "hf-internal-testing/tiny-random-GPT2LMHeadModel",
+        "hf-internal-testing/tiny-random-GPTJForCausalLM",
+        "hf-internal-testing/tiny-random-GPTNeoXForCausalLM",
         "Maykeye/TinyLLama-v0",
-        "openaccess-ai-collective/tiny-mistral",  # quite big and slow
+        "hf-internal-testing/tiny-random-MistralForCausalLM",
     ],
 )
 def model_name(request: pytest.FixtureRequest) -> str:
@@ -57,7 +58,11 @@ def model(model_name: str) -> PreTrainedModelForCausalLM:
 
 @pytest.fixture(scope="module")
 def tokenizer(model_name: str) -> PreTrainedTokenizerBase:
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+    except:
+        local_path = hf_hub.try_to_load_from_cache(model_name, "tokenizer.json")
+        tokenizer = AutoTokenizer.from_pretrained(model_name, tokenizer_file=local_path)
     contexts_tokenizer = [
         context(tokenizer) for context in hf._utils._DEFAULT_CONTEXTS_TOKENIZER
     ]
@@ -75,7 +80,11 @@ def model_and_tokenizer(
     # return model, tokenizer
     # Instead, load them from scratch like a user would:
     model: PreTrainedModelForCausalLM = AutoModelForCausalLM.from_pretrained(model_name)
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+    except:
+        local_path = hf_hub.try_to_load_from_cache(model_name, "tokenizer.json")
+        tokenizer = AutoTokenizer.from_pretrained(model_name, tokenizer_file=local_path)
     return model, tokenizer
 
 

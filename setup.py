@@ -29,7 +29,7 @@ requirements_huggingface_dev = [
     req if not req.startswith("transformers>=") else "transformers>=4.34.0"
     # To test Mistral in our testing workflow, we need this update
     for req in requirements_huggingface
-]
+] + ["huggingface-hub>=0.16.4"]
 
 requirements_demos = [
     "datasets>=2.10.0",

@@ -404,7 +404,7 @@ From the repo home directory `cappr`:
 pytest
 ```
 
-Note that a few small transformers will be downloaded to your computer.
+Note that a few small transformers and tokenizers will be downloaded to your computer.
 
 Sometimes I get paranoid about bigger code changes. So consider additionally testing
 statistical performance by running an appropriate demo in
