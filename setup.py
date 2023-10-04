@@ -25,6 +25,12 @@ requirements_huggingface = [
     "transformers>=4.31.0",  # high version b/c Llama
 ]
 
+requirements_huggingface_dev = [
+    req if not req.startswith("transformers>=") else "transformers>=4.34.0"
+    # To test Mistral in our testing workflow, we need this update
+    for req in requirements_huggingface
+]
+
 requirements_demos = [
     "datasets>=2.10.0",
     "jupyter>=1.0.0",
@@ -62,7 +68,7 @@ setup(
     extras_require={
         "hf": requirements_huggingface,
         "demos": requirements_huggingface + requirements_demos,
-        "dev": requirements_huggingface + requirements_demos + requirements_dev,
+        "dev": requirements_huggingface_dev + requirements_demos + requirements_dev,
     },
     author_email="kushdubey63@gmail.com",
     package_dir={"": "src"},

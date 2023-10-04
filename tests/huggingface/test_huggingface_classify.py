@@ -36,10 +36,10 @@ import _test
     scope="module",
     params=[
         "sshleifer/tiny-gpt2",
-        "anton-l/gpt-j-tiny-random",  # this one is quite big and slow
+        "anton-l/gpt-j-tiny-random",  # quite big and slow
         "hf-internal-testing/tiny-random-GPTNeoXModel",
         "Maykeye/TinyLLama-v0",
-        # "openaccess-ai-collective/tiny-mistral",  # uncomment w/ latest transformers
+        "openaccess-ai-collective/tiny-mistral",  # quite big and slow
     ],
 )
 def model_name(request: pytest.FixtureRequest) -> str:
