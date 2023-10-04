@@ -19,19 +19,22 @@ from cappr.utils import _batch
 logger = logging.getLogger(__name__)
 
 
-Model = Literal[  # only instruct models b/c CAPPr needs logprobs
-    "gpt-3.5-turbo-instruct",
+Model = Literal[  # Literal so that docs and IDEs easily parse it
     "babbage-002",
     "davinci-002",
+    # TODO: deprecate all of these on 01/04/2024
+    # https://platform.openai.com/docs/deprecations/instructgpt-models
     "text-ada-001",
     "text-babbage-001",
     "text-curie-001",
     "text-davinci-002",
     "text-davinci-003",
-]  # Literal so that docs and IDEs easily parse it
-# https://platform.openai.com/docs/models/model-endpoint-compatibility
-# TODO: deprecate according to
-# https://platform.openai.com/docs/deprecations/instructgpt-models
+]
+"""
+These are `v1/completions` models where `echo=True, logprobs=1` can be passed. On
+October 5, 2023, OpenAI deprecated this combination of arguments for the
+`gpt-3.5-turbo-instruct` model. So it cannot supported by CAPPr.
+"""
 
 
 @dataclass(frozen=True)
