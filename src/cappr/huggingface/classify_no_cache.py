@@ -40,7 +40,7 @@ def token_logprobs(
         input texts
     model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
-    end_of_prompt : Literal[&quot; &quot;, &quot;&quot;], optional
+    end_of_prompt : Literal[' ', ''], optional
         This string gets added to the beginning of each text. It's important to set this
         if you're using the discount feature. Otherwise, set it to "". By default " "
     show_progress_bar: bool, optional
@@ -273,8 +273,8 @@ def log_probs_conditional(
         prompt
     model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
-    end_of_prompt : Literal[&quot; &quot;, &quot;&quot;], optional
-        either a whitespace or an empty string, by default whitespace
+    end_of_prompt : Literal[' ', ''], optional
+        whitespace or empty string to join prompt and completion, by default whitespace
     show_progress_bar: bool, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
@@ -490,8 +490,8 @@ def predict_proba(
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
         `completions` is assumed to be equally likely
-    end_of_prompt : Literal[&quot; &quot;, &quot;&quot;], optional
-        either a whitespace or an empty string, by default whitespace
+    end_of_prompt : Literal[' ', ''], optional
+        whitespace or empty string to join prompt and completion, by default whitespace
     normalize : bool, optional
         whether or not to normalize completion-after-prompt probabilities into a
         probability distribution over completions. Set this to `False` if you'd like the
@@ -684,8 +684,8 @@ def predict(
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
         `completions` is assumed to be equally likely
-    end_of_prompt : Literal[&quot; &quot;, &quot;&quot;], optional
-        either a whitespace or an empty string, by default whitespace
+    end_of_prompt : Literal[' ', ''], optional
+        whitespace or empty string to join prompt and completion, by default whitespace
     discount_completions : float, optional
         experimental feature: set it to >0.0 (e.g., 1.0 may work well) if a completion
         is consistently getting over-predicted. You could instead fudge the `prior`, but

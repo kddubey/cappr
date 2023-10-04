@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Optional, Sequence
+from typing import Literal, Optional, Sequence
 
 
 from cappr.utils import _check
@@ -25,8 +25,8 @@ class Example:
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the `prompt`. By default, each completion in
         `completions` is assumed to be equally likely
-    end_of_prompt : str, optional
-        either a whitespace or an empty string, by default whitespace
+    end_of_prompt : Literal[' ', ''], optional
+        whitespace or empty string to join prompt and completion, by default whitespace
     normalize : bool, optional
         whether or not to normalize completion-after-prompt probabilities into a
         probability distribution over completions. Set this to `False` if you'd like the
@@ -56,7 +56,7 @@ class Example:
     prompt: str
     completions: Sequence[str]
     prior: Optional[Sequence[float]] = None
-    end_of_prompt: str = " "
+    end_of_prompt: Literal[" ", ""] = " "
     normalize: bool = True
 
     def __post_init__(self):
