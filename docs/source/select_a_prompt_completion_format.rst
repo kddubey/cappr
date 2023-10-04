@@ -12,14 +12,17 @@ components:
 
    {prompt}{end_of_prompt}{completion}
 
-The text you want to classify should appear in the ``prompt``. One of the classes which
-the text could belong to should appear in the ``completion``.\ [#]_
+The text you want to classify should appear in the ``prompt``. ``end_of_prompt`` is
+either a whitespace ``" "`` or empty ``""``. One of the classes which the text could
+belong to should appear in the ``completion``.\ [#]_
 
 The ``completion`` string should flow naturally after ``{prompt}{end_of_prompt}``. So
 pay close attention to the use of white spaces, newlines, and word casing. CAPPr doesn't
 do any string processing for you; **it just concatenates the three strings and sends
-it**! For each completion in your list of possible completions/choices, consider
-printing ``{prompt}{end_of_prompt}{completion}`` to ensure it passes the eye test.
+it**! It's on you to format the prompt according to the model's instruction/chat format,
+if that's applicable and beneficial. Before calling any CAPPr functions, consider
+printing ``{prompt}{end_of_prompt}{completion}`` for each completion in your list of
+possible completions/choices, and ensure each passes the eye test.
 
 And yes, you'll likely need to do a bit of prompt engineering. But if you can write a
 sentence, you can write a prompt. It's mostly a matter of trial and error. (Here's an
@@ -168,9 +171,7 @@ they've been trained to do so. One caveat is that the number of choices shouldn'
 more than five, because multiple choice question formats seen during training are
 usually limited to the letters from school exams: (A), (B), (C), (D), (E). Also, ensure
 that the system prompt/message is explicit about answering with one of the letters.
-Here's an example of the system prompt used for the `COPA demo`_:
-
-.. _COPA demo: https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb
+Here's an example of the system prompt used for the `Llama 2 COPA demo`_:
 
 .. code:: python
 
@@ -218,6 +219,24 @@ or less instruction-trained models.
              completions are short, you may end up spending much more with CAPPr.
              (:mod:`cappr.huggingface.classify` does not have to repeat the prompt
              because it caches its representation.)
+
+
+Quirks
+------
+
+Most models are sensitive to quirky differences between prompts.
+
+**Llama 2 / SentencePiece models**: when using a Concat-Class style prompt, higher
+accuracy may be achieved by abandoning the chat format. See, e.g., the `Llama 2 COPA
+demo`_. Moreover, instead of setting `end_of_prompt=" "`, consider adding this
+whitespace to the end of the ``prompt`` string and set `end_of_prompt=""`.
+
+I'll update these notes as more quirks are discovered. For now, if you don't already
+have a good feel for the model, consider experimenting with things like:
+
+- using the chat/instruction format or not
+
+- ending the ``prompt`` with ``:`` or not.
 
 
 Wrangle step-by-step completions
@@ -354,3 +373,7 @@ References
 
 .. [6] Min, Sewon, et al. "Rethinking the role of demonstrations: What makes in-context
     learning work?." arXiv preprint arXiv:2202.12837 (2022).
+
+
+.. links
+.. _Llama 2 COPA demo: https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb

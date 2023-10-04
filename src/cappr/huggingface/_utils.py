@@ -28,7 +28,36 @@ PreTrainedModelForCausalLM = TypeVar(
 def does_tokenizer_prepend_space_to_first_token(
     tokenizer: PreTrainedTokenizerBase,
 ) -> bool:
-    # TODO: should somehow check if it's not a SentencePiece tokenizer
+    """
+    Why is this? Good question. Run and read this code::
+
+        from transformers import AutoTokenizer
+
+        model_name = "Maykeye/TinyLLama-v0"
+        # After running the code below on Llama, try the following model
+        # (with BPE tokenization) instead
+        # model_name = "gpt2"
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+        # Run on the whole input text
+        print(tokenizer(["Answer: A"])["input_ids"])
+        # [[1, 19775, 31871, 308]]
+
+        # Run on a partitioned version
+        print(tokenizer(["Answer:", " A"])["input_ids"])
+        # [[1, 19775, 31871], [1, 31822, 308]]
+        # The input IDs are NOT the same as the whole input for Llama.
+        # They are the same for GPT-2.
+
+        # Run on a split but fixed version, removing the space before "A"
+        print(tokenizer(["Answer:", "A"])["input_ids"])
+        # [[1, 19775, 31871], [1, 308]]
+        # Besides the <bos> token (id 1), the input IDs are now the same
+        # as running on the whole input text for Llama.
+        # For GPT-2, they're different.
+    """
+    # TODO: should somehow check if it's not a SentencePiece tokenizer / if it's a BPE
+    # tokenizer? TBH I'm not sure how to generalize this properly.
     return not isinstance(tokenizer, (LlamaTokenizer, LlamaTokenizerFast))
 
 

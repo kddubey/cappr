@@ -262,6 +262,7 @@ def _log_probs_conditional(log_probs_conditional):
         if not isinstance(prompts, str):
             _check.nonempty_and_ordered(prompts, variable_name="prompts")
         _check.completions(completions)
+        _check.end_of_prompt(kwargs.get("end_of_prompt", " "))
         return _wrap_call_unwrap(
             str, prompts, log_probs_conditional, completions, *args, **kwargs
         )

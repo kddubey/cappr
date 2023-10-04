@@ -256,8 +256,8 @@ Current approaches, based on generating text, require the following workflow:
 4. Figure out if you need to tweak the text generation strategy, loop back to step (2).
 
 This workflow is not scalable, and not necessary. CAPPr is guaranteed to output exactly
-one choice from a given set of choices. As a result, your work is reduced to a simpler
-version of step (1).
+one choice from a given set of choices. As a result, your work is reduced to designing a
+prompt-completion string format.
 
 
 <details>
@@ -325,11 +325,11 @@ documentation](https://cappr.readthedocs.io/en/latest/computational_performance.
 
 ## How it works
 
-You input a `prompt` string and a set of candidate `completion` strings such that the
-string—
+You input a `prompt` string, a `end_of_prompt` string (a whitespace or empty) and a set
+of candidate `completion` strings such that the string—
 
 ```python
-{prompt} {completion}
+{prompt}{end_of_prompt}{completion}
 ```
 
 —is a naturally flowing thought. CAPPr picks the `completion` which is mostly likely to

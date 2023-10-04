@@ -4,7 +4,7 @@ User Guide
 Given—
 
 - a ``prompt`` string
-- an ``end_of_prompt`` string (usually just a whitespace)
+- an ``end_of_prompt`` string (a whitespace, or empty)
 - a list of possible completion strings
 - and a language model
 

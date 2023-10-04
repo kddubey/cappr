@@ -137,19 +137,20 @@ def test_set_up_model_and_tokenizer(model_and_tokenizer):
         assert getattr(tokenizer, attribute, None) == old_value
 
 
+@pytest.mark.parametrize("module", (fast, slow))
 @pytest.mark.parametrize(
     "texts",
     (["a b", "c d e"], ["a fistful", "of tokens", "for a few", "tokens more"]),
 )
 @pytest.mark.parametrize("batch_size", (2, 1))
 def test_token_logprobs(
-    texts, model_and_tokenizer, batch_size, atol, end_of_prompt=" "
+    module, texts, model_and_tokenizer, batch_size, atol, end_of_prompt=" "
 ):
     """
     Tests that the model's token log probabilities are correct by testing against an
     unbatched and carefully, manually indexed result.
     """
-    log_probs_texts_observed = fast.token_logprobs(
+    log_probs_texts_observed = module.token_logprobs(
         texts, model_and_tokenizer, batch_size=batch_size
     )
 

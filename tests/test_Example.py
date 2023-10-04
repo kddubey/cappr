@@ -49,6 +49,13 @@ def test___post_init__(prompt, completions, end_of_prompt, prior, normalize):
     with pytest.raises(TypeError, match="prompt must be a string."):
         Example(**modify_kwargs(kwargs_valid, prompt=[prompt]))
 
+    # end_of_prompt - non-" "/""
+    _msg = 'end_of_prompt must be a whitespace " " or an empty string "".'
+    with pytest.raises(TypeError, match=_msg):
+        Example(**modify_kwargs(kwargs_valid, end_of_prompt=None))
+    with pytest.raises(ValueError, match=_msg):
+        Example(**modify_kwargs(kwargs_valid, end_of_prompt=": "))
+
     # completions - empty
     with pytest.raises(ValueError, match="completions must be non-empty."):
         Example(**modify_kwargs(kwargs_valid, completions=[]))

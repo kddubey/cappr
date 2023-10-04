@@ -26,7 +26,7 @@ class Example:
         likelihoods regardless of the `prompt`. By default, each completion in
         `completions` is assumed to be equally likely
     end_of_prompt : str, optional
-        the string to tack on at the end of every prompt, by default " "
+        either a whitespace or an empty string, by default whitespace
     normalize : bool, optional
         whether or not to normalize completion-after-prompt probabilities into a
         probability distribution over completions. Set this to `False` if you'd like the
@@ -69,7 +69,6 @@ class Example:
         # Series index, not its values. To avoid such issues, just convert completions
         # to a tuple. Re-setting an attribute in a frozen object requires this call:
         object.__setattr__(self, "completions", tuple(self.completions))
-        if not isinstance(self.end_of_prompt, str):
-            raise TypeError("end_of_prompt must be a string.")
+        _check.end_of_prompt(self.end_of_prompt)
         _check.prior(self.prior, expected_length=len(self.completions))
         _check.normalize(self.completions, self.normalize)

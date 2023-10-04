@@ -4,7 +4,7 @@ failures. For example, inputting an unordered iterable will cause outputs like p
 probabilities to be meaningless.
 """
 from __future__ import annotations
-from typing import Optional, Sequence
+from typing import Literal, Optional, Sequence
 
 import numpy as np
 
@@ -14,6 +14,7 @@ def _is_reversible(object) -> bool:
     # - list, tuple, dict keys, dict values
     # - numpy array, torch Tensor
     # - pandas and polars Series
+    # - str (but other places in this package handle that)
     # Returns False for:
     # - set
     # reversed(object) is often a generator, so checking this is often cheap.
@@ -55,6 +56,17 @@ def completions(completions: Sequence[str]):
             "intend on inputting a single completion to estimate its probability, wrap "
             "it in a list or tuple and set normalize=False."
         )
+
+
+def end_of_prompt(end_of_prompt: Literal[" ", ""]):
+    """
+    Raises an error if `end_of_prompt` is not a whitespace or an empty string.
+    """
+    msg = 'end_of_prompt must be a whitespace " " or an empty string "".'
+    if not isinstance(end_of_prompt, str):
+        raise TypeError(msg)
+    if end_of_prompt not in {" ", ""}:
+        raise ValueError(msg)
 
 
 def prior(prior: Optional[Sequence[float]], expected_length: int):

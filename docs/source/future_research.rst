@@ -9,9 +9,9 @@ untapped, smaller, or undertrained models which are not good at generating text 
 instructions, but are good at estimating probabilities.
 
 A handful of experiments suggest that CAPPr squeezes more out of smaller LLMs. In the
-`OpenAI COPA demo`_, text generation using OpenAI's ``text-curie-001`` is less than 50%
-accurate, while CAPPr using the same model is 80% accurate. Similar results can be seen
-in:
+`OpenAI COPA demo`_, text generation using OpenAI's smaller model, ``text-curie-001``,
+is less than 50% accurate, while CAPPr using the same model is 80% accurate. Similar
+results can be seen in:
 
 - the 4 GB `Llama 2 COPA demo`_
 - this (minimal but surprising) 3 GB `StableLM demo`_.

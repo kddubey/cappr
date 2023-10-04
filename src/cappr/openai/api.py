@@ -19,11 +19,6 @@ from cappr.utils import _batch
 logger = logging.getLogger(__name__)
 
 
-end_of_prompt = "\n\n###\n\n"
-# https://platform.openai.com/docs/guides/fine-tuning/data-formatting
-# kinda annoying that they don't let you use special tokens
-
-
 Model = Literal[  # only instruct models b/c CAPPr needs logprobs
     "gpt-3.5-turbo-instruct",
     "babbage-002",

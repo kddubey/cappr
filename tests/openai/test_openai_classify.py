@@ -141,6 +141,13 @@ def test_log_probs_conditional(prompts, completions, model):
     with pytest.raises(TypeError, match="prompts must be an ordered collection."):
         classify.log_probs_conditional(set(prompts), completions, model)
 
+    # Test bad end_of_prompt - non-" "/""
+    with pytest.raises(
+        ValueError,
+        match='end_of_prompt must be a whitespace " " or an empty string "".',
+    ):
+        classify.log_probs_conditional(prompts, completions, model, end_of_prompt=": ")
+
     # Test bad completions - empty
     with pytest.raises(ValueError, match="completions must be non-empty."):
         classify.log_probs_conditional(prompts, [], model)

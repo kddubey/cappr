@@ -5,7 +5,7 @@ completion API.
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 """
 from __future__ import annotations
-from typing import Optional, Sequence, Union
+from typing import Literal, Optional, Sequence, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -124,7 +124,7 @@ def log_probs_conditional(
     prompts: Union[str, Sequence[str]],
     completions: Sequence[str],
     model: openai.api.Model,
-    end_of_prompt: str = " ",
+    end_of_prompt: Literal[" ", ""] = " ",
     show_progress_bar: Optional[bool] = None,
     ask_if_ok: bool = False,
     api_key: Optional[str] = None,
@@ -145,8 +145,8 @@ def log_probs_conditional(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
-    end_of_prompt : str, optional
-        the string to tack on at the end of every prompt, by default " "
+    end_of_prompt : Literal[&quot; &quot;, &quot;&quot;], optional
+        either a whitespace or an empty string, by default whitespace
     show_progress_bar: bool, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompt-completion combinations
@@ -349,7 +349,7 @@ def predict_proba(
     completions: Sequence[str],
     model: openai.api.Model,
     prior: Optional[Sequence[float]] = None,
-    end_of_prompt: str = " ",
+    end_of_prompt: Literal[" ", ""] = " ",
     normalize: bool = True,
     discount_completions: float = 0.0,
     log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
@@ -375,8 +375,8 @@ def predict_proba(
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
         `completions` is assumed to be equally likely
-    end_of_prompt : str, optional
-        the string to tack on at the end of every prompt, by default " "
+    end_of_prompt : Literal[&quot; &quot;, &quot;&quot;], optional
+        either a whitespace or an empty string, by default whitespace
     normalize : bool, optional
         whether or not to normalize completion-after-prompt probabilities into a
         probability distribution over completions. Set this to `False` if you'd like the
@@ -571,7 +571,7 @@ def predict(
     completions: Sequence[str],
     model: openai.api.Model,
     prior: Optional[Sequence[float]] = None,
-    end_of_prompt: str = " ",
+    end_of_prompt: Literal[" ", ""] = " ",
     discount_completions: float = 0.0,
     log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
     show_progress_bar: Optional[bool] = None,
@@ -596,8 +596,8 @@ def predict(
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
         `completions` is assumed to be equally likely
-    end_of_prompt : str, optional
-        the string to tack on at the end of every prompt, by default " "
+    end_of_prompt : Literal[&quot; &quot;, &quot;&quot;], optional
+        either a whitespace or an empty string, by default whitespace
     discount_completions : float, optional
         experimental feature: set it to >0.0 (e.g., 1.0 may work well) if a completion
         is consistently getting over-predicted. You could instead fudge the `prior`, but

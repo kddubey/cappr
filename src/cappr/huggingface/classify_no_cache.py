@@ -9,7 +9,7 @@ This module is a mirror of :mod:`cappr.huggingface.classify`. The difference is 
 this module **does not** precompute attention block keys and values for prompts.
 """
 from __future__ import annotations
-from typing import Mapping, Optional, Sequence, Union
+from typing import Literal, Mapping, Optional, Sequence, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -25,7 +25,7 @@ from cappr.huggingface._utils import PreTrainedModelForCausalLM
 def token_logprobs(
     texts: Sequence[str],
     model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
-    end_of_prompt: str = " ",
+    end_of_prompt: Literal[" ", ""] = " ",
     show_progress_bar: Optional[bool] = None,
     batch_size: int = 32,
     **kwargs,
@@ -40,7 +40,7 @@ def token_logprobs(
         input texts
     model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
-    end_of_prompt : str, optional
+    end_of_prompt : Literal[&quot; &quot;, &quot;&quot;], optional
         This string gets added to the beginning of each text. It's important to set this
         if you're using the discount feature. Otherwise, set it to "". By default " "
     show_progress_bar: bool, optional
@@ -196,7 +196,7 @@ def _logits_completions_given_prompts(
     tokenizer: PreTrainedTokenizerBase,
     prompts: Sequence[str],
     completions: Sequence[str],
-    end_of_prompt: str = " ",
+    end_of_prompt: Literal[" ", ""] = " ",
 ):
     if isinstance(prompts, str):
         raise TypeError("prompts must be a sequence of strings, not a string itself.")
@@ -255,7 +255,7 @@ def log_probs_conditional(
     prompts: Union[str, Sequence[str]],
     completions: Sequence[str],
     model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
-    end_of_prompt: str = " ",
+    end_of_prompt: Literal[" ", ""] = " ",
     show_progress_bar: Optional[bool] = None,
     batch_size: int = 32,
     **kwargs,
@@ -273,8 +273,8 @@ def log_probs_conditional(
         prompt
     model_and_tokenizer : tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
-    end_of_prompt : str, optional
-        the string to tack on at the end of every prompt, by default " "
+    end_of_prompt : Literal[&quot; &quot;, &quot;&quot;], optional
+        either a whitespace or an empty string, by default whitespace
     show_progress_bar: bool, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
@@ -467,7 +467,7 @@ def predict_proba(
     completions: Sequence[str],
     model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     prior: Optional[Sequence[float]] = None,
-    end_of_prompt: str = " ",
+    end_of_prompt: Literal[" ", ""] = " ",
     normalize: bool = True,
     discount_completions: float = 0.0,
     log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
@@ -490,8 +490,8 @@ def predict_proba(
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
         `completions` is assumed to be equally likely
-    end_of_prompt : str, optional
-        the string to tack on at the end of every prompt, by default " "
+    end_of_prompt : Literal[&quot; &quot;, &quot;&quot;], optional
+        either a whitespace or an empty string, by default whitespace
     normalize : bool, optional
         whether or not to normalize completion-after-prompt probabilities into a
         probability distribution over completions. Set this to `False` if you'd like the
@@ -662,7 +662,7 @@ def predict(
     completions: Sequence[str],
     model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
     prior: Optional[Sequence[float]] = None,
-    end_of_prompt: str = " ",
+    end_of_prompt: Literal[" ", ""] = " ",
     discount_completions: float = 0.0,
     log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
     show_progress_bar: Optional[bool] = None,
@@ -684,8 +684,8 @@ def predict(
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
         `completions` is assumed to be equally likely
-    end_of_prompt : str, optional
-        the string to tack on at the end of every prompt, by default " "
+    end_of_prompt : Literal[&quot; &quot;, &quot;&quot;], optional
+        either a whitespace or an empty string, by default whitespace
     discount_completions : float, optional
         experimental feature: set it to >0.0 (e.g., 1.0 may work well) if a completion
         is consistently getting over-predicted. You could instead fudge the `prior`, but
