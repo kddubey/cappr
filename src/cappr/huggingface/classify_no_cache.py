@@ -6,8 +6,7 @@ Perform prompt-completion classification using a model which can be loaded via
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 
 This module is a mirror of :mod:`cappr.huggingface.classify`. The difference is that
-this module **does not** precompute attention block keys and values for prompts. As a
-result, its throughput is lower.
+this module **does not** precompute attention block keys and values for prompts.
 """
 from __future__ import annotations
 from typing import Mapping, Optional, Sequence, Union

@@ -37,9 +37,9 @@ import _test
     params=[
         "sshleifer/tiny-gpt2",
         "anton-l/gpt-j-tiny-random",  # this one is quite big and slow
-        "Maykeye/TinyLLama-v0",
-        # "openaccess-ai-collective/tiny-mistral",  # waiting for transformers==4.33.4
         "hf-internal-testing/tiny-random-GPTNeoXModel",
+        "Maykeye/TinyLLama-v0",
+        # "openaccess-ai-collective/tiny-mistral",  # uncomment w/ latest transformers
     ],
 )
 def model_name(request: pytest.FixtureRequest) -> str:

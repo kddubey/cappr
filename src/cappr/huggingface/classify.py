@@ -6,8 +6,7 @@ Perform prompt-completion classification using a model which can be loaded via
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 
 In the implementation, attention block keys and values for prompts are cached and shared
-across completions. If you're running out of RAM even with ``batch_size=1``, try using
-:mod:`cappr.huggingface.classify_no_cache` with ``batch_size=1``.
+across completions.
 
 .. warning:: This module doesn't work with ``transformers.BartForCausalLM``, among
              others probably. Consider using :mod:`cappr.huggingface.classify_no_cache`.
@@ -411,7 +410,7 @@ def _logits_completions_given_prompts(
         end_of_prompt = ""
     else:
         if end_of_prompt != " ":
-            raise ValueError("end_of_prompt must be ' ' for now. Sorry!")
+            raise ValueError("end_of_prompt must be ' ' for now.")
     completions = [end_of_prompt + completion.lstrip() for completion in completions]
     # TODO: figure out how to do this generally, not just for ' ' end_of_prompt
     return _blessed_helper(
@@ -457,7 +456,7 @@ def _logits_completions_given_prompts_examples(
         end_of_prompt = ""
     else:
         if any([example.end_of_prompt != " " for example in examples]):
-            raise ValueError("Every example's end_of_prompt must be ' '")
+            raise ValueError("Every example's end_of_prompt must be ' ' for now.")
         end_of_prompt = " "
 
     prompts = [example.prompt for example in examples]

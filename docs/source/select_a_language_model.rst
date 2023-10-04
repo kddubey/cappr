@@ -58,18 +58,20 @@ Which CAPPr HuggingFace module should I use?
 There are two CAPPr HuggingFace modules. In general, stick to
 :mod:`cappr.huggingface.classify`.
 
-:mod:`cappr.huggingface.classify` is `much faster`_ than
-:mod:`cappr.huggingface.classify_no_cache` when there are a lot of completions and
-you're running a model on batches of prompts. A downside is that the current
-implementation takes more RAM, because I rather crudely implemented batching. I'll fix
-that one day.
+:mod:`cappr.huggingface.classify` is `faster
+<https://cappr.readthedocs.io/en/latest/computational_performance.html>`_ than
+:mod:`cappr.huggingface.classify_no_cache`, especially when there are a lot of
+completions and you're running a model on batches of prompts.
 
-.. _`much faster`: https://cappr.readthedocs.io/en/latest/computational_performance.html
+:mod:`cappr.huggingface.classify_no_cache` may happen to be compatible with a slightly
+broader class of causal/autoregressive language models. Here, the model is only assumed
+to input token/input IDs + attention mask, and then output logits for each input ID.
+Furthermore, in the current implementation, this module may be a bit faster when
+``batch_size=1``.
 
-To minimize RAM, use :mod:`cappr.huggingface.classify_no_cache` with ``batch_size=1``.
-This module may also may happen to be compatible with a slightly broader class of
-causal/autoregressive language models. Here, the model is only assumed to input
-token/input IDs + attention mask, and then output logits for each input ID.
+.. warning:: For completions which aren't single tokens, the current HuggingFace
+   implementation theoretically takes more RAM than it should, even when
+   ``batch_size=1``. It doesn't seem bad, but I'll measure and fix it soon.
 
 
 Examples
