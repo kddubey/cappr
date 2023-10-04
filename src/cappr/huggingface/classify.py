@@ -406,12 +406,13 @@ def _logits_completions_given_prompts(
     2. `encodings`: `BatchEncoding` containing the input IDs, attention mask,
     and position offsets.
     """
-    if not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer):
-        end_of_prompt = ""
-    else:
-        if end_of_prompt != " ":
-            raise ValueError("end_of_prompt must be ' ' for now.")
-    completions = [end_of_prompt + completion.lstrip() for completion in completions]
+    # if not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer):
+    #     end_of_prompt = ""
+    # else:
+    #     if end_of_prompt != " ":
+    #         raise ValueError("end_of_prompt must be ' ' for now.")
+    # completions = [end_of_prompt + completion.lstrip() for completion in completions]
+    completions = [end_of_prompt + completion for completion in completions]
     # TODO: figure out how to do this generally, not just for ' ' end_of_prompt
     return _blessed_helper(
         model,
@@ -452,19 +453,24 @@ def _logits_completions_given_prompts_examples(
     2. `encodings`: `BatchEncoding` containing the input IDs, attention mask,
     and position offsets.
     """
-    if not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer):
-        end_of_prompt = ""
-    else:
-        if any([example.end_of_prompt != " " for example in examples]):
-            raise ValueError("Every example's end_of_prompt must be ' ' for now.")
-        end_of_prompt = " "
+    # if not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer):
+    #     end_of_prompt = ""
+    # else:
+    #     if any([example.end_of_prompt != " " for example in examples]):
+    #         raise ValueError("Every example's end_of_prompt must be ' ' for now.")
+    #     end_of_prompt = " "
 
     prompts = [example.prompt for example in examples]
     completions = [
-        end_of_prompt + completion.lstrip()
+        example.end_of_prompt + completion
         for example in examples
         for completion in example.completions
     ]
+    # completions = [
+    #     end_of_prompt + completion.lstrip()
+    #     for example in examples
+    #     for completion in example.completions
+    # ]
     # TODO: figure out how to do this generally, not just for ' ' end_of_prompt
     num_completions_per_prompt = [len(example.completions) for example in examples]
     return _blessed_helper(
