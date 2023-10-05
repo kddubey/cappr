@@ -470,7 +470,7 @@ def predict_proba(
     end_of_prompt: Literal[" ", ""] = " ",
     normalize: bool = True,
     discount_completions: float = 0.0,
-    log_marginal_probs_completions: Sequence[Sequence[float]] | None = None,
+    log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
     show_progress_bar: bool | None = None,
     batch_size: int = 32,
 ) -> npt.NDArray[np.floating]:
@@ -502,7 +502,7 @@ def predict_proba(
         consistently getting too high predicted probabilities. You could instead fudge
         the `prior`, but this hyperparameter may be easier to tune than the `prior`. By
         default 0.0
-    log_marginal_probs_completions : Sequence[Sequence[float]] | None, optional
+    log_marg_probs_completions : Sequence[Sequence[float]] | None, optional
         experimental feature: pre-computed log probabilities of completion tokens
         conditional on previous completion tokens (not prompt tokens). Only used if `not
         discount_completions`. Pre-compute them by passing `completions`, `model`, and
@@ -665,7 +665,7 @@ def predict(
     prior: Sequence[float] | None = None,
     end_of_prompt: Literal[" ", ""] = " ",
     discount_completions: float = 0.0,
-    log_marginal_probs_completions: Sequence[Sequence[float]] | None = None,
+    log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
     show_progress_bar: bool | None = None,
     batch_size: int = 32,
 ) -> str | list[str]:
@@ -691,7 +691,7 @@ def predict(
         experimental feature: set it to >0.0 (e.g., 1.0 may work well) if a completion
         is consistently getting over-predicted. You could instead fudge the `prior`, but
         this hyperparameter may be easier to tune than the `prior`. By default 0.0
-    log_marginal_probs_completions : Sequence[Sequence[float]] | None, optional
+    log_marg_probs_completions : Sequence[Sequence[float]] | None, optional
         experimental feature: pre-computed log probabilities of completion tokens
         conditional on previous completion tokens (not prompt tokens). Only used if `not
         discount_completions`. Pre-compute them by passing `completions`, `model`, and

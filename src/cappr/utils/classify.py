@@ -299,7 +299,7 @@ def _discount(
     is_single_input: bool,
     *model_args,  # rest are kwarg-only, and must come from the og function's kwargs
     discount_completions: float,
-    log_marginal_probs_completions: Sequence[Sequence[float]] | None = None,
+    log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
     **kwargs,
 ) -> list[npt.NDArray[np.floating]] | list[list[npt.NDArray[np.floating]]]:
     """
@@ -311,31 +311,31 @@ def _discount(
         return log_probs_completions
 
     # log Pr(completion token i | completion tokens :i) for each completion
-    if log_marginal_probs_completions is None:
-        log_marginal_probs_completions = token_logprobs_func(
+    if log_marg_probs_completions is None:
+        log_marg_probs_completions = token_logprobs_func(
             completions, *model_args, **kwargs
         )
-    for x in log_marginal_probs_completions:
+    for x in log_marg_probs_completions:
         if x[0] is None:
             x[0] = 0  # no discount for the first token
 
     # pre-multiply by the discount amount
-    log_marginal_probs_completions_discounted = [
+    log_marg_probs_completions_discounted = [
         discount_completions * np.array(log_marginal_probs_completion)
-        for log_marginal_probs_completion in log_marginal_probs_completions
+        for log_marginal_probs_completion in log_marg_probs_completions
     ]
 
     # add discount
     if is_single_input:
         return [
             np.array(log_probs_completions[completion_idx])
-            + log_marginal_probs_completions_discounted[completion_idx]
+            + log_marg_probs_completions_discounted[completion_idx]
             for completion_idx in range(len(completions))
         ]
     return [
         [
             np.array(log_probs_prompt_completions[completion_idx])
-            + log_marginal_probs_completions_discounted[completion_idx]
+            + log_marg_probs_completions_discounted[completion_idx]
             for completion_idx in range(len(completions))
         ]
         for log_probs_prompt_completions in log_probs_completions
@@ -363,12 +363,10 @@ def _predict_proba(log_probs_conditional):
 
         # Check inputs for discount feature
         discount_completions = kwargs.get("discount_completions", 0)
-        log_marginal_probs_completions = kwargs.get(
-            "log_marginal_probs_completions", None
-        )
-        if not discount_completions and (log_marginal_probs_completions is not None):
+        log_marg_probs_completions = kwargs.get("log_marg_probs_completions", None)
+        if not discount_completions and (log_marg_probs_completions is not None):
             raise ValueError(
-                "log_marginal_probs_completions is set, but they will not be used "
+                "log_marg_probs_completions is set, but they will not be used "
                 "because discount_completions was not set."
             )
 
