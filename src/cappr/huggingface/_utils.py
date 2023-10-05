@@ -19,9 +19,7 @@ from transformers import (
 # AutoModelForCausalLM is not actually a superclass for pretrained causal/autoregressive
 # LMs. Its from_pretrained method is a loading utility which always returns a
 # PreTrainedModel. Let's create a type for them to make the documentation clearer.
-PreTrainedModelForCausalLM = TypeVar(
-    "PreTrainedModelForCausalLM", bound=PreTrainedModel
-)
+ModelForCausalLM = TypeVar("ModelForCausalLM", bound=PreTrainedModel)
 "A model loaded via `transformers.AutoModelForCausalLM.from_pretrained`"
 
 
@@ -69,7 +67,7 @@ class _model_eval_mode:
     Set the model in eval mode. CAPPr only makes sense as an inference computation.
     """
 
-    def __init__(self, model: PreTrainedModelForCausalLM):
+    def __init__(self, model: ModelForCausalLM):
         self.model = model
         self.training = model.training
 
@@ -154,7 +152,7 @@ _DEFAULT_CONTEXTS_TOKENIZER = (
 
 @contextmanager
 def set_up_model_and_tokenizer(
-    model_and_tokenizer: tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase],
+    model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     contexts_tokenizer: Collection = _DEFAULT_CONTEXTS_MODEL,
     contexts_model: Collection = _DEFAULT_CONTEXTS_TOKENIZER,
 ):
@@ -199,7 +197,7 @@ def disable_add_bos_token(tokenizer: PreTrainedTokenizerBase):
 ########################################################################################
 def logits_texts(
     texts: Sequence[str],
-    model: PreTrainedModelForCausalLM,
+    model: ModelForCausalLM,
     tokenizer: PreTrainedTokenizerBase,
 ) -> tuple[torch.Tensor, BatchEncoding]:
     """

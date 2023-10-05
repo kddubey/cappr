@@ -21,7 +21,7 @@ from cappr import Example as Ex
 from cappr.huggingface import classify as fast
 from cappr.huggingface import classify_no_cache as slow
 from cappr import huggingface as hf
-from cappr.huggingface._utils import PreTrainedModelForCausalLM
+from cappr.huggingface._utils import ModelForCausalLM
 
 # sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
@@ -48,21 +48,29 @@ def model_name(request: pytest.FixtureRequest) -> str:
 
 
 @pytest.fixture(scope="module")
-def model(model_name: str) -> PreTrainedModelForCausalLM:
-    model: PreTrainedModelForCausalLM = AutoModelForCausalLM.from_pretrained(model_name)
+def model(model_name: str) -> ModelForCausalLM:
+    model: ModelForCausalLM = AutoModelForCausalLM.from_pretrained(model_name)
     contexts_model = [context(model) for context in hf._utils._DEFAULT_CONTEXTS_MODEL]
     for context in contexts_model:
         context.__enter__()
     return model
 
 
-@pytest.fixture(scope="module")
-def tokenizer(model_name: str) -> PreTrainedTokenizerBase:
+def _load_tokenizer(model_name: str) -> PreTrainedTokenizerBase:
+    # hf-internal-testing/tiny-random-MistralForCausalLM's tokenizer_config.json is bad
+    # b/c its tokenizer_file field is hard coded to some specific machine.
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_name)
     except:
+        # tokenizer_file not found b/c it was hard-coded. Find it locally.
         local_path = hf_hub.try_to_load_from_cache(model_name, "tokenizer.json")
         tokenizer = AutoTokenizer.from_pretrained(model_name, tokenizer_file=local_path)
+    return tokenizer
+
+
+@pytest.fixture(scope="module")
+def tokenizer(model_name: str) -> PreTrainedTokenizerBase:
+    tokenizer = _load_tokenizer(model_name)
     contexts_tokenizer = [
         context(tokenizer) for context in hf._utils._DEFAULT_CONTEXTS_TOKENIZER
     ]
@@ -74,17 +82,13 @@ def tokenizer(model_name: str) -> PreTrainedTokenizerBase:
 @pytest.fixture(scope="module")
 def model_and_tokenizer(
     model_name: str,
-) -> tuple[PreTrainedModelForCausalLM, PreTrainedTokenizerBase]:
+) -> tuple[ModelForCausalLM, PreTrainedTokenizerBase]:
     # This input is directly from a user, so we can't assume the model and tokenizer are
     # set up correctly. For testing, that means we shouldn't just return the fixtures:
     # return model, tokenizer
     # Instead, load them from scratch like a user would:
-    model: PreTrainedModelForCausalLM = AutoModelForCausalLM.from_pretrained(model_name)
-    try:
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-    except:
-        local_path = hf_hub.try_to_load_from_cache(model_name, "tokenizer.json")
-        tokenizer = AutoTokenizer.from_pretrained(model_name, tokenizer_file=local_path)
+    model: ModelForCausalLM = AutoModelForCausalLM.from_pretrained(model_name)
+    tokenizer = _load_tokenizer(model_name)
     return model, tokenizer
 
 
@@ -111,7 +115,7 @@ def test_set_up_model_and_tokenizer(model_and_tokenizer):
     """
     model, tokenizer = model_and_tokenizer
     # Not sure why type inference isn't catching these
-    model: PreTrainedModelForCausalLM
+    model: ModelForCausalLM
     tokenizer: PreTrainedTokenizerBase
 
     # Grab old attribute values.
