@@ -223,8 +223,8 @@ def logits_texts(
 def logits_to_log_probs(
     logits: torch.Tensor,
     input_ids: torch.Tensor,
-    input_ids_start_idx: int = None,
-    logits_end_idx: int = None,
+    input_ids_start_idx: int | None = None,
+    logits_end_idx: int | None = None,
 ):
     """
     Log-softmax and then slice out input IDs to get token log-probabilities.

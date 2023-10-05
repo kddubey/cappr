@@ -5,7 +5,7 @@ completions.
 from __future__ import annotations
 from functools import wraps
 from inspect import getmodule
-from typing import Callable, Optional, Sequence, Union
+from typing import Callable, Sequence
 import warnings
 
 import numpy as np
@@ -121,9 +121,9 @@ def _sequence_depth(sequence) -> int:
 
 
 def agg_log_probs(
-    log_probs: Union[Sequence[Sequence[float]], Sequence[Sequence[Sequence[float]]]],
+    log_probs: Sequence[Sequence[float]] | Sequence[Sequence[Sequence[float]]],
     func: Callable[[Sequence[float]], float] = np.mean,
-) -> Union[list[float], list[list[float]]]:
+) -> list[float] | list[list[float]]:
     """
     Aggregate token log-probabilities along the last dimension into probabilities.
 
@@ -175,8 +175,8 @@ def agg_log_probs(
 def posterior_prob(
     likelihoods: npt.ArrayLike[float],
     axis: int,
-    prior: Optional[Union[Sequence[float], npt.ArrayLike[float]]] = None,
-    normalize: Union[bool, Sequence[bool]] = True,
+    prior: Sequence[float] | None = None,
+    normalize: bool | Sequence[bool] = True,
     check_prior: bool = True,
 ) -> npt.NDArray[np.floating]:
     """
@@ -189,9 +189,10 @@ def posterior_prob(
     axis : int
         the axis along which the probability distribution should be defined, e.g.,
         `axis=0` if `likelihoods` is 1-D
-    prior : Optional[Union[Sequence[float], npt.ArrayLike[float]]], optional
-        a probability distribution over the `axis` of `likelihoods`, by default None
-    normalize : Union[bool, Sequence[bool]], optional
+    prior : Sequence[float] | None, optional
+        a probability distribution over the `axis` of `likelihoods`. By default, a
+        uniform prior is used
+    normalize : bool | Sequence[bool], optional
         whether or not to return a normalized probability distribtution for each row, by
         default True (normalize all rows)
     check_prior : bool, optional
@@ -257,7 +258,7 @@ def _log_probs_conditional(log_probs_conditional):
 
     @wraps(log_probs_conditional)
     def wrapper(
-        prompts: Union[str, Sequence[str]], completions: Sequence[str], *args, **kwargs
+        prompts: str | Sequence[str], completions: Sequence[str], *args, **kwargs
     ) -> list[list[list[float]]]:
         if not isinstance(prompts, str):
             _check.nonempty_and_ordered(prompts, variable_name="prompts")
@@ -280,7 +281,7 @@ def _log_probs_conditional_examples(log_probs_conditional_examples):
 
     @wraps(log_probs_conditional_examples)
     def wrapper(
-        examples: Union[Example, Sequence[Example]], *args, **kwargs
+        examples: Example | Sequence[Example], *args, **kwargs
     ) -> list[list[list[float]]]:
         if not isinstance(examples, Example):
             _check.nonempty_and_ordered(examples, variable_name="examples")
@@ -294,13 +295,13 @@ def _log_probs_conditional_examples(log_probs_conditional_examples):
 def _discount(
     token_logprobs_func,
     completions: Sequence[str],
-    log_probs_completions: Union[list[list[float]], list[list[list[float]]]],
+    log_probs_completions: list[list[float]] | list[list[list[float]]],
     is_single_input: bool,
     *model_args,  # rest are kwarg-only, and must come from the og function's kwargs
     discount_completions: float,
-    log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
+    log_marginal_probs_completions: Sequence[Sequence[float]] | None = None,
     **kwargs,
-) -> list[list[list[float]]]:
+) -> list[npt.NDArray[np.floating]] | list[list[npt.NDArray[np.floating]]]:
     """
     Highly experimental feature: discount completion given prompt probabilities by
     completion probabilities. Useful when particular completions are getting
@@ -349,7 +350,7 @@ def _predict_proba(log_probs_conditional):
 
     @wraps(log_probs_conditional)
     def wrapper(
-        prompts: Union[str, Sequence[str]], completions: Sequence[str], *args, **kwargs
+        prompts: str | Sequence[str], completions: Sequence[str], *args, **kwargs
     ) -> npt.NDArray[np.floating]:
         # Check inputs before making expensive model calls
         # Check the prior
@@ -407,8 +408,8 @@ def _predict_proba_examples(log_probs_conditional_examples):
 
     @wraps(log_probs_conditional_examples)
     def wrapper(
-        examples: Union[Example, Sequence[Example]], *args, **kwargs
-    ) -> Union[npt.NDArray[np.floating], list[npt.NDArray[np.floating]]]:
+        examples: Example | Sequence[Example], *args, **kwargs
+    ) -> npt.NDArray[np.floating] | list[npt.NDArray[np.floating]]:
         log_probs_completions = log_probs_conditional_examples(
             examples, *args, **kwargs
         )
@@ -470,7 +471,7 @@ def _predict(predict_proba_func):
 
     @wraps(predict_proba_func)
     def wrapper(
-        prompts: Union[str, Sequence[str]], completions: Sequence[str], *args, **kwargs
+        prompts: str | Sequence[str], completions: Sequence[str], *args, **kwargs
     ) -> list[str]:
         if len(completions) == 1:
             raise ValueError(
@@ -505,11 +506,9 @@ def _predict_examples(predict_proba_examples_func):
     from cappr import Example  # done locally to avoid circular import lol
 
     @wraps(predict_proba_examples_func)
-    def wrapper(
-        examples: Union[Example, Sequence[Example]], *args, **kwargs
-    ) -> list[str]:
-        pred_probs: Union[
-            npt.NDArray[np.floating], list[npt.NDArray[np.floating]]
+    def wrapper(examples: Example | Sequence[Example], *args, **kwargs) -> list[str]:
+        pred_probs: npt.NDArray[np.floating] | list[
+            npt.NDArray[np.floating]
         ] = predict_proba_examples_func(examples, *args, **kwargs)
         if isinstance(examples, Example):
             # User convenience: examples is a singleton

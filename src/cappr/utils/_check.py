@@ -4,7 +4,7 @@ failures. For example, inputting an unordered iterable will cause outputs like p
 probabilities to be meaningless.
 """
 from __future__ import annotations
-from typing import Literal, Optional, Sequence
+from typing import Literal, Sequence
 
 import numpy as np
 
@@ -27,6 +27,9 @@ def _is_reversible(object) -> bool:
 
 
 def ordered(object: Sequence, variable_name: str):
+    """
+    Raises a `TypeError` is `object` is not a sequence.
+    """
     # This check isn't perfect, but it works well enough.
     if not _is_reversible(object):
         raise TypeError(
@@ -69,7 +72,7 @@ def end_of_prompt(end_of_prompt: Literal[" ", ""]):
         raise ValueError(msg)
 
 
-def prior(prior: Optional[Sequence[float]], expected_length: int):
+def prior(prior: Sequence[float] | None, expected_length: int):
     """
     Raises an error if `prior is not None` and isn't a probability distribution over
     `expected_length` categories.

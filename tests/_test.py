@@ -3,7 +3,7 @@ Helper functions to test that `predict_proba` and `predict` function outputs hav
 correct form.
 """
 from __future__ import annotations
-from typing import Any, Callable, Sequence, Union
+from typing import Any, Callable, Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -13,9 +13,9 @@ from cappr import Example
 
 def predict_proba(
     predict_proba_func: Callable[
-        [Union[str, Sequence[str]], Sequence[str], Any], npt.NDArray[np.floating]
+        [str | Sequence[str], Sequence[str], Any], npt.NDArray[np.floating]
     ],
-    prompts: Union[str, Sequence[str]],
+    prompts: str | Sequence[str],
     completions: Sequence[str],
     *args,
     **kwargs,
@@ -55,10 +55,10 @@ def predict_proba(
 
 def predict_proba_examples(
     predict_proba_examples_func: Callable[
-        [Union[Example, Sequence[Example]], Any],
-        Union[npt.NDArray[np.floating], list[npt.NDArray[np.floating]]],
+        [Example | Sequence[Example], Any],
+        npt.NDArray[np.floating] | list[npt.NDArray[np.floating]],
     ],
-    examples: Union[Example, Sequence[Example]],
+    examples: Example | Sequence[Example],
     *args,
     **kwargs,
 ):
@@ -101,10 +101,8 @@ def predict_proba_examples(
 
 
 def predict(
-    predict_func: Callable[
-        [Union[str, Sequence[str]], Sequence[str], Any], Union[str, list[str]]
-    ],
-    prompts: Union[str, Sequence[str]],
+    predict_func: Callable[[str | Sequence[str], Sequence[str], Any], str | list[str]],
+    prompts: str | Sequence[str],
     completions: Sequence[str],
     *args,
     **kwargs,
@@ -127,9 +125,9 @@ def predict(
 
 def predict_examples(
     predict_examples_func: Callable[
-        [Union[Example, Sequence[Example]], Any], Union[str, list[str]]
+        [Example | Sequence[Example], Any], str | list[str]
     ],
-    examples: Union[Example, Sequence[Example]],
+    examples: Example | Sequence[Example],
     *args,
     **kwargs,
 ):

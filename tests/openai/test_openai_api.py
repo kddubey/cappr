@@ -2,7 +2,6 @@
 Unit tests `cappr.openai.api`. Currently pretty barebones.
 """
 from __future__ import annotations
-from typing import Optional
 import os
 
 import openai
@@ -72,9 +71,9 @@ def test__openai_api_call_is_ok(monkeypatch: pytest.MonkeyPatch):
 @pytest.mark.parametrize("environmt_var_api_key", ("sk-widward", None))
 def test__set_openai_api_key(
     monkeypatch: pytest.MonkeyPatch,
-    user_inputted_api_key: Optional[str],
-    openai_module_api_key: Optional[str],
-    environmt_var_api_key: Optional[str],
+    user_inputted_api_key: str | None,
+    openai_module_api_key: str | None,
+    environmt_var_api_key: str | None,
 ):
     monkeypatch.setattr("openai.api_key", openai_module_api_key)
     if environmt_var_api_key is None:

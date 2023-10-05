@@ -7,13 +7,13 @@ from dataclasses import dataclass
 import logging
 import os
 import time
-from typing import Any, Callable, Literal, Mapping, Optional, Sequence, Union
+from typing import Any, Callable, Literal, Mapping, Sequence
 
 import openai
 import tiktoken
 from tqdm.auto import tqdm
 
-from cappr.utils import _batch
+from cappr.utils import _batch, _check
 
 
 logger = logging.getLogger(__name__)
@@ -50,8 +50,8 @@ class _DollarCostPer1kTokens:
         dollar cost for generating 1k completion tokens. `None` means cost is unknown.
     """
 
-    prompt: Optional[float]
-    completion: Optional[float]
+    prompt: float | None
+    completion: float | None
 
 
 # https://openai.com/api/pricing/
@@ -88,9 +88,9 @@ def _openai_api_call_is_ok(
     texts: list[str],
     model: Model,
     max_tokens: int = 0,
-    cost_per_1k_tokens_prompt: Optional[float] = None,
-    cost_per_1k_tokens_completion: Optional[float] = None,
-) -> tuple[int, int, Union[str, int]]:
+    cost_per_1k_tokens_prompt: float | None = None,
+    cost_per_1k_tokens_completion: float | None = None,
+) -> tuple[int, int, int | str]:
     """
     After displaying the cost (usually an upper bound) of hitting the OpenAI API
     text completion endpoint, prompt the user to manually input ``y`` or ``n`` to
@@ -104,14 +104,16 @@ def _openai_api_call_is_ok(
         name of the OpenAI API text completion model
     max_tokens : int, optional
         maximum number of tokens to generate, by default 0
-    cost_per_1k_tokens_prompt : Optional[float], optional
+    cost_per_1k_tokens_prompt : float | None, optional
         OpenAI API dollar cost for processing 1k prompt tokens. If unset,
         `cappr.openai.api._MODEL_TO_COST_PER_1K_TOKENS[model]["prompt"]` is used. If
-        it's still unknown, the cost will be displayed as `unknown`. By default, None
-    cost_per_1k_tokens_completion : Optional[float], optional
+        it's still unknown, the cost will be displayed as `unknown`. By default, the
+        cost is unknown
+    cost_per_1k_tokens_completion : float | None, optional
         OpenAI API dollar cost for processing 1k completion tokens. If unset,
         `cappr.openai.api._MODEL_TO_COST_PER_1K_TOKENS[model]["completion"]` is used. If
-        it's still unknown, the cost will be displayed as `unknown`. By default, None
+        it's still unknown, the cost will be displayed as `unknown`. By default, the
+        cost is unknown
 
     Returns
     -------
@@ -224,7 +226,7 @@ def openai_method_retry(
 
 
 @contextmanager
-def _set_openai_api_key(api_key: Optional[str] = None):
+def _set_openai_api_key(api_key: str | None = None):
     """
     In this context, the OpenAI module attribute ``openai.api_key`` is set to whatever
     is closest in scope.
@@ -243,10 +245,10 @@ def _set_openai_api_key(api_key: Optional[str] = None):
 def gpt_complete(
     texts: Sequence[str],
     model: Model,
-    show_progress_bar: Optional[bool] = None,
+    show_progress_bar: bool | None = None,
     progress_bar_desc: str = "log-probs",
     ask_if_ok: bool = False,
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
     max_tokens: int = 0,
     **openai_completion_kwargs,
 ) -> list[Mapping[str, Any]]:
@@ -268,7 +270,7 @@ def gpt_complete(
         these are passed as the `prompt` argument in a text completion request
     model : Model
         which text completion model to use
-    show_progress_bar: bool, optional
+    show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
     progress_bar_desc: str, optional
@@ -277,7 +279,7 @@ def gpt_complete(
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
-    api_key : str, optional
+    api_key : str | None, optional
         your OpenAI API key. By default, it's set to the OpenAI's module attribute
         ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
     max_tokens : int, optional
@@ -291,6 +293,7 @@ def gpt_complete(
         list with the same length as `texts`. Each element is the ``choices`` mapping
         which the OpenAI text completion endpoint returns.
     """
+    _check.ordered(texts, variable_name="texts")
     with _set_openai_api_key(api_key):
         _batch_size = 20  # max that the API can currently handle
         if isinstance(texts, str):
@@ -320,17 +323,18 @@ def gpt_complete(
 def gpt_chat_complete(
     texts: Sequence[str],
     model: str = "gpt-3.5-turbo",
-    show_progress_bar: Optional[bool] = None,
+    show_progress_bar: bool | None = None,
     ask_if_ok: bool = False,
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
     system_msg: str = "You are an assistant which classifies text.",
     max_tokens: int = 5,
     temperature: float = 0,
     **openai_chat_kwargs,
 ) -> list[Mapping[str, Any]]:
     """
-    Wrapper around the OpenAI chat completion endpoint which performs text
-    classification 1-by-1. It retries requests that fail and displays a progress bar.
+    Wrapper around the OpenAI chat completion endpoint which sends `texts` 1-by-1 as
+    individual chat messages in a chat. It retries requests that fail and displays a
+    progress bar.
 
     OpenAI API chat completion reference:
     https://platform.openai.com/docs/api-reference/chat
@@ -347,20 +351,20 @@ def gpt_chat_complete(
         ``{"role": "user", "content": text}``
     model : str, optional
         one of the chat model names, by default "gpt-3.5-turbo"
-    show_progress_bar: bool, optional
+    show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
-    api_key : str, optional
+    api_key : str | None, optional
         your OpenAI API key. By default, it's set to the OpenAI's module attribute
         ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
     system_msg : str, optional
-        text which is passed in 1-by-1 immediately before every piece of
-        user content in `texts` as ``{"role": "system", "content": system_msg}``. By
-        default ``"You are an assistant which classifies text."``
+        text which is passed in 1-by-1 immediately before every piece of user content in
+        `texts` as ``{"role": "system", "content": system_msg}``. By default ``"You are
+        an assistant which classifies text."``
     max_tokens : int, optional
         maximum number of tokens to generate, by default 5
     temperature : float, optional
@@ -374,6 +378,7 @@ def gpt_chat_complete(
         (flat) list of the JSONs which the chat completion endpoint returns. More
         specifically, it's a list of ``openai.openai_object.OpenAIObject``
     """
+    _check.ordered(texts, variable_name="texts")
     # TODO: batch, if possible
     with _set_openai_api_key(api_key):
         if isinstance(texts, str):

@@ -12,7 +12,7 @@ across completions.
              others probably. Consider using :mod:`cappr.huggingface.classify_no_cache`.
 """
 from __future__ import annotations
-from typing import Literal, Mapping, Optional, Sequence, Union
+from typing import Literal, Mapping, Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -31,7 +31,7 @@ def token_logprobs(
     texts: Sequence[str],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     end_of_prompt: Literal[" ", ""] = " ",
-    show_progress_bar: Optional[bool] = None,
+    show_progress_bar: bool | None = None,
     batch_size: int = 32,
     **kwargs,
 ) -> list[list[float]]:
@@ -48,7 +48,7 @@ def token_logprobs(
     end_of_prompt : Literal[' ', ''], optional
         This string gets added to the beginning of each text. It's important to set this
         if you're using the discount feature. Otherwise, set it to "". By default " "
-    show_progress_bar: bool, optional
+    show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
     batch_size : int, optional
@@ -119,7 +119,7 @@ def _keys_values_prompts(
     model: ModelForCausalLM,
     tokenizer: PreTrainedTokenizerBase,
     prompts: Sequence[str],
-    num_repeats_per_prompt: Union[int, Sequence[int]],
+    num_repeats_per_prompt: int | Sequence[int],
 ) -> tuple[
     tuple[tuple[torch.Tensor, torch.Tensor]], BatchEncoding, torch.Tensor, torch.Tensor
 ]:
@@ -152,7 +152,7 @@ def _keys_values_prompts(
         the tokenizer corresponding to `model`
     prompts : Sequence[str]
         strings, where, e.g., each contains the text you want to classify
-    num_repeats_per_prompt : Union[int, Sequence[int]]
+    num_repeats_per_prompt : int | Sequence[int]
         the numer of times to repeat each prompt in `prompts`
 
     Returns
@@ -267,7 +267,7 @@ def _blessed_helper(
     tokenizer: PreTrainedTokenizerBase,
     prompts: Sequence[str],
     completions: Sequence[str],
-    num_completions_per_prompt: Union[int, Sequence[int]],
+    num_completions_per_prompt: int | Sequence[int],
     completions_repeats: int,
 ) -> tuple[torch.Tensor, BatchEncoding]:
     """
@@ -516,14 +516,14 @@ def _logits_to_log_probs_completions(
 
 @classify._log_probs_conditional
 def log_probs_conditional(
-    prompts: Union[str, Sequence[str]],
+    prompts: str | Sequence[str],
     completions: Sequence[str],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     end_of_prompt: Literal[" ", ""] = " ",
-    show_progress_bar: Optional[bool] = None,
+    show_progress_bar: bool | None = None,
     batch_size: int = 32,
     **kwargs,
-) -> Union[list[list[float]], list[list[list[float]]]]:
+) -> list[list[float]] | list[list[list[float]]]:
     """
     Log-probabilities of each completion token conditional on each prompt and previous
     completion tokens.
@@ -539,7 +539,7 @@ def log_probs_conditional(
         an instantiated model and its corresponding tokenizer
     end_of_prompt : Literal[' ', ''], optional
         whitespace or empty string to join prompt and completion, by default whitespace
-    show_progress_bar: bool, optional
+    show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
     batch_size : int, optional
@@ -620,11 +620,11 @@ def log_probs_conditional(
 
 @classify._log_probs_conditional_examples
 def log_probs_conditional_examples(
-    examples: Union[Example, Sequence[Example]],
+    examples: Example | Sequence[Example],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
-    show_progress_bar: Optional[bool] = None,
+    show_progress_bar: bool | None = None,
     batch_size: int = 32,
-) -> Union[list[list[float]], list[list[list[float]]]]:
+) -> list[list[float]] | list[list[list[float]]]:
     """
     Log-probabilities of each completion token conditional on each prompt and previous
     completion tokens.
@@ -636,7 +636,7 @@ def log_probs_conditional_examples(
         completions
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
-    show_progress_bar: bool, optional
+    show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 examples
     batch_size : int, optional
@@ -729,15 +729,15 @@ def log_probs_conditional_examples(
 
 @classify._predict_proba
 def predict_proba(
-    prompts: Union[str, Sequence[str]],
+    prompts: str | Sequence[str],
     completions: Sequence[str],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
-    prior: Optional[Sequence[float]] = None,
+    prior: Sequence[float] | None = None,
     end_of_prompt: Literal[" ", ""] = " ",
     normalize: bool = True,
     discount_completions: float = 0.0,
-    log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
-    show_progress_bar: Optional[bool] = None,
+    log_marginal_probs_completions: Sequence[Sequence[float]] | None = None,
+    show_progress_bar: bool | None = None,
     batch_size: int = 32,
 ) -> npt.NDArray[np.floating]:
     """
@@ -752,7 +752,7 @@ def predict_proba(
         prompt
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
-    prior : Sequence[float], optional
+    prior : Sequence[float] | None, optional
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
         `completions` is assumed to be equally likely
@@ -768,12 +768,13 @@ def predict_proba(
         consistently getting too high predicted probabilities. You could instead fudge
         the `prior`, but this hyperparameter may be easier to tune than the `prior`. By
         default 0.0
-    log_marginal_probs_completions : Sequence[Sequence[float]] , optional
+    log_marginal_probs_completions : Sequence[Sequence[float]] | None, optional
         experimental feature: pre-computed log probabilities of completion tokens
         conditional on previous completion tokens (not prompt tokens). Only used if `not
-        discount_completions`. Compute them by passing `completions` and `model` to
-        :func:`cappr.huggingface.classify.token_logprobs`. By default, None
-    show_progress_bar: bool, optional
+        discount_completions`. Pre-compute them by passing `completions`, `model`, and
+        `end_of_prompt` to :func:`cappr.huggingface.classify.token_logprobs`. By
+        default, if `not discount_completions`, they are (re-)computed
+    show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
     batch_size : int, optional
@@ -843,11 +844,11 @@ def predict_proba(
 
 @classify._predict_proba_examples
 def predict_proba_examples(
-    examples: Union[Example, Sequence[Example]],
+    examples: Example | Sequence[Example],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
-    show_progress_bar: Optional[bool] = None,
+    show_progress_bar: bool | None = None,
     batch_size: int = 32,
-) -> Union[npt.NDArray[np.floating], list[npt.NDArray[np.floating]]]:
+) -> npt.NDArray[np.floating] | list[npt.NDArray[np.floating]]:
     """
     Predict probabilities of each completion coming after each prompt.
 
@@ -858,7 +859,7 @@ def predict_proba_examples(
         completions
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
-    show_progress_bar: bool, optional
+    show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 examples
     batch_size : int, optional
@@ -924,16 +925,16 @@ def predict_proba_examples(
 
 @classify._predict
 def predict(
-    prompts: Union[str, Sequence[str]],
+    prompts: str | Sequence[str],
     completions: Sequence[str],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
-    prior: Optional[Sequence[float]] = None,
+    prior: Sequence[float] | None = None,
     end_of_prompt: Literal[" ", ""] = " ",
     discount_completions: float = 0.0,
-    log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
-    show_progress_bar: Optional[bool] = None,
+    log_marginal_probs_completions: Sequence[Sequence[float]] | None = None,
+    show_progress_bar: bool | None = None,
     batch_size: int = 32,
-) -> Union[str, list[str]]:
+) -> str | list[str]:
     """
     Predict which completion is most likely to follow each prompt.
 
@@ -946,7 +947,7 @@ def predict(
         prompt
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
-    prior : Sequence[float], optional
+    prior : Sequence[float] | None, optional
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
         `completions` is assumed to be equally likely
@@ -956,12 +957,13 @@ def predict(
         experimental feature: set it to >0.0 (e.g., 1.0 may work well) if a completion
         is consistently getting over-predicted. You could instead fudge the `prior`, but
         this hyperparameter may be easier to tune than the `prior`. By default 0.0
-    log_marginal_probs_completions : Sequence[Sequence[float]] , optional
+    log_marginal_probs_completions : Sequence[Sequence[float]] | None, optional
         experimental feature: pre-computed log probabilities of completion tokens
         conditional on previous completion tokens (not prompt tokens). Only used if `not
-        discount_completions`. Compute them by passing `completions` and `model` to
-        :func:`cappr.huggingface.classify.token_logprobs`. By default, None
-    show_progress_bar: bool, optional
+        discount_completions`. Pre-compute them by passing `completions`, `model`, and
+        `end_of_prompt` to :func:`cappr.huggingface.classify.token_logprobs`. By
+        default, if `not discount_completions`, they are (re-)computed
+    show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
     batch_size : int, optional
@@ -1017,11 +1019,11 @@ def predict(
 
 @classify._predict_examples
 def predict_examples(
-    examples: Union[Example, Sequence[Example]],
+    examples: Example | Sequence[Example],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
-    show_progress_bar: Optional[bool] = None,
+    show_progress_bar: bool | None = None,
     batch_size: int = 32,
-) -> Union[str, list[str]]:
+) -> str | list[str]:
     """
     Predict which completion is most likely to follow each prompt.
 
@@ -1032,7 +1034,7 @@ def predict_examples(
         completions
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
-    show_progress_bar: bool, optional
+    show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 examples
     batch_size : int, optional

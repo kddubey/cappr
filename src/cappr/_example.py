@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Literal, Optional, Sequence
+from typing import Literal, Sequence
 
 
 from cappr.utils import _check
@@ -21,13 +21,13 @@ class Example:
     completions : Sequence[str]
         strings, where, e.g., each one is the name of a class which could come after the
         prompt
-    prior : Sequence[float], optional
+    prior : Sequence[float] | None, optional
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the `prompt`. By default, each completion in
         `completions` is assumed to be equally likely
     end_of_prompt : Literal[' ', ''], optional
         whitespace or empty string to join prompt and completion, by default whitespace
-    normalize : bool, optional
+    normalize : bool | None, optional
         whether or not to normalize completion-after-prompt probabilities into a
         probability distribution over completions. Set this to `False` if you'd like the
         raw completion-after-prompt probability, or you're solving a multi-label
@@ -45,6 +45,8 @@ class Example:
         if `completions` is empty
     TypeError
         if `end_of_prompt` is not a string
+    ValueError
+        if `end_of_prompt` is not a whitespace or empty
     TypeError
         if `prior` is not None, or it isn't a sequence or numpy array
     ValueError
@@ -55,7 +57,7 @@ class Example:
 
     prompt: str
     completions: Sequence[str]
-    prior: Optional[Sequence[float]] = None
+    prior: Sequence[float] | None = None
     end_of_prompt: Literal[" ", ""] = " "
     normalize: bool = True
 

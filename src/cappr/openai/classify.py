@@ -5,7 +5,7 @@ completion API.
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 """
 from __future__ import annotations
-from typing import Literal, Optional, Sequence, Union
+from typing import Literal, Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -20,8 +20,8 @@ def token_logprobs(
     texts: Sequence[str],
     model: openai.api.Model,
     ask_if_ok: bool = False,
-    api_key: Optional[str] = None,
-    show_progress_bar: Optional[bool] = None,
+    api_key: str | None = None,
+    show_progress_bar: bool | None = None,
     **kwargs,
 ) -> list[list[float]]:
     """
@@ -40,10 +40,10 @@ def token_logprobs(
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
-    api_key : str, optional
+    api_key : str | None, optional
         your OpenAI API key. By default, it's set to the OpenAI's module attribute
         ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
-    show_progress_bar: bool, optional
+    show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
 
@@ -121,15 +121,15 @@ def _slice_completions(
 
 @classify._log_probs_conditional
 def log_probs_conditional(
-    prompts: Union[str, Sequence[str]],
+    prompts: str | Sequence[str],
     completions: Sequence[str],
     model: openai.api.Model,
     end_of_prompt: Literal[" ", ""] = " ",
-    show_progress_bar: Optional[bool] = None,
+    show_progress_bar: bool | None = None,
     ask_if_ok: bool = False,
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
     **kwargs,
-) -> Union[list[list[float]], list[list[list[float]]]]:
+) -> list[list[float]] | list[list[list[float]]]:
     """
     Log-probabilities of each completion token conditional on each prompt and previous
     completion tokens.
@@ -147,14 +147,14 @@ def log_probs_conditional(
         https://platform.openai.com/docs/models/model-endpoint-compatibility
     end_of_prompt : Literal[' ', ''], optional
         whitespace or empty string to join prompt and completion, by default whitespace
-    show_progress_bar: bool, optional
+    show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompt-completion combinations
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
-    api_key : str, optional
+    api_key : str | None, optional
         your OpenAI API key. By default, it's set to the OpenAI's module attribute
         ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
 
@@ -227,12 +227,12 @@ def log_probs_conditional(
 
 @classify._log_probs_conditional_examples
 def log_probs_conditional_examples(
-    examples: Union[Example, Sequence[Example]],
+    examples: Example | Sequence[Example],
     model: openai.api.Model,
-    show_progress_bar: Optional[bool] = None,
+    show_progress_bar: bool | None = None,
     ask_if_ok: bool = False,
-    api_key: Optional[str] = None,
-) -> Union[list[list[float]], list[list[list[float]]]]:
+    api_key: str | None = None,
+) -> list[list[float]] | list[list[list[float]]]:
     """
     Log-probabilities of each completion token conditional on each prompt.
 
@@ -245,14 +245,14 @@ def log_probs_conditional_examples(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
-    show_progress_bar: bool, optional
+    show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompt-completion combinations
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
-    api_key : str, optional
+    api_key : str | None, optional
         your OpenAI API key. By default, it's set to the OpenAI's module attribute
         ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
 
@@ -345,17 +345,17 @@ def log_probs_conditional_examples(
 
 @classify._predict_proba
 def predict_proba(
-    prompts: Union[str, Sequence[str]],
+    prompts: str | Sequence[str],
     completions: Sequence[str],
     model: openai.api.Model,
-    prior: Optional[Sequence[float]] = None,
+    prior: Sequence[float] | None = None,
     end_of_prompt: Literal[" ", ""] = " ",
     normalize: bool = True,
     discount_completions: float = 0.0,
-    log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
-    show_progress_bar: Optional[bool] = None,
+    log_marginal_probs_completions: Sequence[Sequence[float]] | None = None,
+    show_progress_bar: bool | None = None,
     ask_if_ok: bool = False,
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
 ) -> npt.NDArray[np.floating]:
     """
     Predict probabilities of each completion coming after each prompt.
@@ -371,7 +371,7 @@ def predict_proba(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
-    prior : Sequence[float], optional
+    prior : Sequence[float] | None, optional
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
         `completions` is assumed to be equally likely
@@ -387,19 +387,20 @@ def predict_proba(
         consistently getting too high predicted probabilities. You could instead fudge
         the `prior`, but this hyperparameter may be easier to tune than the `prior`. By
         default 0.0
-    log_marginal_probs_completions : Sequence[Sequence[float]] , optional
+    log_marginal_probs_completions : Sequence[Sequence[float]] | None, optional
         experimental feature: pre-computed log probabilities of completion tokens
         conditional on previous completion tokens (not prompt tokens). Only used if `not
-        discount_completions`. Compute them by passing `completions` and `model` to
-        :func:`cappr.openai.classify.token_logprobs`. By default, None
-    show_progress_bar: bool, optional
+        discount_completions`. Pre-compute them by passing `completions`, `model`, and
+        `end_of_prompt` to :func:`cappr.openai.classify.token_logprobs`. By default, if
+        `not discount_completions`, they are (re-)computed
+    show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompt-completion combinations
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
-    api_key : str, optional
+    api_key : str | None, optional
         your OpenAI API key. By default, it's set to the OpenAI's module attribute
         ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
 
@@ -478,12 +479,12 @@ def predict_proba(
 
 @classify._predict_proba_examples
 def predict_proba_examples(
-    examples: Union[Example, Sequence[Example]],
+    examples: Example | Sequence[Example],
     model: openai.api.Model,
-    show_progress_bar: Optional[bool] = None,
+    show_progress_bar: bool | None = None,
     ask_if_ok: bool = False,
-    api_key: Optional[str] = None,
-) -> Union[npt.NDArray[np.floating], list[npt.NDArray[np.floating]]]:
+    api_key: str | None = None,
+) -> npt.NDArray[np.floating] | list[npt.NDArray[np.floating]]:
     """
     Predict probabilities of each completion coming after each prompt.
 
@@ -496,14 +497,14 @@ def predict_proba_examples(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
-    show_progress_bar: bool, optional
+    show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompt-completion combinations
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
-    api_key : str, optional
+    api_key : str | None, optional
         your OpenAI API key. By default, it's set to the OpenAI's module attribute
         ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
 
@@ -567,17 +568,17 @@ def predict_proba_examples(
 
 @classify._predict
 def predict(
-    prompts: Union[str, Sequence[str]],
+    prompts: str | Sequence[str],
     completions: Sequence[str],
     model: openai.api.Model,
-    prior: Optional[Sequence[float]] = None,
+    prior: Sequence[float] | None = None,
     end_of_prompt: Literal[" ", ""] = " ",
     discount_completions: float = 0.0,
-    log_marginal_probs_completions: Optional[Sequence[Sequence[float]]] = None,
-    show_progress_bar: Optional[bool] = None,
+    log_marginal_probs_completions: Sequence[Sequence[float]] | None = None,
+    show_progress_bar: bool | None = None,
     ask_if_ok: bool = False,
-    api_key: Optional[str] = None,
-) -> Union[str, list[str]]:
+    api_key: str | None = None,
+) -> str | list[str]:
     """
     Predict which completion is most likely to follow each prompt.
 
@@ -592,7 +593,7 @@ def predict(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
-    prior : Sequence[float], optional
+    prior : Sequence[float] | None, optional
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
         `completions` is assumed to be equally likely
@@ -602,19 +603,20 @@ def predict(
         experimental feature: set it to >0.0 (e.g., 1.0 may work well) if a completion
         is consistently getting over-predicted. You could instead fudge the `prior`, but
         this hyperparameter may be easier to tune than the `prior`. By default 0.0
-    log_marginal_probs_completions : Sequence[Sequence[float]] , optional
+    log_marginal_probs_completions : Sequence[Sequence[float]] | None, optional
         experimental feature: pre-computed log probabilities of completion tokens
         conditional on previous completion tokens (not prompt tokens). Only used if `not
-        discount_completions`. Compute them by passing `completions` and `model` to
-        :func:`cappr.openai.classify.token_logprobs`. By default, None
-    show_progress_bar: bool, optional
+        discount_completions`. Pre-compute them by passing `completions`, `model`, and
+        `end_of_prompt` to :func:`cappr.openai.classify.token_logprobs`. By default, if
+        `not discount_completions`, they are (re-)computed
+    show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompt-completion combinations
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
-    api_key : str, optional
+    api_key : str | None, optional
         your OpenAI API key. By default, it's set to the OpenAI's module attribute
         ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
 
@@ -681,12 +683,12 @@ def predict(
 
 @classify._predict_examples
 def predict_examples(
-    examples: Union[Example, Sequence[Example]],
+    examples: Example | Sequence[Example],
     model: openai.api.Model,
-    show_progress_bar: Optional[bool] = None,
+    show_progress_bar: bool | None = None,
     ask_if_ok: bool = False,
-    api_key: Optional[str] = None,
-) -> Union[str, list[str]]:
+    api_key: str | None = None,
+) -> str | list[str]:
     """
     Predict which completion is most likely to follow each prompt.
 
@@ -699,14 +701,14 @@ def predict_examples(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
-    show_progress_bar: bool, optional
+    show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
         False
-    api_key : str, optional
+    api_key : str | None, optional
         your OpenAI API key. By default, it's set to the OpenAI's module attribute
         ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
 

@@ -7,7 +7,7 @@ really should test that).
 from __future__ import annotations
 import os
 import sys
-from typing import Mapping, Optional, Union
+from typing import Mapping
 
 import numpy as np
 import pandas as pd
@@ -335,10 +335,10 @@ def _test_logits(
 
 
 def _test_log_probs(
-    log_probs_completions_slow: Union[list[list[float]], list[list[list[float]]]],
-    log_probs_completions_fast: Union[list[list[float]], list[list[list[float]]]],
+    log_probs_completions_slow: list[list[float]] | list[list[list[float]]],
+    log_probs_completions_fast: list[list[float]] | list[list[list[float]]],
     expected_len: int,
-    num_completions_per_prompt: Optional[list[int]],
+    num_completions_per_prompt: list[int] | None,
     atol,
 ):
     """

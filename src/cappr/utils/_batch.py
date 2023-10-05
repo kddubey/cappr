@@ -4,7 +4,7 @@ Batch lists into sublists of constant or variable sizes, and batchify functions.
 from __future__ import annotations
 from functools import wraps
 import inspect
-from typing import Any, Optional, Sequence
+from typing import Any, Sequence
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -63,7 +63,7 @@ def batchify(
     batchable_arg: str,
     batch_size: int = 32,
     progress_bar_desc: str = "",
-    show_progress_bar: Optional[bool] = None,
+    show_progress_bar: bool | None = None,
 ):
     """
     Returns a decorator which runs the decorated function in batches along its
@@ -78,7 +78,7 @@ def batchify(
         batchable_arg_idx = _arg_names.index(batchable_arg)
         _kwargs_signature = _kwarg_name_to_value(func)
         batch_size_default: int = _kwargs_signature.get("batch_size", batch_size)
-        show_progress_bar_default: Optional[bool] = _kwargs_signature.get(
+        show_progress_bar_default: bool | None = _kwargs_signature.get(
             "show_progress_bar", show_progress_bar
         )
 
@@ -89,7 +89,7 @@ def batchify(
             batch_size: int = kwargs.get("batch_size", batch_size_default)
             args = list(args)  # needs to be mutable to modify the batch argument value
             # set up progress bar
-            show_progress_bar: Optional[bool] = kwargs.get(
+            show_progress_bar: bool | None = kwargs.get(
                 "show_progress_bar", show_progress_bar_default
             )
             total = len(batchable)
