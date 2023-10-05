@@ -16,11 +16,11 @@ from transformers import (
 )
 
 
-# AutoModelForCausalLM is not actually a superclass for pretrained causal/autoregressive
-# LMs. Its from_pretrained method is a loading utility which always returns a
-# PreTrainedModel. Let's create a type for them to make the documentation clearer.
 ModelForCausalLM = TypeVar("ModelForCausalLM", bound=PreTrainedModel)
-"A model loaded via `transformers.AutoModelForCausalLM.from_pretrained`"
+"""
+A pretrained model with the same interface as a model loaded via
+`transformers.AutoModelForCausalLM.from_pretrained`.
+"""
 
 
 def does_tokenizer_prepend_space_to_first_token(
@@ -90,8 +90,8 @@ class _tokenizer_pad:
         self.pad_token_id = tokenizer.pad_token_id
 
     def __enter__(self):
-        # Note: PreTrainedTokenizerBase is smart about setting auxiliary attributes,
-        # e.g., it updates tokenizer.special_tokens_map after setting
+        # Note: a PreTrainedTokenizerBase tokenizer is smart about setting auxiliary
+        # attributes, e.g., it updates tokenizer.special_tokens_map after setting
         # tokenizer.pad_token_id.
         if self.pad_token_id is None:
             self.tokenizer.pad_token_id = self.tokenizer.eos_token_id

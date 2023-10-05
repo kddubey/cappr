@@ -1,6 +1,8 @@
 """
 Unit and integration tests for tests `cappr.openai.classify`.
-TODO: this should instead be structured like test_huggingface_classify.py!
+TODO: this should instead be structured like test_huggingface_classify.py! Need to
+factor out the input checks from here and the parametrization from there into one
+generic testing module.
 """
 from __future__ import annotations
 import os
