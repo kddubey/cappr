@@ -26,7 +26,7 @@ Here's a quick example:
 
    pred = predict(prompt, completions, model="text-ada-001")
    print(pred)
-   # 'too long'
+   # too long
 
 There are three factors which influence the performance of CAPPr: the language model,
 the prompt-completion format, and the prior.

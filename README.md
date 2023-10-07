@@ -33,7 +33,7 @@ completions = ("bad message", "too long", "unfunny")
 
 pred = predict(prompt, completions, model="text-ada-001")
 print(pred)
-# 'too long'
+# too long
 ```
 
 Notice that the completions can contain many tokens.
@@ -74,7 +74,7 @@ completions = ("Mercury", "Earth")
 
 pred = predict(prompt, completions, model_and_tokenizer=(model, tokenizer))
 print(pred)
-# 'Mercury'
+# Mercury
 ```
 
 For an example with Llama 2, see the notebook

@@ -8,4 +8,4 @@ dist/
 .vscode/
 .DS_Store
 demos/COPA-resources
-tests/_llama_cpp/fixtures/models
+tests/_llama_cpp/fixtures/models/Tiny*

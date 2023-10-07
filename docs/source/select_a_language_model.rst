@@ -31,7 +31,7 @@ Here's a quick example (which will download a small GPT-2 model to your computer
 
    pred = predict(prompt, completions, model_and_tokenizer=(model, tokenizer))
    print(pred)
-   # 'Mercury'
+   # Mercury
 
 So far, CAPPr has been tested for correctness on the following architectures:
 
@@ -46,10 +46,7 @@ You'll need access to beefier hardware to run models from the HuggingFace hub, a
 :mod:`cappr.huggingface` currently locally loads models. HuggingFace Inference Endpoints
 are not yet supported by this package.
 
-:mod:`cappr.huggingface` is not yet compatible with GGML/GGUF models. I'm waiting on
-`this issue`_ in ``ctransformers`` to be resolved.
-
-.. _this issue: https://github.com/marella/ctransformers/issues/150
+CAPPr will support GGUF models in a few days. It's supported in the main branch.
 
 
 Which CAPPr HuggingFace module should I use?
@@ -109,7 +106,7 @@ Here's a quick example:
 
    pred = predict(prompt, completions, model="text-ada-001")
    print(pred)
-   # 'too long'
+   # too long
 
 CAPPr is currently only compatible with `/v1/completions`_ models (because we can
 request log-probabilities of tokens in an *inputted* string). Unfortunately, with the

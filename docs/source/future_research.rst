@@ -4,7 +4,7 @@ The Misfit Toys Hypothesis
 Modern language models undergo two training stages: pretraining, and instruction
 training. When solving a classification task, it's tempting to lean on instruction-style
 prompts in combination with text generation. This combination works incredibly well for
-large, multi-GPU, proprietary models. But what about open source ones? Perhaps there are
+multi-GPU, proprietary models. But what about open source ones? Perhaps there are
 untapped, smaller, or undertrained models which are not good at generating text from
 instructions, but are good at estimating probabilities.
 
@@ -19,6 +19,9 @@ results can be seen in:
 .. _OpenAI COPA demo: https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb
 .. _Llama 2 COPA demo: https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb
 .. _StableLM demo: https://github.com/kddubey/cappr/blob/main/demos/auto_gptq.ipynb
+
+I'll study how replicable this result is across datasets, model sizes, architectures,
+and levels of quantization.
 
 The `calibration`_ of CAPPr estimates has not yet been studied. These estimates are
 slightly different than usual next-token probability estimates because:
