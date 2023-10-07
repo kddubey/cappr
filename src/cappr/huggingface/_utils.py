@@ -6,7 +6,6 @@ from contextlib import contextmanager
 from typing import Collection, Sequence, TypeVar
 
 import torch
-import torch.nn.functional as F
 from transformers import (
     BatchEncoding,
     LlamaTokenizer,
@@ -230,13 +229,13 @@ def logits_to_log_probs(
     Log-softmax and then slice out input IDs to get token log-probabilities.
     """
     # logits.shape is (# texts, max # tokens in texts, vocab size)
-    log_probs = F.log_softmax(logits, dim=2)
+    log_probs = logits.log_softmax(dim=-1)
 
     # Only keep the log-prob from the vocab dimension whose index is is the next token's
     # input ID.
     # input_ids.shape is (# texts, max # tokens in texts)
     return (
         log_probs[:, :logits_end_idx, :]
-        .take_along_dim(input_ids[:, input_ids_start_idx:, None], dim=2)
+        .take_along_dim(input_ids[:, input_ids_start_idx:, None], dim=-1)
         .squeeze(-1)
     )

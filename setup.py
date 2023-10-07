@@ -31,6 +31,8 @@ requirements_huggingface_dev = [
     for req in requirements_huggingface
 ] + ["huggingface-hub>=0.16.4"]
 
+requirements_llama_cpp = ["llama-cpp-python>=0.2.11"]
+
 requirements_demos = [
     "datasets>=2.10.0",
     "jupyter>=1.0.0",
@@ -67,8 +69,14 @@ setup(
     install_requires=requirements_base + requirements_openai,
     extras_require={
         "hf": requirements_huggingface,
-        "demos": requirements_huggingface + requirements_demos,
-        "dev": requirements_huggingface_dev + requirements_demos + requirements_dev,
+        "llama-cpp": requirements_llama_cpp,
+        "demos": requirements_huggingface + requirements_llama_cpp + requirements_demos,
+        "dev": (
+            requirements_huggingface_dev
+            + requirements_llama_cpp
+            + requirements_demos
+            + requirements_dev
+        ),
     },
     author_email="kushdubey63@gmail.com",
     package_dir={"": "src"},

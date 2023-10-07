@@ -703,6 +703,9 @@ def log_probs_conditional_examples(
         print(log_probs_completions[1])  # corresponds to examples[1]
         # [[-5.0, -1.7]]  [[log Pr(1 | a, b, c)], log Pr(2 | a, b, c, 1)]]
     """
+    # Little weird. I want my IDE to know that examples is always a Sequence[Example]
+    # b/c of the decorator.
+    examples: Sequence[Example] = examples
     with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
         model, tokenizer = model_and_tokenizer
 
@@ -772,8 +775,8 @@ def predict_proba(
         experimental feature: pre-computed log probabilities of completion tokens
         conditional on previous completion tokens (not prompt tokens). Only used if `not
         discount_completions`. Pre-compute them by passing `completions`, `model`, and
-        `end_of_prompt` to :func:`cappr.huggingface.classify.token_logprobs`. By
-        default, if `not discount_completions`, they are (re-)computed
+        `end_of_prompt` to :func:`token_logprobs`. By default, if `not
+        discount_completions`, they are (re-)computed
     show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
@@ -961,8 +964,8 @@ def predict(
         experimental feature: pre-computed log probabilities of completion tokens
         conditional on previous completion tokens (not prompt tokens). Only used if `not
         discount_completions`. Pre-compute them by passing `completions`, `model`, and
-        `end_of_prompt` to :func:`cappr.huggingface.classify.token_logprobs`. By
-        default, if `not discount_completions`, they are (re-)computed
+        `end_of_prompt` to :func:`token_logprobs`. By default, if `not
+        discount_completions`, they are (re-)computed
     show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts

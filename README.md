@@ -381,11 +381,23 @@ documentation](https://cappr.readthedocs.io/en/latest/related_work.html).
 3. `cd` to the repo and install this package in editable mode, along with development
    requirements (after ensuring that your venv is activated!)
 
-   ```
+   ```bash
    cd cappr
 
    python -m pip install -e ".[dev]"
    ```
+
+4. Download [the tiny GGUF Llama model](https://huggingface.co/aladar/TinyLLama-v0-GGUF)
+   I uploaded to HF
+
+   ```bash
+   huggingface-cli download \
+   aladar/TinyLLama-v0-GGUF \
+   TinyLLama-v0.Q8_0.gguf \
+   --local-dir ./tests/_llama_cpp/fixtures/models \
+   --local-dir-use-symlinks False
+   ```
+
 
 ### VS code extensions for development
 
@@ -406,7 +418,7 @@ pytest
 
 Note that a few small transformers and tokenizers will be downloaded to your computer.
 
-Sometimes I get paranoid about bigger code changes. So consider additionally testing
+Sometimes I get worried about bigger code changes. So consider additionally testing
 statistical performance by running an appropriate demo in
 [`demos`](https://github.com/kddubey/cappr/tree/main/demos).
 

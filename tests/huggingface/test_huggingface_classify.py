@@ -57,8 +57,8 @@ def model(model_name: str) -> ModelForCausalLM:
 
 
 def _load_tokenizer(model_name: str) -> PreTrainedTokenizerBase:
-    # hf-internal-testing/tiny-random-MistralForCausalLM's tokenizer_config.json is bad
-    # b/c its tokenizer_file field is hard coded to some specific machine.
+    # hf-internal-testing/tiny-random-MistralForCausalLM's tokenizer_config.json has a
+    # field, tokenizer_file, which is hard-coded to some specific machine
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_name)
     except:
@@ -96,7 +96,7 @@ def model_and_tokenizer(
 def atol() -> float:
     # Reading through some transformers tests, it looks like 1e-3 is considered
     # close-enough for hidden states. See, e.g.,
-    # https://github.com/huggingface/transformers/blob/main/tests/models/gpt2/test_modeling_gpt2.py#L250
+    # https://github.com/huggingface/transformers/blob/897a826d830e8b1e03eb482b165b5d88a7a08d5f/tests/models/gpt2/test_modeling_gpt2.py#L252
     return 1e-4
 
 
@@ -183,8 +183,6 @@ def test_token_logprobs(
     _texts_log_probs = []
     _texts_input_ids = []
     for text in texts:
-        # the correct expected result requires that we use the model() and tokenizer()
-        # fixtures b/c they're set up correctly
         with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
             model, tokenizer = model_and_tokenizer
             _logits, _encoding = hf._utils.logits_texts(

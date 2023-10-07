@@ -11,3 +11,8 @@ try:
     from . import huggingface  # optional
 except ModuleNotFoundError:
     pass
+
+try:
+    from . import llama_cpp  # optional
+except ModuleNotFoundError:
+    pass

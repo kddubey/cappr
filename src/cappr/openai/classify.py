@@ -391,8 +391,8 @@ def predict_proba(
         experimental feature: pre-computed log probabilities of completion tokens
         conditional on previous completion tokens (not prompt tokens). Only used if `not
         discount_completions`. Pre-compute them by passing `completions`, `model`, and
-        `end_of_prompt` to :func:`cappr.openai.classify.token_logprobs`. By default, if
-        `not discount_completions`, they are (re-)computed
+        `end_of_prompt` to :func:`token_logprobs`. By default, if `not
+        discount_completions`, they are (re-)computed
     show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompt-completion combinations
@@ -607,8 +607,8 @@ def predict(
         experimental feature: pre-computed log probabilities of completion tokens
         conditional on previous completion tokens (not prompt tokens). Only used if `not
         discount_completions`. Pre-compute them by passing `completions`, `model`, and
-        `end_of_prompt` to :func:`cappr.openai.classify.token_logprobs`. By default, if
-        `not discount_completions`, they are (re-)computed
+        `end_of_prompt` to :func:`token_logprobs`. By default, if `not
+        discount_completions`, they are (re-)computed
     show_progress_bar: bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompt-completion combinations
