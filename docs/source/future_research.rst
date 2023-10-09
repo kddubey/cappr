@@ -9,16 +9,15 @@ untapped, smaller, or undertrained models which are not good at generating text 
 instructions, but are good at estimating probabilities.
 
 A handful of experiments suggest that CAPPr squeezes more out of smaller LLMs. In the
-`OpenAI COPA demo`_, text generation using OpenAI's smaller model, ``text-curie-001``,
-is less than 50% accurate, while CAPPr using the same model is 80% accurate. Similar
-results can be seen in:
+`OpenAI COPA demo
+<https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb>`_, text
+generation using OpenAI's smaller model, ``text-curie-001``, is less than 50% accurate,
+while CAPPr using the same model is 80% accurate. Similar results can be seen in:
 
-- the 4 GB `Llama 2 COPA demo`_
-- this (minimal but surprising) 3 GB `StableLM demo`_.
-
-.. _OpenAI COPA demo: https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb
-.. _Llama 2 COPA demo: https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb
-.. _StableLM demo: https://github.com/kddubey/cappr/blob/main/demos/auto_gptq.ipynb
+- the 4-bit 4 GB `Llama 2 COPA demo
+  <https://github.com/kddubey/cappr/blob/main/demos/llama_cpp.ipynb>`_
+- this (minimal but surprising) 3 GB `StableLM demo
+  <https://github.com/kddubey/cappr/blob/main/demos/auto_gptq.ipynb>`_.
 
 I'll study how replicable this result is across datasets, model sizes, architectures,
 and levels of quantization.

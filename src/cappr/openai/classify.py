@@ -43,7 +43,7 @@ def token_logprobs(
     api_key : str | None, optional
         your OpenAI API key. By default, it's set to the OpenAI's module attribute
         ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
 
@@ -147,7 +147,7 @@ def log_probs_conditional(
         https://platform.openai.com/docs/models/model-endpoint-compatibility
     end_of_prompt : Literal[' ', ''], optional
         whitespace or empty string to join prompt and completion, by default whitespace
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompt-completion combinations
     ask_if_ok : bool, optional
@@ -245,7 +245,7 @@ def log_probs_conditional_examples(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompt-completion combinations
     ask_if_ok : bool, optional
@@ -294,7 +294,7 @@ def log_probs_conditional_examples(
         # Create data
         examples = [
             Example(prompt="x y", completions=("z", "d e")),
-            Example(prompt="a b c", completions=("1 2",)),
+            Example(prompt="a b c", completions=("1 2",), normalize=False),
         ]
 
         # Compute
@@ -393,7 +393,7 @@ def predict_proba(
         discount_completions`. Pre-compute them by passing `completions`, `model`, and
         `end_of_prompt` to :func:`token_logprobs`. By default, if `not
         discount_completions`, they are (re-)computed
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompt-completion combinations
     ask_if_ok : bool, optional
@@ -497,7 +497,7 @@ def predict_proba_examples(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompt-completion combinations
     ask_if_ok : bool, optional
@@ -609,7 +609,7 @@ def predict(
         discount_completions`. Pre-compute them by passing `completions`, `model`, and
         `end_of_prompt` to :func:`token_logprobs`. By default, if `not
         discount_completions`, they are (re-)computed
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompt-completion combinations
     ask_if_ok : bool, optional
@@ -701,7 +701,7 @@ def predict_examples(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
     ask_if_ok : bool, optional

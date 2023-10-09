@@ -1,7 +1,28 @@
 """
-Yo mamma llama pajama
-TODO: may need to support end_of_prompt for GPT/BPE models
+Perform prompt-completion classification using a model which can be loaded via
+``llama_cpp.Llama``.
+
+You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
+
+.. note:: When instantiating your Llama, set ``logits_all=True``.
+
+The examples below use a 6 MB model to quickly demonstrate functionality. To download
+it::
+
+    # install huggingface-hub if you don't have it already
+    pip install huggingface-hub
+
+Download `this model
+<https://huggingface.co/aladar/TinyLLama-v0-GGUF/blob/main/TinyLLama-v0.Q8_0.gguf>`_ (to
+your current working directory)::
+    
+    huggingface-cli download \\
+    aladar/TinyLLama-v0-GGUF \\
+    TinyLLama-v0.Q8_0.gguf \\
+    --local-dir . \\
+    --local-dir-use-symlinks False
 """
+# TODO: may need to support end_of_prompt for GPT/BPE models
 from __future__ import annotations
 from typing import Sequence
 
@@ -27,11 +48,25 @@ def _check_model(model: Llama):
         raise TypeError("model needed to be instantiated with logits_all=True")
 
 
+def _check_logits(logits) -> np.ndarray:
+    """
+    Returns back `logits` if there are no NaNs. Else raises a `TypeError`.
+    """
+    logits = np.array(logits)
+    if np.isnan(logits).any():
+        raise TypeError(
+            "There are nan logits. This can happen if the model is re-loaded too many "
+            "times in the same session. Please raise this as an issue so that I can "
+            "investigate: https://github.com/kddubey/cappr/issues"
+        )
+    return logits
+
+
 def token_logprobs(
     texts: Sequence[str],
     model: Llama,
     show_progress_bar: bool | None = None,
-    add_bos_token: bool = False,
+    add_bos: bool = False,
     **kwargs,
 ) -> list[list[float]]:
     """
@@ -43,10 +78,13 @@ def token_logprobs(
     texts : Sequence[str]
         input texts
     model : Llama
-        an instantiated model
-    show_progress_bar: bool | None, optional
+        a model instantiated with ``logits_all=True``
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
+    add_bos : bool, optional
+        whether or not to add a beginning-of-sentence token to all `texts`, by default
+        False
 
     Returns
     -------
@@ -81,11 +119,11 @@ def token_logprobs(
     # but that'd cost more memory.
     log_probs = []
     for text in tqdm(texts, total=total, desc="marginal log-probs", disable=disable):
-        input_ids = model.tokenize(text.encode("utf-8"), add_bos=add_bos_token)
+        input_ids = model.tokenize(text.encode("utf-8"), add_bos=add_bos)
         model.reset()  # clear the model's KV cache and logits
         model.eval(input_ids)
         log_probs_text: list[float] = logits_to_log_probs(
-            np.array(model.eval_logits),
+            _check_logits(model.eval_logits),
             np.array(input_ids),
             input_ids_start_idx=1,  # this token's log-prob is in the prev token's logit
             logits_end_idx=-1,
@@ -109,7 +147,7 @@ def _log_probs_conditional_prompt_single_token_completions(
     # 2. Compute the prompt's next-token log-probs—a 1-D array
     input_ids_prompt = model.tokenize(prompt.encode("utf-8"), add_bos=True)
     model.eval(input_ids_prompt)
-    prompt_next_token_log_probs = log_softmax(np.array(model.eval_logits[-1]))
+    prompt_next_token_log_probs = log_softmax(_check_logits(model.eval_logits[-1]))
     # 3. Grab each completion token's log-prob
     log_probs_completions: list[list[float]] = []
     for input_ids_completion in input_ids_completions:
@@ -158,7 +196,7 @@ def _log_probs_conditional_prompt(
         # contains the first completion token's log-prob. But we don't need the last
         # completion token's next-token logits ofc. Also, it's num_tokens_prompt - 1 b/c
         # of 0-indexing.
-        logits_completion = np.array(model.eval_logits)[num_tokens_prompt - 1 : -1]
+        logits_completion = _check_logits(model.eval_logits)[num_tokens_prompt - 1 : -1]
         log_probs_completion: list[float] = logits_to_log_probs(
             logits_completion, np.array(input_ids_completion)
         ).tolist()
@@ -191,8 +229,8 @@ def log_probs_conditional(
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
     model : Llama
-        an instantiated model
-    show_progress_bar: bool | None, optional
+        a model instantiated with ``logits_all=True``
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
 
@@ -219,22 +257,44 @@ def log_probs_conditional(
     -------
     Here we'll use single characters (which are of course single tokens) to more clearly
     demonstrate what this function does::
+
+        from llama_cpp import Llama
+        from cappr.llama_cpp.classify import log_probs_conditional
+
+        # Load model
+        # The top of this page has instructions to download this model
+        model_path = "./TinyLLama-v0.Q8_0.gguf"
+        # Always set logits_all=True for CAPPr
+        model = Llama(model_path, logits_all=True, verbose=False)
+
+        # Create data
+        prompts = ["x y", "a b c"]
+        completions = ["z", "d e"]
+
+        # Compute
+        log_probs_completions = log_probs_conditional(
+            prompts, completions, model
+        )
+
+        # Outputs (rounded) next to their symbolic representation
+
+        print(log_probs_completions[0])
+        # [[-12.8],        [[log Pr(z | x, y)],
+        #  [-10.8, -10.7]]  [log Pr(d | x, y),    log Pr(e | x, y, d)]]
+
+        print(log_probs_completions[1])
+        # [[-9.5],        [[log Pr(z | a, b, c)],
+        #  [-9.9, -10.0]]  [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
-    # Little weird. I want my IDE to know that examples is always a Sequence[Example]
-    # b/c of the decorator.
-    prompts: Sequence[str] = prompts
     total = len(prompts)
     disable = not (
         show_progress_bar or total >= _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
     )
-    log_probs_completions = []
-    for prompt in tqdm(
-        prompts, total=total, desc="conditional log-probs", disable=disable
-    ):
-        log_probs_completions.append(
-            _log_probs_conditional_prompt(prompt, completions, model)
-        )
-    return log_probs_completions
+    desc = "conditional log-probs"
+    return [
+        _log_probs_conditional_prompt(prompt, completions, model)
+        for prompt in tqdm(prompts, total=total, disable=disable, desc=desc)
+    ]
 
 
 @classify._log_probs_conditional_examples
@@ -253,10 +313,10 @@ def log_probs_conditional_examples(
         `Example` object(s), where each contains a prompt and its set of possible
         completions
     model : Llama
-        an instantiated model
-    show_progress_bar: bool | None, optional
+        a model instantiated with ``logits_all=True``
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
-        there are at least 5 examples
+        there are at least 5 `examples`
 
     Returns
     -------
@@ -289,6 +349,36 @@ def log_probs_conditional_examples(
     -------
     Here we'll use single characters (which are of course single tokens) to more clearly
     demonstrate what this function does::
+
+        from llama_cpp import Llama
+        from cappr import Example
+        from cappr.llama_cpp.classify import log_probs_conditional_examples
+
+        # Load model
+        # The top of this page has instructions to download this model
+        model_path = "./TinyLLama-v0.Q8_0.gguf"
+        # Always set logits_all=True for CAPPr
+        model = Llama(model_path, logits_all=True, verbose=False)
+
+        # Create examples
+        examples = [
+            Example(prompt="x y", completions=("z", "d e")),
+            Example(prompt="a b c", completions=("d e",), normalize=False),
+        ]
+
+        # Compute
+        log_probs_completions = log_probs_conditional_examples(
+            examples, model
+        )
+
+        # Outputs (rounded) next to their symbolic representation
+
+        print(log_probs_completions[0])  # corresponds to examples[0]
+        # [[-12.8],        [[log Pr(z | x, y)],
+        #  [-10.8, -10.7]]  [log Pr(d | x, y),    log Pr(e | x, y, d)]]
+
+        print(log_probs_completions[1])  # corresponds to examples[1]
+        # [[-9.90, -10.0]] [[log Pr(d | a, b, c)], log Pr(e | a, b, c, d)]]
     """
     # Little weird. I want my IDE to know that examples is always a Sequence[Example]
     # b/c of the decorator.
@@ -297,14 +387,11 @@ def log_probs_conditional_examples(
     disable = not (
         show_progress_bar or total >= _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
     )
-    log_probs_completions = []
-    for example in tqdm(
-        examples, total=total, desc="conditional log-probs", disable=disable
-    ):
-        log_probs_completions.append(
-            _log_probs_conditional_prompt(example.prompt, example.completions, model)
-        )
-    return log_probs_completions
+    desc = "conditional log-probs"
+    return [
+        _log_probs_conditional_prompt(example.prompt, example.completions, model)
+        for example in tqdm(examples, total=total, disable=disable, desc=desc)
+    ]
 
 
 @classify._predict_proba
@@ -329,7 +416,7 @@ def predict_proba(
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
     model : Llama
-        an instantiated model
+        a model instantiated with ``logits_all=True``
     prior : Sequence[float] | None, optional
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
@@ -350,7 +437,7 @@ def predict_proba(
         discount_completions`. Pre-compute them by passing `completions` and `model` to
         :func:`token_logprobs`. By default, if `not discount_completions`, they are
         (re-)computed
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
 
@@ -376,7 +463,35 @@ def predict_proba(
 
     Example
     -------
-    TODO
+    Let's have our little Llama predict some story beginnings::
+
+        from llama_cpp import Llama
+        from cappr.llama_cpp.classify import predict_proba
+
+        # Load model
+        # The top of this page has instructions to download this model
+        model_path = "./TinyLLama-v0.Q8_0.gguf"
+        # Always set logits_all=True for CAPPr
+        model = Llama(model_path, logits_all=True, verbose=False)
+
+        # Define a classification task
+        prompts = ["In a hole in", "Once upon"]
+        completions = ("a time", "the ground")
+
+        # Compute
+        pred_probs = predict_proba(prompts, completions, model)
+
+        pred_probs_rounded = pred_probs.round(2)  # just for cleaner output
+
+        # predicted probability that the ending for the clause
+        # "In a hole in" is "the ground"
+        print(pred_probs_rounded[0, 1])
+        # 0.98
+
+        # predicted probability that the ending for the clause
+        # "Once upon" is "a time"
+        print(pred_probs_rounded[1, 0])
+        # 1.0
     """
     return log_probs_conditional(**locals())
 
@@ -396,10 +511,10 @@ def predict_proba_examples(
         `Example` object(s), where each contains a prompt and its set of possible
         completions
     model : Llama
-        an instantiated model
-    show_progress_bar: bool | None, optional
+        a model instantiated with ``logits_all=True``
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
-        there are at least 5 examples
+        there are at least 5 `examples`
 
     Returns
     -------
@@ -425,7 +540,41 @@ def predict_proba_examples(
 
     Example
     -------
-    TODO
+    Some story analysis::
+
+        from llama_cpp import Llama
+        from cappr import Example
+        from cappr.llama_cpp.classify import predict_proba_examples
+
+        # Load model
+        # The top of this page has instructions to download this model
+        model_path = "./TinyLLama-v0.Q8_0.gguf"
+        # Always set logits_all=True for CAPPr
+        model = Llama(model_path, logits_all=True, verbose=False)
+
+        # Create examples
+        examples = [
+            Example(
+                prompt="Story: I enjoyed pizza with my buddies.\\nMoral:",
+                completions=("make friends", "food is yummy", "absolutely nothing"),
+                prior=(2 / 5, 2 / 5, 1 / 5),
+            ),
+            Example(
+                prompt="The child rescued the animal. The child is a",
+                completions=("hero", "villain"),
+            ),
+        ]
+
+        # Compute
+        pred_probs = predict_proba_examples(examples, model)
+
+        # predicted probability that the moral of the 1st story is that food is yummy
+        print(pred_probs[0][1].round(2))
+        # 0.72
+
+        # predicted probability that the hero of the 2nd story is the child
+        print(pred_probs[1][0].round(2))
+        # 0.95
     """
     return log_probs_conditional_examples(**locals())
 
@@ -451,7 +600,7 @@ def predict(
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
     model : Llama
-        an instantiated model
+        a model instantiated with ``logits_all=True``
     prior : Sequence[float] | None, optional
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
@@ -466,7 +615,7 @@ def predict(
         discount_completions`. Pre-compute them by passing `completions` and `model` to
         :func:`token_logprobs`. By default, if `not discount_completions`, they are
         (re-)computed
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
 
@@ -490,8 +639,31 @@ def predict(
 
     Example
     -------
-    Let's have GPT-2 (small) predict where stuff is in the kitchen::
-    TODO
+    Let's have our little Llama predict some story beginnings::
+
+        from llama_cpp import Llama
+        from cappr.llama_cpp.classify import predict
+
+        # Load model
+        # The top of this page has instructions to download this model
+        model_path = "./TinyLLama-v0.Q8_0.gguf"
+        # Always set logits_all=True for CAPPr
+        model = Llama(model_path, logits_all=True, verbose=False)
+
+        # Define a classification task
+        prompts = ["In a hole in", "Once upon"]
+        completions = ("a time", "the ground")
+
+        # Compute
+        preds = predict(prompts, completions, model)
+
+        # Predicted ending for the first clause: "In a hole in"
+        print(preds[0])
+        # the ground
+
+        # Predicted ending for the first clause: "Once upon"
+        print(preds[1])
+        # a time
     """
     return predict_proba(**locals())
 
@@ -511,10 +683,10 @@ def predict_examples(
         `Example` object(s), where each contains a prompt and its set of possible
         completions
     model : Llama
-        an instantiated model
-    show_progress_bar: bool | None, optional
+        a model instantiated with ``logits_all=True``
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
-        there are at least 5 examples
+        there are at least 5 `examples`
 
     Returns
     -------
@@ -536,6 +708,41 @@ def predict_examples(
 
     Example
     -------
-    TODO
+    Some story analysis::
+
+        from llama_cpp import Llama
+        from cappr import Example
+        from cappr.llama_cpp.classify import predict_examples
+
+        # Load model
+        # The top of this page has instructions to download this model
+        model_path = "./TinyLLama-v0.Q8_0.gguf"
+        # Always set logits_all=True for CAPPr
+        model = Llama(model_path, logits_all=True, verbose=False)
+
+        # Create examples
+        examples = [
+            Example(
+                prompt="Story: I enjoyed pizza with my buddies.\\nMoral:",
+                completions=("make friends", "food is yummy", "absolutely nothing"),
+                prior=(2 / 5, 2 / 5, 1 / 5),
+            ),
+            Example(
+                prompt="The child rescued the animal. The child is a",
+                completions=("hero", "villain"),
+            ),
+        ]
+
+        # Compute
+        preds = predict_examples(examples, model)
+
+        # the moral of the 1st story
+        print(preds[0])
+        # food is yummy
+
+        # the character of the 2nd story
+        print(preds[1])
+        # hero
+
     """
     return predict_proba_examples(**locals())

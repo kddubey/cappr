@@ -27,6 +27,7 @@ extensions = [
     "sphinx.ext.linkcode",
     "sphinx.ext.napoleon",
     "sphinx.ext.autosectionlabel",
+    "sphinx_copybutton",
     "sphinx_togglebutton",
 ]
 templates_path = ["_templates"]
@@ -46,6 +47,19 @@ html_context = {
     "github_repo": "cappr",
     "github_version": "main",
     "doc_path": "/docs/source/",
+}
+# Theme options are theme-specific and customize the look and feel of a theme
+# further.  For a list of options available for each theme, see the
+# documentation.
+# see example: https://github.com/pydata/pydata-sphinx-theme/blob/185a37aa36820f77bffa4c87a772092e9e7cc380/docs/conf.py#L116C12-L116C12
+html_theme_options = {
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/kddubey/cappr",
+            "icon": "fa-brands fa-github",
+        },
+    ]
 }
 
 

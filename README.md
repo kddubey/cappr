@@ -36,7 +36,11 @@ print(pred)
 # too long
 ```
 
-Notice that the completions can contain many tokens.
+Notice that a completion can contain many tokens.
+
+See [this page of the
+documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#openai)
+for more info on using OpenAI models.
 </details>
 
 
@@ -49,16 +53,16 @@ completion is unwieldy. Use CAPPr to extract the final answer from these types o
 completions, given a list of possible answers.
 
 See this idea in action [here in the
-docs](https://cappr.readthedocs.io/en/latest/select_a_prompt_completion_format.html#wrangle-step-by-step-completions).
+documentation](https://cappr.readthedocs.io/en/latest/select_a_prompt_completion_format.html#wrangle-step-by-step-completions).
 CAPPr is **100% guaranteed** to return an output from the list of answers.
 </details>
 
 
 <details>
-<summary>Use a model from the HuggingFace model hub</summary>
+<summary>Use a PyTorch transformers model</summary>
 
 Specifically, this model must be able to be loaded using
-`transformers.AutoModelForCausalLM.from_pretrained`.
+[`transformers.AutoModelForCausalLM.from_pretrained`](https://huggingface.co/docs/transformers/model_doc/auto#transformers.AutoModelForCausalLM).
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -77,18 +81,9 @@ print(pred)
 # Mercury
 ```
 
-For an example with Llama 2, see the notebook
-[`demos/llama2/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb).
-So far, CAPPr has been tested for correctness on the following architectures:
-- GPT-2
-- GPT-J
-- GPT-NeoX (including StableLM, and its tuned/instruct and GPTQd versions)
-- Llama
-- Llama 2 (chat, raw, and its GPTQd versions)
-- Mistral.
-
-Raise an issue to lmk that you don't see your architecture on this list.
-
+See [this page of the
+documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#huggingface)
+for more info on using PyTorch ``transformers`` models.
 </details>
 
 
@@ -99,15 +94,52 @@ Raise an issue to lmk that you don't see your architecture on this list.
 seems to work fine with models loaded via
 [`auto_gptq.AutoGPTQForCausalLM.from_quantized`](https://github.com/PanQiWei/AutoGPTQ).
 But I haven't thoroughly tested that. See [this
-notebook](https://github.com/kddubey/cappr/blob/main/demos/auto_gptq.ipynb) for a demo.
+notebook](https://github.com/kddubey/cappr/blob/main/demos/auto_gptq.ipynb) for a
+minimal demo.
+</details>
 
+
+<details>
+<summary>Use a GGUF model</summary>
+
+Specifically, this model must be able to be loaded using
+[`llama_cpp.Llama`](https://llama-cpp-python.readthedocs.io/en/latest/api-reference/#llama_cpp.Llama).
+
+```python
+from llama_cpp import Llama
+from cappr.llama_cpp.classify import predict
+
+# Load model. Always set logits_all=True for CAPPr
+model = Llama("./TinyLLama-v0.Q8_0.gguf", logits_all=True, verbose=False)
+
+prompt = """Gary told Spongebob a story:
+There once was a man from Peru; who dreamed he was eating his shoe. He
+woke with a fright, in the middle of the night, to find that his dream
+had come true.
+
+The moral of the story is to"""
+completions = (
+  "look at the bright side",
+  "use your imagination",
+  "eat shoes",
+)
+
+pred = predict(prompt, completions, model)
+print(pred)
+# use your imagination
+```
+
+See [this page of the
+documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#llama-cpp)
+for more info on using Llama CPP models.
 </details>
 
 
 <details>
 <summary>Run in batches</summary>
 
-Also, let's predict probabilities instead of the class.
+Let's use a PyTorch ``transformers`` model. Also, let's predict probabilities instead of
+the class.
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -162,7 +194,7 @@ print(preds)
 <summary>Run in batches, where each prompt has a different set of possible completions
 </summary>
 
-Again, let's use `cappr.huggingface` to predict probabilities.
+Again, let's use a PyTorch ``transformers`` model to predict probabilities.
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -209,7 +241,7 @@ print(preds)
 </details>
 
 See
-[`demos/llama2/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb)
+[`demos/llama_cpp.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp.ipynb)
 for a demonstration of a slightly harder classification task.
 
 
@@ -220,10 +252,16 @@ https://cappr.readthedocs.io
 
 ## Installation
 
-To use HuggingFace models:
+To use PyTorch ``transformers`` models:
 
 ```
 pip install "cappr[hf]"
+```
+
+To use GGUF models:
+
+```
+pip install "cappr[llama-cpp]"
 ```
 
 Or, to use OpenAI models, [sign up](https://platform.openai.com/signup) for the OpenAI
@@ -265,7 +303,6 @@ prompt-completion string format.
 
 See [this page of the
 documentation](https://cappr.readthedocs.io/en/latest/motivation.html).
-
 </details>
 
 
@@ -275,7 +312,6 @@ documentation](https://cappr.readthedocs.io/en/latest/motivation.html).
 A handful of experiments suggest that CAPPr squeezes more out of smaller LLMs. See [this
 page of the
 documentation](https://cappr.readthedocs.io/en/latest/future_research.html).
-
 </details>
 
 
@@ -283,7 +319,6 @@ documentation](https://cappr.readthedocs.io/en/latest/future_research.html).
 <summary>Honest</summary>
 
 am bored. am unemployed.
-
 </details>
 
 
@@ -302,13 +337,12 @@ Not too shabby. TODO: summary table comparing competing methods.
 
 For HuggingFace models, see
 
-- the 4 GB [Llama 2 COPA
-  demo](https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb)
+- the 4-bit 4 GB [Llama 2 COPA
+  demo](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp.ipynb)
 - and this (minimal but surprising) 3 GB [StableLM
   demo](https://github.com/kddubey/cappr/blob/main/demos/auto_gptq.ipynb).
 
 I'll evaluate Llama 2 or Mistral 7B on a few more datasets.
-
 </details>
 
 
@@ -319,7 +353,6 @@ Computational performance
 
 See [this page of the
 documentation](https://cappr.readthedocs.io/en/latest/computational_performance.html).
-
 </details>
 
 

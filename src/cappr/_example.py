@@ -42,7 +42,7 @@ class Example:
     TypeError
         if `completions` is not a sequence
     ValueError
-        if `completions` is empty
+        if `completions` is empty, or contains an empty string
     TypeError
         if `end_of_prompt` is not a string
     ValueError
@@ -62,7 +62,7 @@ class Example:
     normalize: bool = True
 
     def __post_init__(self):
-        # Check inputs here so that fxns of Example don't need to check
+        # Check inputs here so that functions of Example don't need to check
         if not isinstance(self.prompt, str):
             raise TypeError("prompt must be a string.")
         _check.nonempty(self.prompt, variable_name="prompt")

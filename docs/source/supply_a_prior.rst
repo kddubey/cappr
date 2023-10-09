@@ -24,7 +24,7 @@ If you have absolutely no idea what a reasonable prior could be, then you may le
 the ``prior`` keyword argument for ``predict`` and ``predict_proba`` functions.
 
 If a particular completion is consistently getting over-predicted, you may want to set
-`discount_completions=1.0` to `penalize it
+``discount_completions=1.0`` to `penalize it
 <https://stats.stackexchange.com/a/606323/337906>`_. But this feature is highly
 experimental. I need to evaluate it more.
 

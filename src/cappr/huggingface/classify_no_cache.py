@@ -43,7 +43,7 @@ def token_logprobs(
     end_of_prompt : Literal[' ', ''], optional
         This string gets added to the beginning of each text. It's important to set this
         if you're using the discount feature. Otherwise, set it to "". By default " "
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
     batch_size : int, optional
@@ -275,7 +275,7 @@ def log_probs_conditional(
         an instantiated model and its corresponding tokenizer
     end_of_prompt : Literal[' ', ''], optional
         whitespace or empty string to join prompt and completion, by default whitespace
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
     batch_size : int, optional
@@ -371,9 +371,9 @@ def log_probs_conditional_examples(
         completions
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
-        there are at least 5 examples
+        there are at least 5 `examples`
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -421,7 +421,7 @@ def log_probs_conditional_examples(
         # Create examples
         examples = [
             Example(prompt="x y", completions=("z", "d e")),
-            Example(prompt="a b c", completions=("1 2",)),
+            Example(prompt="a b c", completions=("1 2",), normalize=False),
         ]
 
         # Compute
@@ -511,7 +511,7 @@ def predict_proba(
         discount_completions`. Pre-compute them by passing `completions`, `model`, and
         `end_of_prompt` to :func:`token_logprobs`. By default, if `not
         discount_completions`, they are (re-)computed
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
     batch_size : int, optional
@@ -596,9 +596,9 @@ def predict_proba_examples(
         completions
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
-        there are at least 5 examples
+        there are at least 5 `examples`
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32
@@ -700,7 +700,7 @@ def predict(
         discount_completions`. Pre-compute them by passing `completions`, `model`, and
         `end_of_prompt` to :func:`token_logprobs`. By default, if `not
         discount_completions`, they are (re-)computed
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
     batch_size : int, optional
@@ -771,9 +771,9 @@ def predict_examples(
         completions
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
-        there are at least 5 examples
+        there are at least 5 `examples`
     batch_size : int, optional
         the maximum number of inputs that the model will process in parallel, by default
         32

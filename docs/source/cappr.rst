@@ -12,5 +12,6 @@ API Reference
    :maxdepth: 4
 
    cappr.huggingface
+   cappr.llama_cpp
    cappr.openai
    cappr.utils

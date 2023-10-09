@@ -45,14 +45,11 @@ def log_probs_conditional(
     model: Llama,
     **kwargs,
 ) -> list[list[list[float]]]:
-    # Little weird. I want my IDE to know that examples is always a Sequence[Example]
-    # b/c of the decorator.
-    prompts: Sequence[str] = prompts
     # Flat list of prompts and their completions. Will post-process
     texts = [
         prompt + " " + completion for prompt in prompts for completion in completions
     ]
-    log_probs = token_logprobs(texts, model, add_bos_token=True)
+    log_probs = token_logprobs(texts, model, add_bos=True)
     # Since log_probs is a flat list, we'll need to batch them by the size and order of
     # completions to fulfill the spec.
     return [
@@ -76,7 +73,7 @@ def log_probs_conditional_examples(
         for example in examples
         for completion in example.completions
     ]
-    log_probs_all = token_logprobs(texts, model=model, add_bos_token=True)
+    log_probs_all = token_logprobs(texts, model=model, add_bos=True)
     # Flatten completions in same order as examples were flattened
     completions_all = [
         completion for example in examples for completion in example.completions

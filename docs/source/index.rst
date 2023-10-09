@@ -1,11 +1,6 @@
 CAPPr Docs
 ==========
 
-|gittycat| `GitHub <https://github.com/kddubey/cappr>`_
-
-.. |gittycat| image:: _static/github-mark.png
-              :scale: 10%
-
 CAPPr performs text classification. No training. No post-processing. **Just have your
 LLM pick from a list of choices.** Or compute the probability of a completion given a
 prompt. Squeeze more out of open source LLMs.

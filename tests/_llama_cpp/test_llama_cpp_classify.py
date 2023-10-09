@@ -26,7 +26,7 @@ sys.path.insert(1, os.path.join(sys.path[0], ".."))
 import _test
 
 
-_FULL_PATH_FOR_THIS_FILES_DIR = os.path.dirname(os.path.abspath(__file__))
+_ABS_PATH_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 ########################################################################################
@@ -46,9 +46,7 @@ def model_name(request: pytest.FixtureRequest) -> str:
 
 @pytest.fixture(scope="module")
 def model(model_name: str) -> Llama:
-    model_path = os.path.join(
-        _FULL_PATH_FOR_THIS_FILES_DIR, "fixtures", "models", model_name
-    )
+    model_path = os.path.join(_ABS_PATH_THIS_DIR, "fixtures", "models", model_name)
     return Llama(model_path, logits_all=True)
 
 
@@ -90,7 +88,7 @@ def test_token_logprobs(texts: Sequence[str], model: Llama, atol: float):
     Tests that the model's token log probabilities are correct by testing against a
     carefully, manually indexed result.
     """
-    log_probs_texts_observed = fast.token_logprobs(texts, model, add_bos_token=True)
+    log_probs_texts_observed = fast.token_logprobs(texts, model, add_bos=True)
 
     # The first logprob of every text must be None b/c no CausalLM estimates Pr(token)
     for log_prob_observed in log_probs_texts_observed:
@@ -102,9 +100,10 @@ def test_token_logprobs(texts: Sequence[str], model: Llama, atol: float):
     for text in texts:
         input_ids = model.tokenize(text.encode("utf-8"), add_bos=True)
         model.reset()
-        # TODO: extremely weird bug. 2nd weirdest I've ever seen. If the huggingface
-        # tests are ran before llama_cpp tests, model.eval_logits are all nan! That's
-        # why the directory is named _llama_cpp, not llama_cpp lol
+        # TODO: extremely weird bug. If the huggingface tests are ran before llama_cpp
+        # tests, model.eval_logits are all nan! That's why the directory is named
+        # _llama_cpp, not llama_cpp lol. I can reproduce the bug by repeatedly loading
+        # the Llama model: model = Llama(...)
         model.eval(input_ids)
         _texts_log_probs.append(log_softmax(np.array(model.eval_logits)))
         _texts_input_ids.append(input_ids)

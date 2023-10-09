@@ -14,6 +14,11 @@ easy to plug and play though.
 HuggingFace
 -----------
 
+To work with serialized PyTorch ``transformers`` models, CAPPr depends on the
+`transformers <https://github.com/huggingface/transformers>`_ package. You can search
+the `HuggingFace model hub <https://huggingface.co/models?library=pytorch>`_ for these
+models.
+
 Here's a quick example (which will download a small GPT-2 model to your computer):
 
 .. code:: python
@@ -43,10 +48,11 @@ So far, CAPPr has been tested for correctness on the following architectures:
 - Mistral.
 
 You'll need access to beefier hardware to run models from the HuggingFace hub, as
-:mod:`cappr.huggingface` currently locally loads models. HuggingFace Inference Endpoints
-are not yet supported by this package.
+:mod:`cappr.huggingface` currently assumes you've locally loaded the model. HuggingFace
+Inference Endpoints are not yet supported by this package.
 
-CAPPr will support GGUF models in a few days. It's supported in the main branch.
+``ctransformers`` models are not yet supported. I think I'm just waiting on [this
+issue](https://github.com/marella/ctransformers/issues/150).
 
 
 Which CAPPr HuggingFace module should I use?
@@ -62,13 +68,14 @@ completions and you're running a model on batches of prompts.
 
 :mod:`cappr.huggingface.classify_no_cache` may happen to be compatible with a slightly
 broader class of causal/autoregressive language models. Here, the model is only assumed
-to input token/input IDs + attention mask, and then output logits for each input ID.
-Furthermore, in the current implementation, this module may be a bit faster when
+to input token/input IDs and an attention mask, and then output logits for each input
+ID. Furthermore, in the current implementation, this module may be a bit faster when
 ``batch_size=1``.
 
-.. warning:: For completions which aren't single tokens, the current HuggingFace
-   implementation theoretically takes more RAM than it should, even when
-   ``batch_size=1``. It doesn't seem bad, but I'll measure and fix it soon.
+.. warning:: If there are many many completions, and they aren't all single tokens, the
+   current HuggingFace implementation takes more RAM than it should, even when
+   ``batch_size=1``. It shouldn't be a huge issue. But I'll measure and fix this problem
+   soon.
 
 
 Examples
@@ -86,6 +93,60 @@ For simple GPT-2 CPU examples, see the **Example** section for each of these fun
 :func:`cappr.huggingface.classify.predict`
 
 :func:`cappr.huggingface.classify.predict_examples`
+
+
+Llama CPP
+---------
+
+To work with models stored in the GGUF format, CAPPr depends on the `llama-cpp-python
+<https://github.com/abetlen/llama-cpp-python>`_ package. You can search the `HuggingFace
+model hub <https://huggingface.co/models?sort=trending&search=gguf>`_ for these models.
+
+.. note:: When instantiating your Llama, set ``logits_all=True``.
+
+Here's a quick example (which assumes you've downloaded `this 6 MB model
+<https://huggingface.co/aladar/TinyLLama-v0-GGUF/blob/main/TinyLLama-v0.Q8_0.gguf>`_):
+
+.. code:: python
+
+   from llama_cpp import Llama
+   from cappr.llama_cpp.classify import predict
+
+   # Load model. Always set logits_all=True for CAPPr
+   model = Llama("./TinyLLama-v0.Q8_0.gguf", logits_all=True, verbose=False)
+
+   prompt = """Gary told Spongebob a story:
+   There once was a man from Peru; who dreamed he was eating his shoe. He
+   woke with a fright, in the middle of the night, to find that his dream
+   had come true.
+
+   The moral of the story is to"""
+   completions = (
+      "look at the bright side",
+      "use your imagination",
+      "eat shoes",
+   )
+
+   pred = predict(prompt, completions, model)
+   print(pred)
+   # use your imagination
+
+So far, CAPPr has been tested for correctness on models which use SentencePiece
+tokenization, e.g., Llama. I'll test on models which use BPE soon. I think you may just
+need to add a space before each completion string.
+
+
+Examples
+~~~~~~~~
+
+For an example of running Llama 2 with CAPPr, see `this notebook
+<https://github.com/kddubey/cappr/blob/main/demos/llama_cpp.ipynb>`_.
+
+For simple examples, see the **Example** section for each of these functions:
+
+:func:`cappr.llama_cpp.classify.predict`
+
+:func:`cappr.llama_cpp.classify.predict_examples`
 
 
 OpenAI

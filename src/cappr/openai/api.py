@@ -270,7 +270,7 @@ def gpt_complete(
         these are passed as the `prompt` argument in a text completion request
     model : Model
         which text completion model to use
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
     progress_bar_desc: str, optional
@@ -351,7 +351,7 @@ def gpt_chat_complete(
         ``{"role": "user", "content": text}``
     model : str, optional
         one of the chat model names, by default "gpt-3.5-turbo"
-    show_progress_bar: bool | None, optional
+    show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
     ask_if_ok : bool, optional

@@ -1,7 +1,12 @@
 """
-Shared input checks. These check conditions that would cause silent and annoying
-failures. For example, inputting an unordered iterable will cause outputs like predicted
-probabilities to be meaningless.
+Shared input checks. These check conditions that would cause silent or
+difficult-to-debug errors.
+
+For example:
+    - inputting an unordered iterable will cause an output array of predicted
+      probabilities to be meaningless
+    - inputting an empty object will cause an index error in some downstream
+      model/tokenization function.
 """
 from __future__ import annotations
 from typing import Literal, Sequence
@@ -14,7 +19,7 @@ def _is_reversible(object) -> bool:
     # - list, tuple, dict keys, dict values
     # - numpy array, torch Tensor
     # - pandas and polars Series
-    # - str (but other places in this package handle that)
+    # - str (but other places in this package filter those out before getting here)
     # Returns False for:
     # - set
     # reversed(object) is often a generator, so checking this is often cheap.
@@ -39,18 +44,25 @@ def ordered(object: Sequence, variable_name: str):
 
 
 def nonempty(object: Sequence, variable_name: str):
+    """
+    Raises a `ValueError` if `object` is empty.
+    """
     if len(object) == 0:
         raise ValueError(f"{variable_name} must be non-empty.")
 
 
 def nonempty_and_ordered(object: Sequence, variable_name: str):
+    """
+    Raises an error if `object` is not nonempty and ordered.
+    """
     nonempty(object, variable_name)
     ordered(object, variable_name)
 
 
 def completions(completions: Sequence[str]):
     """
-    Raise an error if `completions` is not a nonempty, ordered, non-string.
+    Raises an error if `completions` is not a nonempty, ordered, non-string, or if it
+    contains an empty string.
     """
     nonempty_and_ordered(completions, variable_name="completions")
     if isinstance(completions, str):
@@ -58,6 +70,19 @@ def completions(completions: Sequence[str]):
             "completions cannot be a string. It must be a sequence of strings. If you "
             "intend on inputting a single completion to estimate its probability, wrap "
             "it in a list or tuple and set normalize=False."
+        )
+    idxs_empty_completions = [
+        i for i, completion in enumerate(completions) if not completion
+    ]
+    if len(idxs_empty_completions) == len(completions):
+        raise ValueError(
+            "All completions are empty. Expected all completions to be non-empty "
+            "strings. Did you mean to use the token_logprobs function instead?"
+        )
+    elif idxs_empty_completions:
+        raise ValueError(
+            f"completions {idxs_empty_completions} are empty. Expected all completions "
+            "to be non-empty strings."
         )
 
 
@@ -83,7 +108,7 @@ def prior(prior: Sequence[float] | None, expected_length: int):
     # after making expensive model calls. Don't want that multiplication to fail b/c
     # that'd be a complete waste of model compute.
     if not isinstance(prior, (Sequence, np.ndarray)):
-        raise TypeError("prior must be None, a Sequence, or numpy array.")
+        raise TypeError("prior must be None, a Sequence, or a numpy array.")
     if len(np.shape(prior)) != 1:
         raise ValueError("prior must be 1-D.")
     prior_arr = np.array(prior, dtype=float)  # try casting to float

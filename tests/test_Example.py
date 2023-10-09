@@ -2,7 +2,8 @@
 Unit tests `cappr.Example` input checks.
 """
 from __future__ import annotations
-from typing import Any
+import re
+from typing import Any, Sequence
 
 import numpy as np
 import pandas as pd
@@ -20,7 +21,13 @@ def modify_kwargs(kwargs: dict[str, Any], **kwargs_new) -> dict[str, Any]:
 @pytest.mark.parametrize("end_of_prompt", (" ",))
 @pytest.mark.parametrize("prior", (None, [1 / 3, 2 / 3], np.array([0.5, 0.5])))
 @pytest.mark.parametrize("normalize", (True, False))
-def test___post_init__(prompt, completions, end_of_prompt, prior, normalize):
+def test___post_init__(
+    prompt: str,
+    completions: list,
+    end_of_prompt: str,
+    prior: Sequence[float],
+    normalize: bool,
+):
     kwargs_valid = dict(
         prompt=prompt,
         completions=completions,
@@ -65,6 +72,16 @@ def test___post_init__(prompt, completions, end_of_prompt, prior, normalize):
     # completions - string
     with pytest.raises(TypeError, match="completions cannot be a string."):
         Example(**modify_kwargs(kwargs_valid, completions=completions[0]))
+    # completions - empty strings (all)
+    _completions_all_empty = [""] * len(completions)
+    with pytest.raises(ValueError, match="All completions are empty."):
+        Example(**modify_kwargs(kwargs_valid, completions=_completions_all_empty))
+    # completions - empty strings (1)
+    if len(completions) > 1:
+        _completions_with_empty = completions.copy()
+        _completions_with_empty[0] = ""
+        with pytest.raises(ValueError, match=re.escape("completions [0] are empty.")):
+            Example(**modify_kwargs(kwargs_valid, completions=_completions_with_empty))
 
     # prior - probabilities < 0
     with pytest.raises(
