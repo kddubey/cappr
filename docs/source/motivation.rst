@@ -11,13 +11,11 @@ Problem
 -------
 
 There are many ways to do text classification. The one that this package is competing
-against is what I'll call **classification via sampling (CVS)**. This method simply has
-an LLM generate text.
+against is text generation.
 
-To make CVS more concrete, let's work through an example.
-
-In CVS, your job is to write up your classification task in a ``prompt`` string. For
-example, to classify a product review, CVS code looks like this:
+To make text generation more concrete, let's work through an example. Your first task is
+to write up your classification task in a ``prompt`` string. For example, to classify a
+product review, text generation code looks like this:
 
 .. code:: python
 
@@ -54,10 +52,10 @@ example, to classify a product review, CVS code looks like this:
    # '\nThe product is difficult to use'
    # correct!
 
-This usually works well. But if you've ever run CVS on a slightly larger scale, then you
-know that there may be a considerable fraction of cases where the ``completion`` is not
-actually in ``class_names``. For your LLM application to work well, you need to handle
-these cases. So you add:
+This usually works well. But if you've ever run text generation on a slightly larger
+scale, then you know that there may be a considerable fraction of cases where the
+``completion`` is not actually in ``class_names``. For your LLM application to work
+well, you need to handle these cases. So you add:
 
 .. code:: python
 
@@ -104,7 +102,7 @@ not a clean solution to a classification problem.
 Recap
 -----
 
-Before moving on to the solution, let's recap the CVS/text-generation workflow:
+Before moving on to the solution, let's recap the text generation workflow:
 
 #. Design a prompt which asks the model to output exactly one choice from a given set of
    choices

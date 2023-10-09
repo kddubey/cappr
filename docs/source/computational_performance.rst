@@ -14,21 +14,22 @@ models, as I can't control their backend. So if you're running
    :align: center
 
    `COPA`_ dataset, repeating the choices to simulate multi-class classification tasks.
-   `GPT-2 (small)`_ was run on a Tesla K80 GPU (whatever was free in Google Colab in
-   March 2023). 96 classification inputs were processed in batches of size 32. Each
-   point in the graph is a median of 5 runs. For classification via sampling (CVS),
-   exactly 4 tokens were generated for each prompt, which is the number of tokens in
-   ``'\n\nAnswer A'``. 1-token times are also shown. But for COPA (and other
-   multiple-choice style prompts), that may result in lower zero-shot accuracy, as most
-   of the sampled choices come after the first token.
+   `GPT-2 (small)`_ was run on a T4 GPU. 96 classification inputs were processed in
+   batches of size 32. For each method and each number of classes, GPU RAM was held
+   (roughly) constant, peaking at around 13 GB for the highest number of classes. Each
+   point in the graph is a median of 5 runs. For text generation, exactly 4 tokens were
+   generated for each prompt, which is the number of tokens in ``'\n\nAnswer A'``.
+   1-token times are also shown. But for COPA (and other multiple-choice style prompts),
+   that may result in lower zero-shot accuracy, as most of the sampled choices come
+   after the first token.
 
 .. _COPA: https://people.ict.usc.edu/~gordon/copa.html
 
 .. _GPT-2 (small): https://huggingface.co/gpt2
 
-See the `this notebook`_ for the code which produced the figure above.
-
-.. _this notebook: https://github.com/kddubey/cappr/blob/main/demos/computational_analysis.ipynb
+See the `this notebook
+<https://github.com/kddubey/cappr/blob/main/demos/computational_analysis.ipynb>`_ for
+the code which produced the figure above.
 
 
 Future work

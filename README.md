@@ -241,7 +241,7 @@ print(preds)
 </details>
 
 See
-[`demos/llama_cpp.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb)
+[`demos/superglue/llama_cpp.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb)
 for a demonstration of a slightly harder classification task.
 
 
