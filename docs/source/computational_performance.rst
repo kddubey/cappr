@@ -29,3 +29,17 @@ models, as I can't control their backend. So if you're running
 See the `this notebook`_ for the code which produced the figure above.
 
 .. _this notebook: https://github.com/kddubey/cappr/blob/main/demos/computational_analysis.ipynb
+
+
+Future work
+-----------
+
+Significant memory savings can be achieved by improving the current implementation of
+batching. Currently, all of the completions are ran in parallel per prompt. In reality,
+they can be batched too; each prompt-completion pair can be processed one at a time.
+This should result in significant memory savings over text generation because a CAPPr
+prompt is typically much smaller than a text generation prompt. A text generation prompt
+must describe each class in the prompt, and the model must attend to all of this
+information to perform well. A CAPPr prompt doesn't need to include info about the
+classes to perform well. And a completion is just one of the classes. As a result,
+memory and context requirements can be relaxed.

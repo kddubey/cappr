@@ -253,8 +253,8 @@ age of LLMs, text classification can be done by any engineer, not just ML engine
 
 Re the algorithm: classification-via-sampling using `text-curie-001` (a smaller GPT-3
 model) performs worse than random guessing, while CAPPr using `text-curie-001` is 80%
-accurate. See the experiment
-[here](https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb). It'd be
+accurate. See the experiments
+[here](https://cappr.readthedocs.io/en/latest/future_research.html). It'd be
 cool to demonstrate that CAPPr generally works better for smaller or under-trained LMs.
 
 Besides the algorithmic stuff, I was pleasantly surprised to find that I loved

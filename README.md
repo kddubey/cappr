@@ -94,7 +94,7 @@ for more info on using PyTorch ``transformers`` models.
 seems to work fine with models loaded via
 [`auto_gptq.AutoGPTQForCausalLM.from_quantized`](https://github.com/PanQiWei/AutoGPTQ).
 But I haven't thoroughly tested that. See [this
-notebook](https://github.com/kddubey/cappr/blob/main/demos/auto_gptq.ipynb) for a
+notebook](https://github.com/kddubey/cappr/blob/main/demos/huggingface/auto_gptq.ipynb) for a
 minimal demo.
 </details>
 
@@ -241,7 +241,7 @@ print(preds)
 </details>
 
 See
-[`demos/llama_cpp.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp.ipynb)
+[`demos/llama_cpp.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb)
 for a demonstration of a slightly harder classification task.
 
 
@@ -329,20 +329,22 @@ am bored. am unemployed.
 Statistical performance
 </summary>
 
-Not too shabby. TODO: summary table comparing competing methods.
-
-[2 SuperGLUE datasets](https://github.com/kddubey/cappr/blob/main/demos/superglue)
-
-[RAFT zero-shot training sets](https://github.com/kddubey/cappr/blob/main/demos/raft)
-
-For HuggingFace models, see
+I'm still evaluating open source models. For now, see
 
 - the 4-bit 4 GB [Llama 2 COPA
-  demo](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp.ipynb)
+  demo](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb)
 - and this (minimal but surprising) 3 GB [StableLM
   demo](https://github.com/kddubey/cappr/blob/main/demos/auto_gptq.ipynb).
 
-I'll evaluate Llama 2 or Mistral 7B on a few more datasets.
+For OpenAI models, see
+
+[2 SuperGLUE
+datasets](https://github.com/kddubey/cappr/blob/main/demos/openai/superglue)
+
+[RAFT zero-shot training
+sets](https://github.com/kddubey/cappr/blob/main/demos/openai/raft)
+
+TODO: summary tables/spiderwebs
 </details>
 
 

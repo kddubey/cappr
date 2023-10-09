@@ -83,11 +83,11 @@ Examples
 ~~~~~~~~
 
 For an example of running Llama 2 with CAPPr, see `this notebook
-<https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb>`_.
+<https://github.com/kddubey/cappr/blob/main/demos/huggingface/superglue/copa.ipynb>`_.
 
 For a minimal example of running an `AutoGPTQ <https://github.com/PanQiWei/AutoGPTQ>`_
 model, see `this notebook
-<https://github.com/kddubey/cappr/blob/main/demos/auto_gptq.ipynb>`_.
+<https://github.com/kddubey/cappr/blob/main/demos/huggingface/auto_gptq.ipynb>`_.
 
 For simple GPT-2 CPU examples, see the **Example** section for each of these functions:
 
@@ -141,7 +141,7 @@ Examples
 ~~~~~~~~
 
 For an example of running Llama 2 with CAPPr, see `this notebook
-<https://github.com/kddubey/cappr/blob/main/demos/llama_cpp.ipynb>`_.
+<https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb>`_.
 
 For simple examples, see the **Example** section for each of these functions:
 
@@ -183,7 +183,7 @@ exception of ``davinci-002`` and ``babbage-002`` (weak, non-instruction-trained 
 
 .. _/v1/completions: https://platform.openai.com/docs/models/model-endpoint-compatibility
 
-.. _may be SOTA for zero-shot COPA: https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb
+.. _may be SOTA for zero-shot COPA: https://github.com/kddubey/cappr/blob/main/demos/openai/superglue/copa.ipynb
 
 .. warning:: Currently, :mod:`cappr.openai.classify` must repeat the ``prompt`` for
              however many completions there are. So if your prompt is long and your
@@ -196,10 +196,10 @@ Examples
 ~~~~~~~~
 
 Great zero-shot COPA performance is achieved in `this notebook
-<https://github.com/kddubey/cappr/blob/main/demos/superglue/copa.ipynb>`_.
+<https://github.com/kddubey/cappr/blob/main/demos/openai/superglue/copa.ipynb>`_.
 
 Great zero-shot WSC performance with ``text-curie-001`` is achieved in `this notebook
-<https://github.com/kddubey/cappr/blob/main/demos/superglue/wsc.ipynb>`_.
+<https://github.com/kddubey/cappr/blob/main/demos/openai/superglue/wsc.ipynb>`_.
 
 For simple examples, see the **Example** section for each of these functions:
 

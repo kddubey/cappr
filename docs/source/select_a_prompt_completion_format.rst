@@ -133,7 +133,7 @@ Yes-No
 
 Sometimes, your task can be framed as a yes or no question. Here's an example of a
 successful format for instruction-trained models, which was pulled from `this demo
-<https://github.com/kddubey/cappr/blob/main/demos/raft/ade.ipynb>`_:
+<https://github.com/kddubey/cappr/blob/main/demos/openai/raft/ade.ipynb>`_:
 
 .. code:: python
 
@@ -164,7 +164,7 @@ Examples
 ++++++++
 
 For another example of this prompt-completion format in action, see `this demo
-<https://github.com/kddubey/cappr/blob/main/demos/raft/over.ipynb>`_.
+<https://github.com/kddubey/cappr/blob/main/demos/openai/raft/over.ipynb>`_.
 
 
 Multiple Choice
@@ -175,7 +175,8 @@ they've been trained to do so. One caveat is that the number of choices shouldn'
 more than five, because multiple choice question formats seen during training are
 usually limited to the letters from school exams: (A), (B), (C), (D), (E). Also, ensure
 that the system prompt/message is explicit about answering with one of the letters.
-Here's an example of the system prompt used for the `Llama 2 COPA demo`_:
+Here's an example of the system prompt used for the `Llama 2 COPA demo
+<https://github.com/kddubey/cappr/blob/main/demos/huggingface/superglue/copa.ipynb>`_:
 
 .. code:: python
 
@@ -337,14 +338,15 @@ Footnotes
 ---------
 
 .. [#] These are not hard rules. For example, the `demo for the Winograd Schema
-   Challenge <https://github.com/kddubey/cappr/blob/main/demos/superglue/wsc.ipynb>`_
+   Challenge
+   <https://github.com/kddubey/cappr/blob/main/demos/openai/superglue/wsc.ipynb>`_
    flips the roles of the ``prompt`` and ``completion``. (Just don't use the ``prior``
    keyword argument in that case.)
 
 .. [#] CAPPr may be able to lean more on what was learned during pretraining than
    methods which rely on instruction-style prompts. Consider the `COPA task
-   <https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb>`_. A
-   smaller language model probably hasn't seen enough of the instruction-style prompt:
+   <https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb>`_.
+   A smaller language model probably hasn't seen enough of the instruction-style prompt:
 
    .. code::
 
@@ -377,7 +379,3 @@ References
 
 .. [6] Min, Sewon, et al. "Rethinking the role of demonstrations: What makes in-context
     learning work?." arXiv preprint arXiv:2202.12837 (2022).
-
-
-.. links
-.. _Llama 2 COPA demo: https://github.com/kddubey/cappr/blob/main/demos/llama2/copa.ipynb
