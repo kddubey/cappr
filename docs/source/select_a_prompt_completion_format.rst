@@ -115,9 +115,13 @@ each of these functions:
 
 :func:`cappr.huggingface.classify.predict`
 
-:func:`cappr.huggingface.classify.predict_examples`
+:func:`cappr.llama_cpp.classify.predict`
 
 :func:`cappr.openai.classify.predict_examples`
+
+:func:`cappr.huggingface.classify.predict_examples`
+
+:func:`cappr.llama_cpp.classify.predict_examples`
 
 .. warning:: I haven't evaluated CAPPr on completion strings which are longer than 15
              tokens. And I don't think CAPPr works well when there are ≥50 possible
@@ -217,8 +221,8 @@ or less instruction-trained models.
 .. warning:: Currently, :mod:`cappr.openai.classify` must repeat the ``prompt`` for
              however many completions there are. So if your prompt is long and your
              completions are short, you may end up spending much more with CAPPr.
-             (:mod:`cappr.huggingface.classify` does not have to repeat the prompt
-             because it caches its representation.)
+             (:mod:`cappr.huggingface.classify` and :mod:`cappr.llama_cpp.classify` do
+             not repeat the prompt because they cache its representation.)
 
 
 Quirks
@@ -226,9 +230,9 @@ Quirks
 
 Most models are sensitive to quirky differences between prompts.
 
-**Llama 2 / SentencePiece models**: when using a Concat-Class style prompt, higher
-accuracy may be achieved by abandoning the chat format. See, e.g., the `Llama 2 COPA
-demo`_. Moreover, instead of setting ``end_of_prompt=" "``, consider adding this
+**Llama 2 / SentencePiece models**: when using a Concat-Class style prompt, it's
+possible to achieve higher accuracy by abandoning the chat format. See, e.g., the `Llama
+2 COPA demo`_. Moreover, instead of setting ``end_of_prompt=" "``, consider adding this
 whitespace to the end of the ``prompt`` string and set ``end_of_prompt=""``.
 
 I'll update these notes as more quirks are discovered. For now, if you don't already

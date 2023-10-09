@@ -38,7 +38,8 @@ Here's a quick example (which will download a small GPT-2 model to your computer
    print(pred)
    # Mercury
 
-So far, CAPPr has been tested for correctness on the following architectures:
+So far, CAPPr has been tested for correctness on the following ``transformers``
+architectures:
 
 - GPT-2
 - GPT-J
@@ -51,8 +52,8 @@ You'll need access to beefier hardware to run models from the HuggingFace hub, a
 :mod:`cappr.huggingface` currently assumes you've locally loaded the model. HuggingFace
 Inference Endpoints are not yet supported by this package.
 
-``ctransformers`` models are not yet supported. I think I'm just waiting on [this
-issue](https://github.com/marella/ctransformers/issues/150).
+``ctransformers`` models are not yet supported. I think I'm just waiting on `this
+issue <https://github.com/marella/ctransformers/issues/150>`_.
 
 
 Which CAPPr HuggingFace module should I use?
@@ -131,7 +132,7 @@ Here's a quick example (which assumes you've downloaded `this 6 MB model
    print(pred)
    # use your imagination
 
-So far, CAPPr has been tested for correctness on models which use SentencePiece
+So far, CAPPr has been tested for correctness on GGUF models which use SentencePiece
 tokenization, e.g., Llama. I'll test on models which use BPE soon. I think you may just
 need to add a space before each completion string.
 
@@ -187,8 +188,8 @@ exception of ``davinci-002`` and ``babbage-002`` (weak, non-instruction-trained 
 .. warning:: Currently, :mod:`cappr.openai.classify` must repeat the ``prompt`` for
              however many completions there are. So if your prompt is long and your
              completions are short, you may end up spending much more with CAPPr.
-             (:mod:`cappr.huggingface.classify` does not have to repeat the prompt
-             because it caches its representation.)
+             (:mod:`cappr.huggingface.classify` and :mod:`cappr.llama_cpp.classify` do
+             not repeat the prompt because they cache its representation.)
 
 
 Examples
