@@ -44,5 +44,5 @@ order) instead of the one above:
 
    pip install --no-deps cappr
 
-(In the future, it'd be nice if a feature like
-[this one](https://github.com/pypa/setuptools/pull/1503) were supported by PyPA.)
+(In the future, it'd be nice if a feature like `this one
+<https://github.com/pypa/setuptools/pull/1503>`_ were supported by PyPA.)

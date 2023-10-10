@@ -1,7 +1,7 @@
 """
 Completion After Prompt Probability
 """
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 
 from . import utils
 from ._example import Example
