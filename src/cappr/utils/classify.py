@@ -259,7 +259,7 @@ def _log_probs_conditional(log_probs_conditional):
     @wraps(log_probs_conditional)
     def wrapper(
         prompts: str | Sequence[str], completions: Sequence[str], *args, **kwargs
-    ) -> list[list[list[float]]]:
+    ) -> list[list[float]] | list[list[list[float]]]:
         if not isinstance(prompts, str):
             _check.nonempty_and_ordered(prompts, variable_name="prompts")
         _check.completions(completions)
@@ -282,7 +282,7 @@ def _log_probs_conditional_examples(log_probs_conditional_examples):
     @wraps(log_probs_conditional_examples)
     def wrapper(
         examples: Example | Sequence[Example], *args, **kwargs
-    ) -> list[list[list[float]]]:
+    ) -> list[list[float]] | list[list[list[float]]]:
         if not isinstance(examples, Example):
             _check.nonempty_and_ordered(examples, variable_name="examples")
         return _wrap_call_unwrap(
