@@ -43,3 +43,7 @@ prompt. A text generation prompt must describe each class in the prompt, and the
 must attend to all of this information to perform well. A CAPPr prompt doesn't need to
 include info about the classes to perform well. And a completion is just one of the
 classes. As a result, model context and memory requirements can be relaxed.
+
+.. note:: For :mod:`cappr.llama_cpp.classify`, batch inference currently isn't possible.
+          As a result, memory is optimized at the cost of slightly greater runtime
+          compared to text generation.
