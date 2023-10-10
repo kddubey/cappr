@@ -193,13 +193,13 @@ Here's a little utility function which automatically writes out the letters and 
 
    from string import ascii_uppercase as alphabet
 
-    def multiple_choice(*choices) -> str:
-        if len(choices) > len(alphabet):
-            raise ValueError("There are more choices than letters.")
-        letters_and_choices = [
-            f"{letter}. {choice}" for letter, choice in zip(alphabet, choices)
-        ]
-        return "\n".join(letters_and_choices)
+   def multiple_choice(*choices) -> str:
+       if len(choices) > len(alphabet):
+           raise ValueError("There are more choices than letters.")
+       letters_and_choices = [
+           f"{letter}. {choice}" for letter, choice in zip(alphabet, choices)
+       ]
+       return "\n".join(letters_and_choices)
 
    choices = [
        "Don't Wanna Know",
@@ -218,12 +218,6 @@ Here's a little utility function which automatically writes out the letters and 
 
 Based on a few experiments, multiple choice questions are less appropriate for smaller
 or less instruction-trained models.
-
-.. warning:: Currently, :mod:`cappr.openai.classify` must repeat the ``prompt`` for
-             however many completions there are. So if your prompt is long and your
-             completions are short, you may end up spending much more with CAPPr.
-             (:mod:`cappr.huggingface.classify` and :mod:`cappr.llama_cpp.classify` do
-             not repeat the prompt because they cache its representation.)
 
 
 Quirks
@@ -256,6 +250,8 @@ sorts of prompts, it may be applied to post-process completions:
 2. Pass this completion in a second prompt, and have CAPPr classify the answer. You can
    probably get away with using a cheap model for this task, as it just takes a bit of
    semantic parsing.
+
+(Indeed, I am advocating for replacing string processing with a small LLM.)
 
 Here's an example:
 

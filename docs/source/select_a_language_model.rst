@@ -14,10 +14,9 @@ easy to plug and play though.
 HuggingFace
 -----------
 
-To work with serialized PyTorch ``transformers`` models, CAPPr depends on the
-`transformers <https://github.com/huggingface/transformers>`_ package. You can search
-the `HuggingFace model hub <https://huggingface.co/models?library=pytorch>`_ for these
-models.
+To work with PyTorch ``transformers`` models, CAPPr depends on the `transformers
+<https://github.com/huggingface/transformers>`_ package. You can search the `HuggingFace
+model hub <https://huggingface.co/models?library=pytorch>`_ for these models.
 
 Here's a quick example (which will download a small GPT-2 model to your computer):
 
