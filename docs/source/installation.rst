@@ -30,14 +30,19 @@ Without dependencies
 For backwards compatibility reasons, installing this package installs the ``openai``
 `API <https://pypi.org/project/openai/>`_ and its (lightweight) dependencies. You don't
 need these packages to run ``llama-cpp``/GGUF models with ``cappr``. So in case you'd
-like to avoid installing ``openai`` and its dependencies, run this command instead of
-the one above::
+like to avoid installing ``openai`` and its dependencies, run these two commands (in any
+order) instead of the one above:
+
+::
 
    pip install \
    "numpy>=1.21.0" \
    "tqdm>=4.27.0" \
-   "llama-cpp-python>=0.2.11" \
-   --no-deps cappr
+   "llama-cpp-python>=0.2.11"
+
+::
+
+   pip install --no-deps cappr
 
 (In the future, it'd be nice if a feature like
 [this one](https://github.com/pypa/setuptools/pull/1503) were supported by PyPA.)
