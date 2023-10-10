@@ -252,31 +252,8 @@ https://cappr.readthedocs.io
 
 ## Installation
 
-To use PyTorch ``transformers`` models:
-
-```
-pip install "cappr[hf]"
-```
-
-To use GGUF models:
-
-```
-pip install "cappr[llama-cpp]"
-```
-
-Or, to use OpenAI models, [sign up](https://platform.openai.com/signup) for the OpenAI
-API, set the environment variable `OPENAI_API_KEY`, and then
-
-```
-pip install cappr
-```
-
-(Optional) Install requirements for running the repo's
-[`demos`](https://github.com/kddubey/cappr/tree/main/demos)
-
-```
-pip install "cappr[demos]"
-```
+See [this page of the
+documentation](https://cappr.readthedocs.io/en/latest/installation.html).
 
 
 ## Motivation
@@ -390,7 +367,7 @@ documentation](https://cappr.readthedocs.io/en/latest/related_work.html).
 ### Setup
 
 1. Create a new Python 3.8+ virtual environment. Activate the venv. I use
-   [`virtualenvwrapper`](https://virtualenvwrapper.readthedocs.io/en/latest/). For this
+   [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/). For this
    example, let's create a virtual environment called `cappr`
    using Python's native `venv`:
 

@@ -35,11 +35,11 @@ Future work
 -----------
 
 Significant memory savings can be achieved by improving the current implementation of
-batching. Currently, all of the completions are ran in parallel per prompt. They can be
-batched too; each prompt-completion pair can be processed one at a time. This should
-result in significant memory savings over text generation because a CAPPr prompt is
-typically much smaller than a text generation prompt. A text generation prompt must
-describe each class in the prompt, and the model must attend to all of this information
-to perform well. A CAPPr prompt doesn't need to include info about the classes to
-perform well. And a completion is just one of the classes. As a result, model context
-and memory requirements can be slightly relaxed.
+batching. Currently, all of the completions are ran in parallel per prompt. In the
+future, I'll enable completions to be batched as well; each prompt-completion pair will
+be processed one at a time. This should result in significant memory savings over text
+generation because a CAPPr prompt is typically much smaller than a text generation
+prompt. A text generation prompt must describe each class in the prompt, and the model
+must attend to all of this information to perform well. A CAPPr prompt doesn't need to
+include info about the classes to perform well. And a completion is just one of the
+classes. As a result, model context and memory requirements can be relaxed.

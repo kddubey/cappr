@@ -5,7 +5,11 @@ __version__ = "0.5.0"
 
 from . import utils
 from ._example import Example
-from . import openai
+
+try:
+    from . import openai  # can be optional if cappr is installed with --no-deps
+except ModuleNotFoundError:
+    pass
 
 try:
     from . import huggingface  # optional
