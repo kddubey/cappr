@@ -474,8 +474,8 @@ def _predict(predict_proba_func):
         if len(completions) == 1:
             raise ValueError(
                 "completions only has one completion. predict will trivially return "
-                "back this completion. Perhaps you meant to call predict_proba instead "
-                "of predict."
+                "back this completion. Perhaps you meant to call predict_proba with "
+                "normalize=False instead of predict."
             )
         pred_probs: npt.NDArray = predict_proba_func(
             prompts, completions, *args, **kwargs

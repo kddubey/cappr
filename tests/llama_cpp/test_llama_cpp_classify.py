@@ -40,14 +40,9 @@ _ABS_PATH_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
         "TinyLLama-v0.Q8_0.gguf",  # TODO: include a BPE-based model like GPT
     ],
 )
-def model_name(request: pytest.FixtureRequest) -> str:
-    return request.param
-
-
-@pytest.fixture(scope="module")
-def model(model_name: str) -> Llama:
-    model_path = os.path.join(_ABS_PATH_THIS_DIR, "fixtures", "models", model_name)
-    return Llama(model_path, logits_all=True)
+def model(request: pytest.FixtureRequest) -> Llama:
+    model_path = os.path.join(_ABS_PATH_THIS_DIR, "fixtures", "models", request.param)
+    return Llama(model_path, logits_all=True, verbose=False)
 
 
 @pytest.fixture(scope="module")
@@ -63,10 +58,12 @@ def atol() -> float:
 ########################################################################################
 
 
-def test__check_model(model):
+def test__check_model(model: Llama):
     model.context_params.logits_all = False
     with pytest.raises(TypeError):
-        fast._check_model(model)
+        fast.token_logprobs(["not used"], model)
+    with pytest.raises(TypeError):
+        fast.predict_proba("not used", ["not used"], model, normalize=False)
     model.context_params.logits_all = True
 
 
@@ -100,12 +97,8 @@ def test_token_logprobs(texts: Sequence[str], model: Llama, atol: float):
     for text in texts:
         input_ids = model.tokenize(text.encode("utf-8"), add_bos=True)
         model.reset()
-        # TODO: extremely weird bug. If the huggingface tests are ran before llama_cpp
-        # tests, model.eval_logits are all nan! That's why the directory is named
-        # _llama_cpp, not llama_cpp lol. I can reproduce the bug by repeatedly loading
-        # the Llama model: model = Llama(...)
         model.eval(input_ids)
-        _texts_log_probs.append(log_softmax(np.array(model.eval_logits)))
+        _texts_log_probs.append(log_softmax(fast._check_logits(model.eval_logits)))
         _texts_input_ids.append(input_ids)
     model.reset()
 

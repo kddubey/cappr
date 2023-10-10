@@ -429,7 +429,7 @@ documentation](https://cappr.readthedocs.io/en/latest/related_work.html).
    huggingface-cli download \
    aladar/TinyLLama-v0-GGUF \
    TinyLLama-v0.Q8_0.gguf \
-   --local-dir ./tests/_llama_cpp/fixtures/models \
+   --local-dir ./tests/llama_cpp/fixtures/models \
    --local-dir-use-symlinks False
    ```
 
@@ -456,6 +456,10 @@ Note that a few small transformers and tokenizers will be downloaded to your com
 Sometimes I get worried about bigger code changes. So consider additionally testing
 statistical performance by running an appropriate demo in
 [`demos`](https://github.com/kddubey/cappr/tree/main/demos).
+
+When you add a new testing module, add it to the list in `pyproject.toml`. The list is
+in order of dependencies: `Example` and `utils` must pass for the rest of the modules to
+pass.
 
 ### Docs
 
