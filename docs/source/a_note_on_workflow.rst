@@ -9,8 +9,8 @@ Probably not. Here's what, and how, you need to do.
 Gather data
 -----------
 
-Without previous experiments or good reason, don't assume that an LLM and your first
-prompt-completion format are going to work well. Instead, gather data like so:
+Without previous experiments, don't assume that an LLM and your first prompt-completion
+format are going to work well. Instead, gather data like so:
 
 .. list-table:: A bunch of input-output pairs (200 examples)
    :widths: 3 10 10
