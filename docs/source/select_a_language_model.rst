@@ -60,8 +60,7 @@ Inference Endpoints are not yet supported by this package.
 Which CAPPr HuggingFace module should I use?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are three CAPPr HuggingFace modules. In general, stick to
-:mod:`cappr.huggingface.classify`.
+There are three CAPPr HuggingFace modules.
 
 :mod:`cappr.huggingface.classify` has the greatest `throughput
 <https://cappr.readthedocs.io/en/latest/computational_performance.html>`_, but costs a
@@ -99,8 +98,7 @@ minimizing memory usage.
 Examples
 ~~~~~~~~
 
-For an example of running PyTorch ``transformers`` Llama 2 with CAPPr, see `this
-notebook
+For an example of running Llama 2 with CAPPr, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/superglue/copa.ipynb>`_.
 
 For a minimal example of running an `AutoGPTQ <https://github.com/PanQiWei/AutoGPTQ>`_

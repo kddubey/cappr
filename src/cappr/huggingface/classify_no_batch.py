@@ -80,9 +80,6 @@ def log_probs_conditional(
     Log-probabilities of each completion token conditional on each prompt and previous
     completion tokens.
 
-    Here, memory usage is minimized, as each prompt-completion pair is passed to the
-    model one at a time.
-
     Parameters
     ----------
     prompts : str | Sequence[str]
@@ -183,9 +180,6 @@ def log_probs_conditional_examples(
     """
     Log-probabilities of each completion token conditional on each prompt and previous
     completion tokens.
-
-    Here, memory usage is minimized, as each prompt-completion pair is passed to the
-    model one at a time.
 
     Parameters
     ----------
@@ -303,9 +297,6 @@ def predict_proba(
     """
     Predict probabilities of each completion coming after each prompt.
 
-    Here, memory usage is minimized, as each prompt-completion pair is passed to the
-    model one at a time.
-
     Parameters
     ----------
     prompts : str | Sequence[str]
@@ -411,9 +402,6 @@ def predict_proba_examples(
     """
     Predict probabilities of each completion coming after each prompt.
 
-    Here, memory usage is minimized, as each prompt-completion pair is passed to the
-    model one at a time.
-
     Parameters
     ----------
     examples : Example | Sequence[Example]
@@ -496,9 +484,6 @@ def predict(
 ) -> str | list[str]:
     """
     Predict which completion is most likely to follow each prompt.
-
-    Here, memory usage is minimized, as each prompt-completion pair is passed to the
-    model one at a time.
 
     Parameters
     ----------
@@ -584,9 +569,6 @@ def predict_examples(
 ) -> str | list[str]:
     """
     Predict which completion is most likely to follow each prompt.
-
-    Here, memory usage is minimized, as each prompt-completion pair is passed to the
-    model one at a time.
 
     Parameters
     ----------
