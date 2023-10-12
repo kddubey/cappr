@@ -110,9 +110,10 @@ def token_logprobs(
     _check_model(model)
 
     total = len(texts)
-    disable = not (
-        show_progress_bar or total >= _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
-    )
+    if show_progress_bar is None:
+        disable = total < _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
+    else:
+        disable = not show_progress_bar
     first_token_log_prob = [None]  # no CausalLM estimates Pr(token), so call it None
     # Loop through completions, b/c llama cpp currently doesn't support batch inference
     # Note: we could instead run logits_to_log_probs over a batch to save a bit of time,
@@ -287,9 +288,10 @@ def log_probs_conditional(
         #  [-9.9, -10.0]]  [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
     total = len(prompts)
-    disable = not (
-        show_progress_bar or total >= _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
-    )
+    if show_progress_bar is None:
+        disable = total < _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
+    else:
+        disable = not show_progress_bar
     desc = "conditional log-probs"
     return [
         _log_probs_conditional_prompt(prompt, completions, model)
@@ -384,9 +386,10 @@ def log_probs_conditional_examples(
     # b/c of the decorator.
     examples: Sequence[Example] = examples
     total = len(examples)
-    disable = not (
-        show_progress_bar or total >= _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
-    )
+    if show_progress_bar is None:
+        disable = total < _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
+    else:
+        disable = not show_progress_bar
     desc = "conditional log-probs"
     return [
         _log_probs_conditional_prompt(example.prompt, example.completions, model)

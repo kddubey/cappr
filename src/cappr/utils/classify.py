@@ -16,7 +16,7 @@ from cappr.utils import _check
 
 def _agg_log_probs_vectorized(
     log_probs: Sequence[Sequence[Sequence[float]]],
-    func: Callable[[Sequence[float]], float] = np.mean,
+    func: Callable[[Sequence[Sequence[float]]], Sequence[float]] = np.mean,
 ) -> npt.NDArray[np.floating]:
     """
     Aggregate using a vectorized numpy function `func`.

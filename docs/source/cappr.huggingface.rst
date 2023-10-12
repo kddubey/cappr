@@ -13,3 +13,4 @@ cappr.huggingface
 
    cappr.huggingface.classify
    cappr.huggingface.classify_no_cache
+   cappr.huggingface.classify_no_batch

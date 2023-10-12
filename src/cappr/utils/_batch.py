@@ -93,9 +93,10 @@ def batchify(
                 "show_progress_bar", show_progress_bar_default
             )
             total = len(batchable)
-            disable = not (
-                show_progress_bar or total >= MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
-            )
+            if show_progress_bar is None:
+                disable = total < MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
+            else:
+                disable = not show_progress_bar
             # run func along batches of batchable
             outputs = []
             with tqdm(

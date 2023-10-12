@@ -303,9 +303,10 @@ def gpt_complete(
             _ = _openai_api_call_is_ok(texts, model, max_tokens=max_tokens)
         choices = []
         total = len(texts)
-        disable = not (
-            show_progress_bar or total >= _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
-        )
+        if show_progress_bar is None:
+            disable = total < _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
+        else:
+            disable = not show_progress_bar
         with tqdm(total=total, desc=progress_bar_desc, disable=disable) as progress_bar:
             for texts_batch in _batch.constant(texts, _batch_size):
                 response = openai_method_retry(
@@ -386,9 +387,10 @@ def gpt_chat_complete(
         if ask_if_ok:
             _ = _openai_api_call_is_ok(texts, model, max_tokens=max_tokens)
         total = len(texts)
-        disable = not (
-            show_progress_bar or total >= _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
-        )
+        if show_progress_bar is None:
+            disable = total < _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
+        else:
+            disable = not show_progress_bar
         choices = []
         for text in tqdm(texts, total=total, desc="Completing chats", disable=disable):
             messages = [

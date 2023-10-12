@@ -7,20 +7,22 @@ Perform prompt-completion classification using a model which can be loaded via
 
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 
-This module is a mirror of :mod:`cappr.huggingface.classify`. The difference is that
-this module **does not** precompute attention block keys and values for prompts.
+This module is a mirror of :mod:`cappr.huggingface.classify_no_cache`. The difference is
+that this module **does not** batch any inputs—every prompt-completion pair is processed
+one at a time. As a result, memory usage is minimized.
 """
 from __future__ import annotations
-from typing import Literal, Mapping, Sequence
+from typing import Literal, Sequence
 
 import numpy as np
 import numpy.typing as npt
-import torch
-from transformers import BatchEncoding, PreTrainedTokenizerBase
+from tqdm.auto import tqdm
+from transformers import PreTrainedTokenizerBase
 
-from cappr.utils import _batch, _check, classify
+from cappr.utils import _batch, classify
 from cappr import Example
 from cappr import huggingface as hf
+from cappr.huggingface import classify_no_cache as hf_no_cache
 from cappr.huggingface._utils import ModelForCausalLM
 
 
@@ -29,7 +31,6 @@ def token_logprobs(
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     end_of_prompt: Literal[" ", ""] = " ",
     show_progress_bar: bool | None = None,
-    batch_size: int = 32,
     **kwargs,
 ) -> list[list[float]]:
     """
@@ -48,9 +49,6 @@ def token_logprobs(
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
-    batch_size : int, optional
-        the maximum number of texts that the model will process in parallel, by default
-        32
 
     Returns
     -------
@@ -65,191 +63,8 @@ def token_logprobs(
         model_and_tokenizer,
         end_of_prompt=end_of_prompt,
         show_progress_bar=show_progress_bar,
-        batch_size=batch_size,
+        batch_size=1,
     )
-
-
-def _keys_values_prompts(
-    model: ModelForCausalLM,
-    tokenizer: PreTrainedTokenizerBase,
-    prompts: Sequence[str],
-    num_completions_per_prompt: int | Sequence[int],
-):
-    """
-    Performs this procedure:
-
-    1. Repeat-interleave `prompts[i]` `num_repeats_per_prompt[i]` times.
-
-       Or, if `num_repeats_per_prompt` is an integer, repeat-interleave `prompts[i]`
-       `num_repeats_per_prompt` times.
-
-       For example, if there are 2 prompts and `num_repeats_per_prompt=(2,3)`, the
-       repeated prompts look like::
-
-           [prompts[0],
-            prompts[0],
-            prompts[1],
-            prompts[1],
-            prompts[1]]
-
-    2. Apply `tokenizer` to the repeated prompts.
-
-    3. Apply `model`.
-
-    Note
-    ----
-    This function is only used to test
-    :func:`cappr.huggingface.classify._keys_values_prompts`.
-
-    Parameters
-    ----------
-    model : ModelForCausalLM
-        an autoregressive transformer language model
-    tokenizer : PreTrainedTokenizerBase
-        the tokenizer corresponding to `model`
-    prompts : Sequence[str]
-        strings, where, e.g., each contains the text you want to classify
-    num_repeats_per_prompt : int | Sequence[int]
-        the numer of times to repeat each prompt in `prompts`
-
-    Returns
-    -------
-    past_key_values : tuple[torch.Tensor, torch.Tensor]
-        for each attention block in `model`, the keys and values for each prompt in the
-        repeated prompts
-    encodings : BatchEncoding
-        the tokenizer output for the repeated prompts
-    offsets : torch.Tensor
-        the number of (non-pad) tokens in each of the repeated prompts
-    last_nonpad_token_logits : torch.Tensor
-        next-token logits for the last non-pad token for each of the repeated prompts
-
-    Raises
-    ------
-    ValueError
-        if the `tokenizer` is not using right-padding
-    TypeError
-        if `prompts` is not a `Sequence`
-    ValueError
-        if `num_repeats_per_prompt` is a `Sequence` whose length is not the same as the
-        length of `prompts`
-    """
-    if not tokenizer.padding_side == "right":
-        raise ValueError("Gotta use right padding to ensure position IDs are correct.")
-    if isinstance(prompts, str):
-        raise TypeError("prompts must be a sequence of strings, not a string itself.")
-    if not isinstance(num_completions_per_prompt, int):
-        if not len(prompts) == len(num_completions_per_prompt):
-            raise ValueError(
-                "If num_completions_per_prompt is a Sequence, then it must be the same "
-                f"length as prompts. Got lengths {len(num_completions_per_prompt)}, "
-                f"{len(prompts)}."
-            )
-    if isinstance(num_completions_per_prompt, int):
-        # For code simplicity, just repeat it
-        num_completions_per_prompt = [num_completions_per_prompt] * len(prompts)
-    prompts_repeated = [
-        prompt
-        for prompt, num_repeats in zip(prompts, num_completions_per_prompt)
-        for _ in range(num_repeats)
-    ]
-    encodings: BatchEncoding = tokenizer(
-        prompts_repeated, return_tensors="pt", padding=True
-    ).to(model.device)
-    with torch.no_grad():
-        out = model(**encodings)
-
-    offsets: torch.Tensor = encodings.attention_mask.sum(dim=1)
-
-    # Need (next-token) logits from prompts, i.e., last non-pad prompt token, since
-    # that contains the first completion token's log-probability
-    _last_nonpad_token_idxs = (offsets - 1)[:, None, None]
-    last_nonpad_token_logits: torch.Tensor = out.logits.take_along_dim(
-        _last_nonpad_token_idxs, dim=1
-    )
-
-    return out.past_key_values, encodings, offsets, last_nonpad_token_logits
-
-
-def _prompts_offsets(
-    tokenizer: PreTrainedTokenizerBase,
-    prompts: Sequence[str],
-    num_completions_per_prompt: int | Sequence[int],
-) -> torch.Tensor:
-    if not isinstance(num_completions_per_prompt, int) and not isinstance(
-        num_completions_per_prompt, torch.Tensor
-    ):
-        num_completions_per_prompt = torch.tensor(num_completions_per_prompt)
-    prompts = list(prompts)  # tokenizer requires list
-    offsets: torch.Tensor = (
-        tokenizer(prompts, return_tensors="pt", padding=True)
-        .attention_mask.sum(dim=1)
-        .repeat_interleave(num_completions_per_prompt, dim=0)
-    )
-    if getattr(tokenizer, "add_bos_token", False):
-        # Drop the first <s> token after we're done encoding so that the shape is
-        # consistent w/ other tokenizers
-        offsets -= 1
-    return offsets
-
-
-def _logits_completions_given_prompts(
-    model: ModelForCausalLM,
-    tokenizer: PreTrainedTokenizerBase,
-    prompts: Sequence[str],
-    completions: Sequence[str],
-    end_of_prompt: Literal[" ", ""] = " ",
-):
-    if isinstance(prompts, str):
-        raise TypeError("prompts must be a sequence of strings, not a string itself.")
-    _check.completions(completions)
-    texts = [
-        prompt + end_of_prompt + completion
-        for prompt in prompts
-        for completion in completions
-    ]
-    logits, encodings = hf._utils.logits_texts(texts, model, tokenizer)
-    # Need these indices to slice completion tokens
-    encodings["offsets"] = _prompts_offsets(
-        tokenizer, prompts, num_completions_per_prompt=len(completions)
-    ).to(model.device)
-    return logits, encodings
-
-
-def _logits_completions_given_prompts_examples(
-    model: ModelForCausalLM,
-    tokenizer: PreTrainedTokenizerBase,
-    examples: Sequence[Example],
-):
-    texts = [
-        example.prompt + example.end_of_prompt + completion
-        for example in examples
-        for completion in example.completions
-    ]
-    logits, encodings = hf._utils.logits_texts(texts, model, tokenizer)
-    # Need these indices to slice completion tokens
-    prompts = [example.prompt for example in examples]
-    num_completions_per_prompt = [len(example.completions) for example in examples]
-    encodings["offsets"] = _prompts_offsets(
-        tokenizer, prompts, num_completions_per_prompt=num_completions_per_prompt
-    )
-    return logits, encodings
-
-
-def _logits_to_log_probs_completions(
-    logits: torch.Tensor, encodings: Mapping[str, torch.Tensor]
-) -> list[list[float]]:
-    log_probs = hf._utils.logits_to_log_probs(
-        logits, encodings["input_ids"], input_ids_start_idx=1, logits_end_idx=-1
-    )
-    last_idx_non_pad = encodings["attention_mask"].sum(dim=1)
-    # i.e., # of tokens per text
-    return [
-        log_probs_prompt_completion[completion_start:completion_end].tolist()
-        for log_probs_prompt_completion, completion_start, completion_end in zip(
-            log_probs, encodings["offsets"] - 1, last_idx_non_pad - 1
-        )
-    ]
 
 
 @classify._log_probs_conditional
@@ -259,12 +74,14 @@ def log_probs_conditional(
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     end_of_prompt: Literal[" ", ""] = " ",
     show_progress_bar: bool | None = None,
-    batch_size: int = 32,
     **kwargs,
 ) -> list[list[float]] | list[list[list[float]]]:
     """
     Log-probabilities of each completion token conditional on each prompt and previous
     completion tokens.
+
+    Here, memory usage is minimized, as each prompt-completion pair is passed to the
+    model one at a time.
 
     Parameters
     ----------
@@ -280,9 +97,6 @@ def log_probs_conditional(
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
-    batch_size : int, optional
-        the maximum number of `prompts` that the model will process in parallel, by
-        default 32
 
     Returns
     -------
@@ -310,7 +124,7 @@ def log_probs_conditional(
     demonstrate what this function does::
 
         from transformers import AutoModelForCausalLM, AutoTokenizer
-        from cappr.huggingface.classify_no_cache import log_probs_conditional
+        from cappr.huggingface.classify_no_batch import log_probs_conditional
 
         # Load model and tokenizer
         model = AutoModelForCausalLM.from_pretrained("gpt2")
@@ -335,24 +149,28 @@ def log_probs_conditional(
         # [[-9.7],        [[log Pr(z | a, b, c)],
         #  [-0.2, -0.03]]  [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
+    total = len(prompts)
+    if show_progress_bar is None:
+        disable = total < _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
+    else:
+        disable = not show_progress_bar
+    desc = "conditional log-probs"
     with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
         model, tokenizer = model_and_tokenizer
-
-        @_batch.flatten
-        @_batch.batchify(
-            batchable_arg="prompts",
-            progress_bar_desc="conditional log-probs (no cache)",
-        )
-        def log_probs_completions_batch(
-            prompts, show_progress_bar=show_progress_bar, batch_size=batch_size
-        ):
-            logits, encodings = _logits_completions_given_prompts(
-                model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
-            )
-            return _logits_to_log_probs_completions(logits, encodings)
-
-        log_probs_completions = log_probs_completions_batch(prompts)
-        return list(_batch.constant(log_probs_completions, size=len(completions)))
+        log_probs_completions = []
+        for prompt in tqdm(prompts, total=total, disable=disable, desc=desc):
+            for completion in completions:
+                logits, encodings = hf_no_cache._logits_completions_given_prompts(
+                    model,
+                    tokenizer,
+                    [prompt],
+                    [completion],
+                    end_of_prompt=end_of_prompt,
+                )
+                log_probs_completions.append(
+                    hf_no_cache._logits_to_log_probs_completions(logits, encodings)[0]
+                )
+    return list(_batch.constant(log_probs_completions, size=len(completions)))
 
 
 @classify._log_probs_conditional_examples
@@ -360,11 +178,14 @@ def log_probs_conditional_examples(
     examples: Example | Sequence[Example],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     show_progress_bar: bool | None = None,
-    batch_size: int = 32,
+    **kwargs,
 ) -> list[list[float]] | list[list[list[float]]]:
     """
     Log-probabilities of each completion token conditional on each prompt and previous
     completion tokens.
+
+    Here, memory usage is minimized, as each prompt-completion pair is passed to the
+    model one at a time.
 
     Parameters
     ----------
@@ -376,9 +197,6 @@ def log_probs_conditional_examples(
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 `examples`
-    batch_size : int, optional
-        the maximum number of `examples` that the model will process in parallel, by
-        default 32
 
     Returns
     -------
@@ -414,7 +232,7 @@ def log_probs_conditional_examples(
 
         from transformers import AutoModelForCausalLM, AutoTokenizer
         from cappr import Example
-        from cappr.huggingface.classify_no_cache import log_probs_conditional_examples
+        from cappr.huggingface.classify_no_batch import log_probs_conditional_examples
 
         # Load model and tokenizer
         model = AutoModelForCausalLM.from_pretrained("gpt2")
@@ -443,27 +261,31 @@ def log_probs_conditional_examples(
     # Little weird. I want my IDE to know that examples is always a Sequence[Example]
     # b/c of the decorator.
     examples: Sequence[Example] = examples
+    total = len(examples)
+    if show_progress_bar is None:
+        disable = total < _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
+    else:
+        disable = not show_progress_bar
+    desc = "conditional log-probs"
+    log_probs_completions = []
     with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
         model, tokenizer = model_and_tokenizer
-
-        @_batch.flatten
-        @_batch.batchify(
-            batchable_arg="examples",
-            progress_bar_desc="conditional log-probs (no cache)",
-        )
-        def log_probs_completions_batch(
-            examples, show_progress_bar=show_progress_bar, batch_size=batch_size
-        ):
-            logits, encodings = _logits_completions_given_prompts_examples(
-                model, tokenizer, examples
-            )
-            return _logits_to_log_probs_completions(logits, encodings)
-
-        log_probs_completions = log_probs_completions_batch(examples)
-        num_completions_per_prompt = [len(example.completions) for example in examples]
-        return list(
-            _batch.variable(log_probs_completions, sizes=num_completions_per_prompt)
-        )
+        for example in tqdm(examples, total=total, disable=disable, desc=desc):
+            for completion in example.completions:
+                logits, encodings = hf_no_cache._logits_completions_given_prompts(
+                    model,
+                    tokenizer,
+                    [example.prompt],
+                    [completion],
+                    example.end_of_prompt,
+                )
+                log_probs_completions.append(
+                    hf_no_cache._logits_to_log_probs_completions(logits, encodings)[0]
+                )
+    num_completions_per_prompt = [len(example.completions) for example in examples]
+    return list(
+        _batch.variable(log_probs_completions, sizes=num_completions_per_prompt)
+    )
 
 
 @classify._predict_proba
@@ -477,10 +299,12 @@ def predict_proba(
     discount_completions: float = 0.0,
     log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
     show_progress_bar: bool | None = None,
-    batch_size: int = 32,
 ) -> npt.NDArray[np.floating]:
     """
     Predict probabilities of each completion coming after each prompt.
+
+    Here, memory usage is minimized, as each prompt-completion pair is passed to the
+    model one at a time.
 
     Parameters
     ----------
@@ -516,9 +340,6 @@ def predict_proba(
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
-    batch_size : int, optional
-        the maximum number of `prompts` that the model will process in parallel, by
-        default 32
 
     Returns
     -------
@@ -547,7 +368,7 @@ def predict_proba(
     conveys that it's not the greatest model out there::
 
         from transformers import AutoModelForCausalLM, AutoTokenizer
-        from cappr.huggingface.classify_no_cache import predict_proba
+        from cappr.huggingface.classify_no_batch import predict_proba
 
         # Load model and tokenizer
         model = AutoModelForCausalLM.from_pretrained("gpt2")
@@ -586,10 +407,12 @@ def predict_proba_examples(
     examples: Example | Sequence[Example],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     show_progress_bar: bool | None = None,
-    batch_size: int = 32,
 ) -> npt.NDArray[np.floating] | list[npt.NDArray[np.floating]]:
     """
     Predict probabilities of each completion coming after each prompt.
+
+    Here, memory usage is minimized, as each prompt-completion pair is passed to the
+    model one at a time.
 
     Parameters
     ----------
@@ -601,9 +424,6 @@ def predict_proba_examples(
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 `examples`
-    batch_size : int, optional
-        the maximum number of `examples` that the model will process in parallel, by
-        default 32
 
     Returns
     -------
@@ -628,7 +448,8 @@ def predict_proba_examples(
 
         from transformers import AutoModelForCausalLM, AutoTokenizer
         from cappr import Example
-        from cappr.huggingface.classify_no_cache import predict_proba_examples
+        from cappr.huggingface.classify_no_batch import predict_proba_examples
+        )
 
         # Load model and tokenizer
         model = AutoModelForCausalLM.from_pretrained("gpt2")
@@ -672,10 +493,12 @@ def predict(
     discount_completions: float = 0.0,
     log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
     show_progress_bar: bool | None = None,
-    batch_size: int = 32,
 ) -> str | list[str]:
     """
     Predict which completion is most likely to follow each prompt.
+
+    Here, memory usage is minimized, as each prompt-completion pair is passed to the
+    model one at a time.
 
     Parameters
     ----------
@@ -705,9 +528,6 @@ def predict(
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
-    batch_size : int, optional
-        the maximum number of `prompts` that the model will process in parallel, by
-        default 32
 
     Returns
     -------
@@ -732,7 +552,7 @@ def predict(
     Let's have GPT-2 (small) predict where stuff is in the kitchen::
 
         from transformers import AutoModelForCausalLM, AutoTokenizer
-        from cappr.huggingface.classify_no_cache import predict
+        from cappr.huggingface.classify_no_batch import predict
 
         # Load model and tokenizer
         model = AutoModelForCausalLM.from_pretrained("gpt2")
@@ -761,10 +581,12 @@ def predict_examples(
     examples: Example | Sequence[Example],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     show_progress_bar: bool | None = None,
-    batch_size: int = 32,
 ) -> str | list[str]:
     """
     Predict which completion is most likely to follow each prompt.
+
+    Here, memory usage is minimized, as each prompt-completion pair is passed to the
+    model one at a time.
 
     Parameters
     ----------
@@ -776,9 +598,6 @@ def predict_examples(
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 `examples`
-    batch_size : int, optional
-        the maximum number of `examples` that the model will process in parallel, by
-        default 32
 
     Returns
     -------
@@ -799,7 +618,7 @@ def predict_examples(
 
         from transformers import AutoModelForCausalLM, AutoTokenizer
         from cappr import Example
-        from cappr.huggingface.classify_no_cache import predict_examples
+        from cappr.huggingface.classify_no_batch import predict_examples
 
         # Load model and tokenizer
         model = AutoModelForCausalLM.from_pretrained("gpt2")

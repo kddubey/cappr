@@ -51,31 +51,35 @@ You'll need access to beefier hardware to run models from the HuggingFace hub, a
 :mod:`cappr.huggingface` currently assumes you've locally loaded the model. HuggingFace
 Inference Endpoints are not yet supported by this package.
 
-``ctransformers`` models are not yet supported. I think I'm just waiting on `this
-issue <https://github.com/marella/ctransformers/issues/150>`_.
+``ctransformers`` model objects are not yet supported. (I think I'm just waiting on
+`this issue <https://github.com/marella/ctransformers/issues/150>`_.)
+
+``vllm`` model objects are not yet supported.
 
 
 Which CAPPr HuggingFace module should I use?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are two CAPPr HuggingFace modules. In general, stick to
+There are three CAPPr HuggingFace modules. In general, stick to
 :mod:`cappr.huggingface.classify`.
 
-:mod:`cappr.huggingface.classify` is `faster
-<https://cappr.readthedocs.io/en/latest/computational_performance.html>`_ than
-:mod:`cappr.huggingface.classify_no_cache`, especially when there are a lot of
-completions and you're running a model on batches of prompts.
+:mod:`cappr.huggingface.classify` has the greatest `throughput
+<https://cappr.readthedocs.io/en/latest/computational_performance.html>`_, but costs a
+bit more memory.
 
-:mod:`cappr.huggingface.classify_no_cache` may happen to be compatible with a slightly
-broader class of causal/autoregressive language models. Here, the model is only assumed
-to input token/input IDs and an attention mask, and then output logits for each input
-ID. Furthermore, in the current implementation, this module may be a bit faster when
-``batch_size=1``.
+:mod:`cappr.huggingface.classify_no_cache` is compatible with `AutoAWQ`_ models. In
+general, it may be compatible with a slightly broader class of causal/autoregressive
+language models. Here, the model is only assumed to input token/input IDs and an
+attention mask, and then output logits for each input ID. Furthermore, in the current
+implementation, this module may be a bit faster when ``batch_size=1``, where the model
+processes one prompt at a time.
 
-.. warning:: If there are many many completions, and they aren't all single tokens, the
-   current HuggingFace implementation takes more RAM than it should, even when
-   ``batch_size=1``. It shouldn't be a huge issue. But I'll measure and fix this problem
-   soon.
+:mod:`cappr.huggingface.classify_no_batch` is compatible with all models which
+:mod:`cappr.huggingface.classify_no_cache` is compatible with. The difference is that
+the no-batch module has the model process one prompt-completion pair at a time, which
+minimizes memory usage. The other modules always process completions in parallel. The
+``batch_size`` argument in other modules refers to the number of prompts that are
+processed at at time; completions are always processed in parallel.
 
 
 Examples
@@ -93,6 +97,8 @@ For simple GPT-2 CPU examples, see the **Example** section for each of these fun
 :func:`cappr.huggingface.classify.predict`
 
 :func:`cappr.huggingface.classify.predict_examples`
+
+.. _AutoAWQ: https://github.com/casper-hansen/AutoAWQ
 
 
 Llama CPP

@@ -1,15 +1,13 @@
 """
 Perform prompt-completion classification using a model which can be loaded via
-``transformers.AutoModelForCausalLM.from_pretrained`` or
-``auto_gptq.AutoGPTQForCausalLM.from_quantized``.
+
+- ``transformers.AutoModelForCausalLM.from_pretrained`` or
+- ``auto_gptq.AutoGPTQForCausalLM.from_quantized``.
 
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 
 In the implementation, attention block keys and values for prompts are cached and shared
 across completions.
-
-.. warning:: This module doesn't work with ``transformers.BartForCausalLM``, among
-             others probably. Consider using :mod:`cappr.huggingface.classify_no_cache`.
 """
 from __future__ import annotations
 from typing import Literal, Mapping, Sequence
@@ -52,8 +50,8 @@ def token_logprobs(
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
     batch_size : int, optional
-        the maximum number of inputs that the model will process in parallel, by default
-        32
+        the maximum number of `texts` that the model will process in parallel, by
+        default 32
 
     Returns
     -------
@@ -543,8 +541,8 @@ def log_probs_conditional(
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
     batch_size : int, optional
-        the maximum number of inputs that the model will process in parallel, by default
-        32
+        the maximum number of `prompts` that the model will process in parallel, by
+        default 32
 
     Returns
     -------
@@ -640,8 +638,8 @@ def log_probs_conditional_examples(
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 `examples`
     batch_size : int, optional
-        the maximum number of inputs that the model will process in parallel, by default
-        32
+        the maximum number of `examples` that the model will process in parallel, by
+        default 32
 
     Returns
     -------
@@ -781,8 +779,8 @@ def predict_proba(
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
     batch_size : int, optional
-        the maximum number of inputs that the model will process in parallel, by default
-        32
+        the maximum number of `prompts` that the model will process in parallel, by
+        default 32
 
     Returns
     -------
@@ -866,8 +864,8 @@ def predict_proba_examples(
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 `examples`
     batch_size : int, optional
-        the maximum number of inputs that the model will process in parallel, by default
-        32
+        the maximum number of `examples` that the model will process in parallel, by
+        default 32
 
     Returns
     -------
@@ -970,8 +968,8 @@ def predict(
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
     batch_size : int, optional
-        the maximum number of inputs that the model will process in parallel, by default
-        32
+        the maximum number of `prompts` that the model will process in parallel, by
+        default 32
 
     Returns
     -------
@@ -1041,8 +1039,8 @@ def predict_examples(
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 `examples`
     batch_size : int, optional
-        the maximum number of inputs that the model will process in parallel, by default
-        32
+        the maximum number of `examples` that the model will process in parallel, by
+        default 32
 
     Returns
     -------
