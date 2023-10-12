@@ -65,21 +65,34 @@ There are three CAPPr HuggingFace modules. In general, stick to
 
 :mod:`cappr.huggingface.classify` has the greatest `throughput
 <https://cappr.readthedocs.io/en/latest/computational_performance.html>`_, but costs a
-bit more memory.
+bit more memory. Furthermore, this module is currently not compatible with `AutoAWQ`_
+models.
 
 :mod:`cappr.huggingface.classify_no_cache` is compatible with `AutoAWQ`_ models. In
 general, it may be compatible with a slightly broader class of causal/autoregressive
-language models. Here, the model is only assumed to input token/input IDs and an
-attention mask, and then output logits for each input ID. Furthermore, in the current
+architectures. Here, the model is only assumed to input token/input IDs and an attention
+mask, and then output logits for each input ID. Furthermore, in the current
 implementation, this module may be a bit faster when ``batch_size=1``, where the model
 processes one prompt at a time.
 
+In the above modules, the ``batch_size`` keyword argument refers to the number of
+prompts that are processed at at time; completions are always processed in parallel.
+
 :mod:`cappr.huggingface.classify_no_batch` is compatible with all models which
 :mod:`cappr.huggingface.classify_no_cache` is compatible with. The difference is that
-the no-batch module has the model process one prompt-completion pair at a time, which
-minimizes memory usage. The other modules always process completions in parallel. The
-``batch_size`` argument in other modules refers to the number of prompts that are
-processed at at time; completions are always processed in parallel.
+the no-batch module has the model process one prompt-completion pair at a time,
+minimizing memory usage.
+
+.. warning:: If you're using an `AutoAWQ`_ model, you must set an extra attribute
+             indicating the device(s) which the model is on, e.g.,
+             ``model.device = "cuda"``.
+
+.. note:: If you're using an `AutoAWQ`_ model, pass ``batch_size=len(completions)`` to
+          the model's initialization. If you're processing :class:`cappr.Example`
+          objects with a non-constant number of :attr:`cappr.Example.completions`, then
+          leave out the ``batch_size`` argument from the model's initialization (or,
+          equivalently, set it to 1) and use :mod:`cappr.huggingface.classify_no_batch`
+          instead of :mod:`cappr.huggingface.classify_no_cache`.
 
 
 Examples
@@ -91,6 +104,9 @@ For an example of running Llama 2 with CAPPr, see `this notebook
 For a minimal example of running an `AutoGPTQ <https://github.com/PanQiWei/AutoGPTQ>`_
 model, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/auto_gptq.ipynb>`_.
+
+For a minimal example of running an `AutoAWQ`_ model, see `this notebook
+<https://github.com/kddubey/cappr/blob/main/demos/huggingface/autoawq.ipynb>`_.
 
 For simple GPT-2 CPU examples, see the **Example** section for each of these functions:
 

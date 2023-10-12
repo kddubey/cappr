@@ -88,18 +88,6 @@ for more info on using PyTorch ``transformers`` models.
 
 
 <details>
-<summary>Use an AutoGPTQ model</summary>
-
-[`cappr.huggingface`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html)
-seems to work fine with models loaded via
-[`auto_gptq.AutoGPTQForCausalLM.from_quantized`](https://github.com/PanQiWei/AutoGPTQ).
-But I haven't thoroughly tested that. See [this
-notebook](https://github.com/kddubey/cappr/blob/main/demos/huggingface/auto_gptq.ipynb) for a
-minimal demo.
-</details>
-
-
-<details>
 <summary>Use a GGUF model</summary>
 
 Specifically, this model must be able to be loaded using
@@ -131,7 +119,31 @@ print(pred)
 
 See [this page of the
 documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#llama-cpp)
-for more info on using Llama CPP models.
+for more info on using GGUF models.
+</details>
+
+
+<details>
+<summary>Use an AutoGPTQ model</summary>
+
+[`cappr.huggingface`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html)
+seems to play nice with models loaded via
+[`auto_gptq.AutoGPTQForCausalLM.from_quantized`](https://github.com/PanQiWei/AutoGPTQ).
+But I haven't thoroughly tested that. See [this
+notebook](https://github.com/kddubey/cappr/blob/main/demos/huggingface/auto_gptq.ipynb)
+for a minimal demo.
+</details>
+
+
+<details>
+<summary>Use an AutoAWQ model</summary>
+
+[`cappr.huggingface.classify_no_cache`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html)
+seems to play nice with models loaded via
+[`awq.AutoAWQForCausalLM.from_quantized`](https://github.com/casper-hansen/AutoAWQ). But
+I haven't thoroughly tested that. See [this
+notebook](https://github.com/kddubey/cappr/blob/main/demos/huggingface/autoawq.ipynb)
+for a minimal demo.
 </details>
 
 
