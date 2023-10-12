@@ -3,16 +3,25 @@ YouTils
 """
 from __future__ import annotations
 from contextlib import contextmanager
-from typing import Collection, Sequence, TypeVar
+from typing import Collection, Mapping, Sequence, TypeVar
 
 import torch
 from transformers import (
-    BatchEncoding,
     LlamaTokenizer,
     LlamaTokenizerFast,
     PreTrainedModel,
     PreTrainedTokenizerBase,
 )
+from transformers.modeling_outputs import CausalLMOutput
+
+
+BatchEncoding = TypeVar("BatchEncoding", bound=Mapping[str, torch.Tensor])
+"""
+The output of a `tokenizer(texts, return_tensors="pt")` call.
+"""
+# transformers.BatchEncoding doesn't annotate values as tensors since it's more generic
+# than that. In this package, they'll always be PyTorch tensors, and it's convenient to
+# annotate them as such.
 
 
 ModelForCausalLM = TypeVar("ModelForCausalLM", bound=PreTrainedModel)
@@ -200,20 +209,22 @@ def logits_texts(
     tokenizer: PreTrainedTokenizerBase,
 ) -> tuple[torch.Tensor, BatchEncoding]:
     """
-    Basically `model(**tokenizer(texts))`.
+    Basically `model(**tokenizer(texts)), tokenizer(texts)`.
     """
     # TODO: auto-batch? consider adding a batch_size kwarg, and decorating the func like
     # token_logprobs
-    encodings = tokenizer(texts, return_tensors="pt", padding=True).to(model.device)
+    encodings: BatchEncoding = tokenizer(texts, return_tensors="pt", padding=True).to(
+        model.device
+    )
     with torch.no_grad():
-        out = model(**encodings)
+        out: CausalLMOutput = model(**encodings)
     if getattr(tokenizer, "add_bos_token", False):
         # Drop the first bos token after we're done encoding so that the shape is
         # consistent w/ other tokenizers
         logits = out.logits[:, 1:, :]
-        encodings = BatchEncoding(
-            {key: value[:, 1:] for key, value in encodings.items()}
-        )
+        encodings: BatchEncoding = {
+            key: value[:, 1:] for key, value in encodings.items()
+        }
     else:
         logits = out.logits
     return logits, encodings

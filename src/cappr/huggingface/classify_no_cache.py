@@ -16,12 +16,13 @@ from typing import Literal, Mapping, Sequence
 import numpy as np
 import numpy.typing as npt
 import torch
-from transformers import BatchEncoding, PreTrainedTokenizerBase
+from transformers import PreTrainedTokenizerBase
+from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from cappr.utils import _batch, _check, classify
 from cappr import Example
 from cappr import huggingface as hf
-from cappr.huggingface._utils import ModelForCausalLM
+from cappr.huggingface._utils import BatchEncoding, ModelForCausalLM
 
 
 def token_logprobs(
@@ -74,65 +75,11 @@ def _keys_values_prompts(
     tokenizer: PreTrainedTokenizerBase,
     prompts: Sequence[str],
     num_completions_per_prompt: int | Sequence[int],
-):
+) -> tuple[
+    tuple[tuple[torch.Tensor, torch.Tensor]], BatchEncoding, torch.Tensor, torch.Tensor
+]:
     """
-    Performs this procedure:
-
-    1. Repeat-interleave `prompts[i]` `num_repeats_per_prompt[i]` times.
-
-       Or, if `num_repeats_per_prompt` is an integer, repeat-interleave `prompts[i]`
-       `num_repeats_per_prompt` times.
-
-       For example, if there are 2 prompts and `num_repeats_per_prompt=(2,3)`, the
-       repeated prompts look like::
-
-           [prompts[0],
-            prompts[0],
-            prompts[1],
-            prompts[1],
-            prompts[1]]
-
-    2. Apply `tokenizer` to the repeated prompts.
-
-    3. Apply `model`.
-
-    Note
-    ----
-    This function is only used to test
-    :func:`cappr.huggingface.classify._keys_values_prompts`.
-
-    Parameters
-    ----------
-    model : ModelForCausalLM
-        an autoregressive transformer language model
-    tokenizer : PreTrainedTokenizerBase
-        the tokenizer corresponding to `model`
-    prompts : Sequence[str]
-        strings, where, e.g., each contains the text you want to classify
-    num_repeats_per_prompt : int | Sequence[int]
-        the numer of times to repeat each prompt in `prompts`
-
-    Returns
-    -------
-    past_key_values : tuple[torch.Tensor, torch.Tensor]
-        for each attention block in `model`, the keys and values for each prompt in the
-        repeated prompts
-    encodings : BatchEncoding
-        the tokenizer output for the repeated prompts
-    offsets : torch.Tensor
-        the number of (non-pad) tokens in each of the repeated prompts
-    last_nonpad_token_logits : torch.Tensor
-        next-token logits for the last non-pad token for each of the repeated prompts
-
-    Raises
-    ------
-    ValueError
-        if the `tokenizer` is not using right-padding
-    TypeError
-        if `prompts` is not a `Sequence`
-    ValueError
-        if `num_repeats_per_prompt` is a `Sequence` whose length is not the same as the
-        length of `prompts`
+    Only for testing purposes.
     """
     if not tokenizer.padding_side == "right":
         raise ValueError("Gotta use right padding to ensure position IDs are correct.")
@@ -153,13 +100,13 @@ def _keys_values_prompts(
         for prompt, num_repeats in zip(prompts, num_completions_per_prompt)
         for _ in range(num_repeats)
     ]
-    encodings: BatchEncoding = tokenizer(
-        prompts_repeated, return_tensors="pt", padding=True
-    ).to(model.device)
+    encodings = tokenizer(prompts_repeated, return_tensors="pt", padding=True).to(
+        model.device
+    )
     with torch.no_grad():
-        out = model(**encodings)
+        out: CausalLMOutputWithPast = model(**encodings)
 
-    offsets: torch.Tensor = encodings.attention_mask.sum(dim=1)
+    offsets: torch.Tensor = encodings["attention_mask"].sum(dim=1)
 
     # Need (next-token) logits from prompts, i.e., last non-pad prompt token, since
     # that contains the first completion token's log-probability
@@ -182,8 +129,8 @@ def _prompts_offsets(
         num_completions_per_prompt = torch.tensor(num_completions_per_prompt)
     prompts = list(prompts)  # tokenizer requires list
     offsets: torch.Tensor = (
-        tokenizer(prompts, return_tensors="pt", padding=True)
-        .attention_mask.sum(dim=1)
+        tokenizer(prompts, return_tensors="pt", padding=True)["attention_mask"]
+        .sum(dim=1)
         .repeat_interleave(num_completions_per_prompt, dim=0)
     )
     if getattr(tokenizer, "add_bos_token", False):

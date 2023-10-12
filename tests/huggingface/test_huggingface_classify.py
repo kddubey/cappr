@@ -7,7 +7,6 @@ really should test that).
 from __future__ import annotations
 import os
 import sys
-from typing import Mapping
 
 import numpy as np
 import pandas as pd
@@ -22,7 +21,7 @@ from cappr.huggingface import classify_no_cache as slow
 from cappr.huggingface import classify as fast
 from cappr.huggingface import classify_no_batch as lmem  # lmem = low memory
 from cappr import huggingface as hf
-from cappr.huggingface._utils import ModelForCausalLM
+from cappr.huggingface._utils import BatchEncoding, ModelForCausalLM
 
 # sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
@@ -191,7 +190,7 @@ def test_token_logprobs(
             )
         # grab first index b/c we only gave it 1 text
         _texts_log_probs.append(_logits[0].log_softmax(dim=1))
-        _texts_input_ids.append(_encoding.input_ids[0])
+        _texts_input_ids.append(_encoding["input_ids"][0])
 
     # Slice out log probs for the final expected result
     log_probs_texts_expected = []
@@ -246,8 +245,10 @@ def test__keys_values_prompts(
         assert torch.allclose(keys_slow, keys_fast, atol=atol)
         assert torch.allclose(vals_slow, vals_fast, atol=atol)
 
-    assert torch.equal(encodings_slow.input_ids, encodings_fast.input_ids)
-    assert torch.equal(encodings_slow.attention_mask, encodings_fast.attention_mask)
+    assert torch.equal(encodings_slow["input_ids"], encodings_fast["input_ids"])
+    assert torch.equal(
+        encodings_slow["attention_mask"], encodings_fast["attention_mask"]
+    )
     assert torch.equal(offsets_slow, offsets_fast)
 
     assert torch.allclose(logits_last_slow, logits_last_fast, atol=atol)
@@ -260,9 +261,9 @@ def test__keys_values_prompts(
 
 def _test_encodings(
     logits_slow: torch.Tensor,
-    encodings_slow: Mapping[str, torch.Tensor],
+    encodings_slow: BatchEncoding,
     logits_fast: torch.Tensor,
-    encodings_fast: Mapping[str, torch.Tensor],
+    encodings_fast: BatchEncoding,
 ):
     """
     Tests that all objects have the expected shape, and that the encodings `offsets` are
@@ -273,7 +274,7 @@ def _test_encodings(
         # doesn't repeat any data, unlike what's done in the slow/no-cache module
         return
 
-    def _test_shapes(logits, encodings):
+    def _test_shapes(logits: torch.Tensor, encodings: BatchEncoding):
         assert encodings["input_ids"].shape == logits.shape[:2]  # 3rd dim is vocab
         assert encodings["input_ids"].shape == encodings["attention_mask"].shape
         assert encodings["input_ids"].shape[0] == encodings["offsets"].shape[0]
@@ -288,9 +289,9 @@ def _test_encodings(
 
 def _test_logits(
     logits_slow: torch.Tensor,
-    encodings_slow: Mapping[str, torch.Tensor],
+    encodings_slow: BatchEncoding,
     logits_fast: torch.Tensor,
-    encodings_fast: Mapping[str, torch.Tensor],
+    encodings_fast: BatchEncoding,
     atol,
 ):
     """
