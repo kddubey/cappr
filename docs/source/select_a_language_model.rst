@@ -14,9 +14,10 @@ easy to plug and play though.
 HuggingFace
 -----------
 
-To work with PyTorch ``transformers`` models, CAPPr depends on the `transformers
-<https://github.com/huggingface/transformers>`_ package. You can search the `HuggingFace
-model hub <https://huggingface.co/models?library=pytorch>`_ for these models.
+To work with models which implement the PyTorch ``transformers`` CausalLM interface,
+CAPPr depends on the `transformers <https://github.com/huggingface/transformers>`_
+package. You can search the `HuggingFace model hub
+<https://huggingface.co/models?library=pytorch>`_ for these models.
 
 Here's a quick example (which will download a small GPT-2 model to your computer):
 
@@ -37,8 +38,7 @@ Here's a quick example (which will download a small GPT-2 model to your computer
    print(pred)
    # Mercury
 
-So far, CAPPr has been tested for correctness on the following ``transformers``
-architectures:
+So far, CAPPr has been tested for correctness on the following architectures:
 
 - GPT-2
 - GPT-J
@@ -75,15 +75,16 @@ mask, and then output logits for each input ID. Furthermore, in the current
 implementation, this module may be a bit faster when ``batch_size=1``, where the model
 processes one prompt at a time.
 
-In the above modules, the ``batch_size`` keyword argument refers to the number of
-prompts that are processed at at time; completions are always processed in parallel.
+.. note:: In the above modules, the ``batch_size`` keyword argument refers to the number
+   of prompts that are processed at at time; completions are always processed in
+   parallel.
 
 :mod:`cappr.huggingface.classify_no_batch` is compatible with all models which
 :mod:`cappr.huggingface.classify_no_cache` is compatible with. The difference is that
 the no-batch module has the model process one prompt-completion pair at a time,
 minimizing memory usage.
 
-.. warning:: If you're using an `AutoAWQ`_ model, you must set an extra attribute
+.. warning:: When instantiating your `AutoAWQ`_ model, you must set an extra attribute
              indicating the device(s) which the model is on, e.g.,
              ``model.device = "cuda"``.
 
@@ -98,7 +99,8 @@ minimizing memory usage.
 Examples
 ~~~~~~~~
 
-For an example of running Llama 2 with CAPPr, see `this notebook
+For an example of running PyTorch ``transformers`` Llama 2 with CAPPr, see `this
+notebook
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/superglue/copa.ipynb>`_.
 
 For a minimal example of running an `AutoGPTQ <https://github.com/PanQiWei/AutoGPTQ>`_

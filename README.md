@@ -272,28 +272,8 @@ documentation](https://cappr.readthedocs.io/en/latest/installation.html).
 
 Minimize engineering complexity.
 
-Current approaches, based on generating text, require the following workflow:
-1. Design a prompt which asks the model to output exactly one choice from a given set of
-   choices
-2. Given this prompt, figure out how often the model doesn't output one of the given
-   choices—call this an "invalid" output
-3. Figure out how to post-processes invalid outputs, depending on the way they look. Or
-   give up, and figure out how to get your application to gracefully fail on an invalid
-   output
-4. Figure out if you need to tweak the text generation strategy, loop back to step (2).
-
-This workflow is not scalable, and not necessary. CAPPr is guaranteed to output exactly
-one choice from a given set of choices. As a result, your work is reduced to designing a
-prompt-completion string format.
-
-
-<details>
-<summary>Long</summary>
-
 See [this page of the
-documentation](https://cappr.readthedocs.io/en/latest/motivation.html).
-</details>
-
+documentation](https://cappr.readthedocs.io/en/latest/motivation.html) for more info.
 
 <details>
 <summary>Cool</summary>
