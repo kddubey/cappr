@@ -22,6 +22,7 @@ from cappr.huggingface._utils import BatchEncoding, ModelForCausalLM
 # sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
 from _base import BaseTestPromptsCompletions, BaseTestExamples
+from _test_content import token_logprobs as _test_token_logprobs
 
 
 ########################################################################################
@@ -164,10 +165,6 @@ def test_token_logprobs(
         texts, model_and_tokenizer, batch_size=batch_size
     )
 
-    # The first logprob of every text must be None b/c no CausalLM estimates Pr(token)
-    for log_prob_observed in log_probs_texts_observed:
-        assert log_prob_observed[0] is None
-
     # Gather un-batched un-sliced log probs for the expected result
     # bleh
     if (
@@ -177,8 +174,8 @@ def test_token_logprobs(
         )
     ):
         end_of_prompt = ""
-    _texts_log_probs = []
-    _texts_input_ids = []
+    log_probs_texts_from_unbatched = []
+    input_ids_from_unbatched = []
     for text in texts:
         with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
             model, tokenizer = model_and_tokenizer
@@ -186,35 +183,14 @@ def test_token_logprobs(
                 [end_of_prompt + text], model, tokenizer
             )
         # grab first index b/c we only gave it 1 text
-        _texts_log_probs.append(_logits[0].log_softmax(dim=1))
-        _texts_input_ids.append(_encoding["input_ids"][0])
+        log_probs_texts_from_unbatched.append(_logits[0].log_softmax(dim=1))
+        input_ids_from_unbatched.append(_encoding["input_ids"][0])
 
-    # Slice out log probs for the final expected result
-    log_probs_texts_expected = []
-    for _text_input_ids, _text_log_probs in zip(_texts_input_ids, _texts_log_probs):
-        log_probs_texts_expected.append(
-            [None]  # for the first token, no CausalLM estimates Pr(token)
-            + [  # this token's data contains the next token's log-probability
-                _text_log_probs[i, _text_input_ids[i + 1]]
-                for i in range(0, len(_text_input_ids) - 1)
-            ]
-        )
-
-    # Every log prob is correct, and sizes are correct
-    assert len(log_probs_texts_observed) == len(log_probs_texts_expected)
-    for log_probs_text_observed, log_probs_text_expected in zip(
-        log_probs_texts_observed, log_probs_texts_expected
-    ):
-        assert len(log_probs_text_observed) == len(log_probs_text_expected)
-        # skip the first token b/c its log prob is always None
-        for log_prob_token_observed, log_prob_token_expected in zip(
-            log_probs_text_observed[1:], log_probs_text_expected[1:]
-        ):
-            assert torch.isclose(
-                torch.tensor(log_prob_token_observed),
-                log_prob_token_expected,
-                atol=atol,
-            )
+    _test_token_logprobs(
+        log_probs_texts_observed,
+        log_probs_texts_from_unbatched,
+        input_ids_from_unbatched,
+    )
 
 
 @pytest.mark.parametrize("prompts", (["a b c", "c"],))
@@ -351,7 +327,6 @@ class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
         self, model, tokenizer, prompts, completions, atol
     ):
         # for this function, prompts can't be a single string
-        # TODO: uh yes it can, wrap it in a list, dummy
         if isinstance(prompts, str):
             return
         slow_out = classify_no_cache._logits_completions_given_prompts(
@@ -398,7 +373,6 @@ class TestExamples(Modules, BaseTestExamples):
         self, model, tokenizer, examples, atol
     ):
         # for this helper function, examples can't be an Example
-        # TODO: uh yes it can, wrap it in a list, dummy
         if isinstance(examples, Example):
             return
         slow_out = classify_no_cache._logits_completions_given_prompts_examples(

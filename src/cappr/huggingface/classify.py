@@ -90,7 +90,7 @@ def token_logprobs(
 
         # Batch inference
         logits, encodings = hf._utils.logits_texts(texts, model, tokenizer)
-        # bro y is this^ type hint not working
+        # y is this^ type hint not working
         encodings: BatchEncoding = encodings
 
         # Convert next-token logits to this-token logprobs.

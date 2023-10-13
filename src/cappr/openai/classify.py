@@ -38,7 +38,8 @@ def token_logprobs(
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
     end_of_prompt : Literal[' ', ''], optional
-        whitespace or empty string to join prompt and completion, by default whitespace
+        This string gets added to the beginning of each text. It's important to set this
+        if you're using the discount feature. Otherwise, set it to "". By default " "
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,

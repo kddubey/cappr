@@ -1,5 +1,5 @@
 """
-TODO
+Base classes which are parametrized with an (almost) exhaustive set of test cases.
 """
 from __future__ import annotations
 from typing import Collection, Sequence
@@ -16,36 +16,35 @@ import _test_content
 
 
 class _BaseTest:
-    """
-    TODO
-    """
-
     def __setattr__(self, attr, value):
         raise AttributeError(
-            f"Tried to set {attr} to {value}. But you cannot set attributes for "
-            "instances of this class. It's frozen bb."
+            f"Tried to set {attr} to {value}. But this class is frozen."
         )
 
     @property
     def module_correct(self) -> classify_module:
-        raise NotImplementedError(
-            "module_correct has not been set. Have it return None if there's no way to "
-            "determine whether an implementation is correct. Usually that's the case "
-            "if you're integrating an API endpoint like OpenAI.\n"
-        )
+        """
+        `classify` module which is correct, and serves as a reference implementation.
+        Have it return None if there's no way to determine whether an implementation is
+        correct. Usually that's the case if you're integrating an API endpoint like
+        OpenAI.
+        """
+        raise NotImplementedError
 
     @property
     def modules_to_test(self) -> Collection[classify_module]:
-        raise NotImplementedError(
-            "modules_to_test has not been set. Set it to the modules which need to be "
-            "tested."
-        )
+        """
+        `classify` modules which need to be tested. Usually just::
+
+            (cappr.your_new_backend.classify,)
+        """
+        raise NotImplementedError
 
     def _test(self, function: str, *args, **kwargs):
         """
-        Format of all tests: test all modules for form/structure, and then test their
-        contents if `self.module_correct is not None`, i.e., there exists a reference
-        implementation to test against.
+        Format of all tests: test all modules' function outputs for form/structure, and
+        then test their content if `self.module_correct is not None`, i.e., there exists
+        a reference implementation to test against.
         """
         test_form = getattr(_test_form, function)
         for module in self.modules_to_test:
@@ -63,9 +62,10 @@ class _BaseTest:
 @pytest.mark.parametrize(
     "prompts",
     (
+        ####################### Single tokens for easy debugging #######################
         ["a b c", "c"],
         ############################### Test single-input ##############################
-        "prompts single",
+        "prompts single string",
         ######################## Test different type of sequence #######################
         pd.Series(["prompts is", "a", "Series"], index=np.random.choice(3, size=3)),
     ),
@@ -73,6 +73,7 @@ class _BaseTest:
 @pytest.mark.parametrize(
     "completions",
     (
+        ####################### Single tokens for easy debugging #######################
         ["d e f g", "1 2", "O"],
         ######################## Test Single-token optimization ########################
         ["d", "e", "f"],
@@ -82,7 +83,7 @@ class _BaseTest:
 )
 class BaseTestPromptsCompletions(_BaseTest):
     """
-    TODO
+    Test non-`_examples` functions.
     """
 
     def test_log_probs_conditional(
@@ -99,12 +100,9 @@ class BaseTestPromptsCompletions(_BaseTest):
         return request.param
 
     @pytest.fixture(scope="class", params=[0, 1])
-    def discount_completions(self, request: pytest.FixtureRequest) -> bool:
+    def discount_completions(self, request: pytest.FixtureRequest) -> float:
         return request.param
 
-    # @pytest.mark.parametrize("_use_prior", (True, False))
-    # @pytest.mark.parametrize("discount_completions", (0.0, 1.0))
-    # @pytest.mark.parametrize("normalize", (True, False))
     def test_predict_proba(
         self,
         prompts: str | Sequence,
@@ -115,6 +113,7 @@ class BaseTestPromptsCompletions(_BaseTest):
         normalize: bool,
         **kwargs,
     ):
+        # TODO: this is a bit dirty. Figure out how to make it simpler.
         if _use_prior:
             kwargs["prior"] = [1 / len(completions)] * len(completions)
         else:
@@ -138,15 +137,11 @@ class BaseTestPromptsCompletions(_BaseTest):
 @pytest.mark.parametrize(
     "examples",
     (
+        ######################## Test non-constant # completions #######################
         [
             Example("a b c", ["d", "e f g"]),
-            Example("C", ["p G C p G", "D E F", "ya later alligator"]),
-        ],
-        ############################# Next set of examples #############################
-        [
             Example("chi", ["can", "ery"]),
             Example("koyaa", ["nisqatsi"], normalize=False),
-            Example("hi hi", ["bye bye", "yo yo"]),
         ],
         ############## Test constant # completions, non-constant # tokens ##############
         [
@@ -162,7 +157,7 @@ class BaseTestPromptsCompletions(_BaseTest):
 )
 class BaseTestExamples(_BaseTest):
     """
-    TODO
+    Test `_examples` functions.
     """
 
     def test_log_probs_conditional_examples(

@@ -2,8 +2,6 @@
 Unit and integration tests for `cappr.llama_cpp.classify`. Works by checking that its
 functions' outputs are numerically close to those from
 `cappr.llama_cpp._classify_no_cache`.
-
-# TODO: factor out these tests so that they're shared across all backends.
 """
 from __future__ import annotations
 import os
@@ -22,6 +20,7 @@ from cappr.llama_cpp._utils import log_softmax
 # sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
 from _base import BaseTestPromptsCompletions, BaseTestExamples
+from _test_content import token_logprobs as _test_token_logprobs
 
 
 _ABS_PATH_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -85,45 +84,24 @@ def test_token_logprobs(texts: Sequence[str], model: Llama, atol: float):
     """
     log_probs_texts_observed = classify.token_logprobs(texts, model, add_bos=True)
 
-    # The first logprob of every text must be None b/c no CausalLM estimates Pr(token)
-    for log_prob_observed in log_probs_texts_observed:
-        assert log_prob_observed[0] is None
-
     # Gather un-batched un-sliced log probs for the expected result
-    _texts_log_probs = []
-    _texts_input_ids = []
+    log_probs_texts_from_unbatched = []
+    input_ids_from_unbatched = []
     for text in texts:
         input_ids = model.tokenize(text.encode("utf-8"), add_bos=True)
         model.reset()
         model.eval(input_ids)
-        _texts_log_probs.append(log_softmax(classify._check_logits(model.eval_logits)))
-        _texts_input_ids.append(input_ids)
+        log_probs_texts_from_unbatched.append(
+            log_softmax(classify._check_logits(model.eval_logits))
+        )
+        input_ids_from_unbatched.append(input_ids)
     model.reset()
 
-    # Slice out log probs for the final expected result
-    log_probs_texts_expected = []
-    for _text_input_ids, _text_log_probs in zip(_texts_input_ids, _texts_log_probs):
-        log_probs_texts_expected.append(
-            [None]  # for the first token, no CausalLM estimates Pr(token)
-            + [  # this token's data contains the next token's log-probability
-                _text_log_probs[i, _text_input_ids[i + 1]]
-                for i in range(0, len(_text_input_ids) - 1)
-            ]
-        )
-
-    # Every log prob is correct, and sizes are correct
-    assert len(log_probs_texts_observed) == len(log_probs_texts_expected)
-    for log_probs_text_observed, log_probs_text_expected in zip(
-        log_probs_texts_observed, log_probs_texts_expected
-    ):
-        assert len(log_probs_text_observed) == len(log_probs_text_expected)
-        # skip the first token b/c its log prob is always None
-        for log_prob_token_observed, log_prob_token_expected in zip(
-            log_probs_text_observed[1:], log_probs_text_expected[1:]
-        ):
-            assert np.isclose(
-                log_prob_token_observed, log_prob_token_expected, atol=atol
-            )
+    _test_token_logprobs(
+        log_probs_texts_observed,
+        log_probs_texts_from_unbatched,
+        input_ids_from_unbatched,
+    )
 
 
 ########################################################################################

@@ -14,9 +14,52 @@ from _protocol import classify_module
 atol = 1e-4  # TODO: fixture?
 
 
-# Note: throughout this module, we'll cast to torch float16 tensors to be consistent
-# with the way numerical closeness is defined for model-dependent outputs.
-dtype = torch.float16
+def _as_tensor(data: Sequence) -> torch.Tensor:
+    # Note: throughout this module, we'll cast to torch float16 tensors to be consistent
+    # with the way numerical closeness is defined for model-dependent outputs.
+    dtype = torch.float16
+    if isinstance(data, torch.Tensor):
+        return data.to(dtype)
+    return torch.tensor(data).to(dtype)
+
+
+def token_logprobs(
+    log_probs_texts_observed: Sequence[Sequence[float]],
+    log_probs_texts_from_unbatched: Sequence[Sequence[Sequence[float]]],
+    input_ids_from_unbatched: Sequence[Sequence[int]],
+):
+    # The first logprob of every text must be None b/c no CausalLM estimates Pr(token)
+    for log_probs_text_observed in log_probs_texts_observed:
+        assert log_probs_text_observed[0] is None
+
+    # Slice out log probs for the final expected result
+    log_probs_texts_expected = []
+    for _text_input_ids, _text_log_probs in zip(
+        input_ids_from_unbatched, log_probs_texts_from_unbatched
+    ):
+        log_probs_texts_expected.append(
+            [None]  # for the first token, no CausalLM estimates Pr(token)
+            + [  # this token's data contains the next token's log-probability
+                _text_log_probs[i, _text_input_ids[i + 1]]
+                for i in range(0, len(_text_input_ids) - 1)
+            ]
+        )
+
+    # Every log prob is correct, and sizes are correct
+    assert len(log_probs_texts_observed) == len(log_probs_texts_expected)
+    for log_probs_text_observed, log_probs_text_expected in zip(
+        log_probs_texts_observed, log_probs_texts_expected
+    ):
+        assert len(log_probs_text_observed) == len(log_probs_text_expected)
+        # skip the first token b/c its log prob is always None
+        for log_prob_token_observed, log_prob_token_expected in zip(
+            log_probs_text_observed[1:], log_probs_text_expected[1:]
+        ):
+            assert torch.isclose(
+                _as_tensor(log_prob_token_observed),
+                _as_tensor(log_prob_token_expected),
+                atol=atol,
+            )
 
 
 def _test_log_probs_conditional(
@@ -24,17 +67,11 @@ def _test_log_probs_conditional(
     log_probs_completions2: list[list[float]] | list[list[list[float]]],
     is_single_input: bool,
 ):
-    """
-    Helper
-    """
-
     def test_single_input(log_probs1, log_probs2):
         assert len(log_probs1) == len(log_probs2)
         for log_probs_tokens1, log_probs_tokens2 in zip(log_probs1, log_probs2):
             assert torch.allclose(
-                torch.tensor(log_probs_tokens1).to(dtype),
-                torch.tensor(log_probs_tokens2).to(dtype),
-                atol=atol,
+                _as_tensor(log_probs_tokens1), _as_tensor(log_probs_tokens2), atol=atol
             )
 
     if is_single_input:
@@ -105,11 +142,7 @@ def predict_proba(
     """
     pred_probs1 = classify1.predict_proba(prompts, completions, *args, **kwargs)
     pred_probs2 = classify2.predict_proba(prompts, completions, *args, **kwargs)
-    assert torch.allclose(
-        torch.tensor(pred_probs1).to(dtype),
-        torch.tensor(pred_probs2).to(dtype),
-        atol=atol,
-    )
+    assert torch.allclose(_as_tensor(pred_probs1), _as_tensor(pred_probs2), atol=atol)
 
 
 def predict_proba_examples(
@@ -126,9 +159,7 @@ def predict_proba_examples(
     pred_probs2 = classify2.predict_proba_examples(examples, *args, **kwargs)
     for pred_probs1_ex, pred_probs2_ex in zip(pred_probs1, pred_probs2):
         assert torch.allclose(
-            torch.tensor(pred_probs1_ex).to(dtype),
-            torch.tensor(pred_probs2_ex).to(dtype),
-            atol=atol,
+            _as_tensor(pred_probs1_ex), _as_tensor(pred_probs2_ex), atol=atol
         )
 
 
