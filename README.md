@@ -430,6 +430,12 @@ When you add a new testing module, add it to the list in `pyproject.toml`. The l
 in order of dependencies: `Example` and `utils` must pass for the rest of the modules to
 pass.
 
+To test a specific module, e.g., `huggingface`:
+
+```
+pytest -k huggingface
+```
+
 ### Docs
 
 To test changes to documentation, first locally build them from the repo home directory

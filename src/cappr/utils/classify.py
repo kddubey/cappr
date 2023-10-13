@@ -101,8 +101,8 @@ def _agg_log_probs(
 
 def _sequence_depth(sequence) -> int:
     """
-    Like `len(np.shape(sequence))` but `sequence` can be more jagged. It can't be nested
-    inconsistently though, since we'll just check the first element.
+    Like `array.ndim` or `len(np.shape(sequence))` but `sequence` can be more jagged. It
+    can't be nested inconsistently though, since we'll just check the first element.
     """
 
     def _is_sliceable(object) -> bool:

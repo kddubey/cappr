@@ -19,9 +19,8 @@ BatchEncoding = TypeVar("BatchEncoding", bound=Mapping[str, torch.Tensor])
 """
 The output of a `tokenizer(texts, return_tensors="pt")` call.
 """
-# transformers.BatchEncoding doesn't annotate values as tensors since it's more generic
-# than that. In this package, they'll always be PyTorch tensors, and it's convenient to
-# annotate them as such.
+# transformers.BatchEncoding doesn't annotate values as tensors b/c tokenizers can
+# return other objects. In this package, tokenizers will always return PyTorch tensors.
 
 
 ModelForCausalLM = TypeVar("ModelForCausalLM", bound=PreTrainedModel)

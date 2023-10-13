@@ -6,20 +6,24 @@ generic testing module.
 """
 from __future__ import annotations
 import os
-import re
 import sys
+from typing import Sequence
 
 import numpy as np
-import pandas as pd
 import pytest
 import tiktoken
 
-from cappr import Example as Ex
+from cappr import Example
 from cappr.openai import classify
 
 # sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
-import _test
+from _base import BaseTestPromptsCompletions, BaseTestExamples
+
+
+########################################################################################
+###################################### Fixtures ########################################
+########################################################################################
 
 
 @pytest.fixture(autouse=True)
@@ -28,11 +32,14 @@ def patch_openai_method_retry(monkeypatch: pytest.MonkeyPatch):
     # an OpenAI endpoint!
     def _log_probs(texts: list[str]) -> list[list[float]]:
         """
-        Returns a list `log_probs` where `log_probs[i]` is `list(range(size))` where
+        Returns a list `log_probs` where `log_probs[i]` is `-range(1, size+1))` where
         `size` is the number of tokens in `texts[i]`.
         """
         tokenizer = tiktoken.get_encoding("gpt2")
-        return [list(range(len(tokens))) for tokens in tokenizer.encode_batch(texts)]
+        return [
+            -np.array(range(1, len(tokens) + 1))
+            for tokens in tokenizer.encode_batch(texts)
+        ]
 
     # Note that the the text completion endpoint uses a kwarg named prompt, but that's
     # actually set to prompt + completion in the CAPPr scheme. We input that to get
@@ -67,182 +74,75 @@ def model():
     return "🦖 ☄️ 💥"
 
 
-@pytest.fixture(scope="module")
-def prompts():
-    return [
-        "Fill in the blank. Have an __ day!",
-        "i before e except after",
-        "Popular steak sauce:",
-        "The English alphabet: a, b,",
-    ]
-
-
-@pytest.fixture(scope="module")
-def completions():
-    return ["A1", "c"]
-
-
-@pytest.fixture(scope="module")
-def examples():
-    # Let's make these ragged (different # completions per prompt), since
-    # that's a use case for an Example
-    return [
-        Ex(prompt="lotta", completions=("media", "food"), prior=(1 / 2, 1 / 2)),
-        Ex(
-            prompt=("🎶The best time to wear a striped sweater is all the"),
-            completions=("time🎶",),
-            normalize=False,
-        ),
-        Ex(
-            prompt="machine",
-            completions=("-washed", " learnt", " 🤖"),
-            prior=(1 / 6, 2 / 3, 1 / 6),
-            end_of_prompt="",
-        ),
-    ]
+########################################################################################
+#################################### One-off tests #####################################
+########################################################################################
 
 
 def test_token_logprobs(model):
     texts = ["a b c", "d e"]
     log_probs = classify.token_logprobs(texts, model)
-    assert log_probs == [[0, 1, 2], [0, 1]]  # cuz the API is mocked w/ range(len())
+    assert log_probs == [[-1, -2, -3], [-1, -2]]  # cuz the API is mocked w/ range
 
 
-def test__slice_completions(completions, model):
-    log_probs = [[0, 1, 2], [0, 1]]
+def test__slice_completions(model):
+    completions = ["A1", "c"]
+    log_probs = [[-1, -2, -3], [-1, -2]]
     log_probs_completions = classify._slice_completions(
         completions, end_of_prompt="", log_probs=log_probs, model=model
     )
-    assert log_probs_completions == [[1, 2], [1]]
+    assert log_probs_completions == [[-2, -3], [-2]]
 
 
-def test_log_probs_conditional(prompts, completions, model):
-    expected = [[[10, 11], [10]], [[5, 6], [5]], [[5, 6], [5]], [[8, 9], [8]]]
-
-    # Test plain input
-    _log_probs_conditional = classify.log_probs_conditional(prompts, completions, model)
-    assert _log_probs_conditional == expected
-
-    # Test that you can input a pandas Series w/ an arbitrary index
-    _prompts_series = pd.Series(
-        prompts, index=np.random.choice(len(prompts), size=len(prompts))
-    )
-    _completions_series = pd.Series(
-        completions, index=np.random.choice(len(completions), size=len(completions))
-    )
-    _log_probs_conditional = classify.log_probs_conditional(
-        _prompts_series, _completions_series, model
-    )
-    assert _log_probs_conditional == expected
-
-    # Test bad prompts - empty
-    with pytest.raises(ValueError, match="prompts must be non-empty."):
-        classify.log_probs_conditional([], completions, model)
-
-    # Test bad prompts - non-ordered
-    with pytest.raises(TypeError, match="prompts must be an ordered collection."):
-        classify.log_probs_conditional(set(prompts), completions, model)
-
-    # Test bad end_of_prompt - non-" "/""
-    with pytest.raises(
-        ValueError,
-        match='end_of_prompt must be a whitespace " " or an empty string "".',
-    ):
-        classify.log_probs_conditional(prompts, completions, model, end_of_prompt=": ")
-
-    # Test bad completions - empty
-    with pytest.raises(ValueError, match="completions must be non-empty."):
-        classify.log_probs_conditional(prompts, [], model)
-
-    # Test bad completions - non-ordered
-    with pytest.raises(TypeError, match="completions must be an ordered collection."):
-        classify.log_probs_conditional(prompts, set(completions), model)
-
-    # Test bad completions - string
-    with pytest.raises(TypeError, match="completions cannot be a string."):
-        classify.log_probs_conditional(prompts, completions[0], model)
+########################################################################################
+####################################### Tests ##########################################
+########################################################################################
 
 
-def test_log_probs_conditional_examples(examples, model):
-    log_probs_conditional = classify.log_probs_conditional_examples(examples, model)
-    expected = [[[2], [2]], [[14, 15, 16, 17]], [[1, 2], [1], [1, 2, 3]]]
-    assert log_probs_conditional == expected
+class Modules:
+    @property
+    def module_correct(self):
+        return None
 
-    # Test bad examples - non-ordered
-    with pytest.raises(TypeError, match="examples must be an ordered collection."):
-        classify.log_probs_conditional_examples(set(examples), model)
-
-    # Test bad examples - empty
-    with pytest.raises(ValueError, match="examples must be non-empty."):
-        classify.log_probs_conditional_examples([], model)
+    @property
+    def modules_to_test(self):
+        return (classify,)
 
 
-def test_predict_proba(prompts, completions, model):
-    _test.predict_proba(classify.predict_proba, prompts, completions, model)
+class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
+    def test_log_probs_conditional(self, prompts, completions, model):
+        super().test_log_probs_conditional(prompts, completions, model)
 
-    # Test prior
-    prior = [1 / len(completions)] * len(completions)
-    _test.predict_proba(
-        classify.predict_proba, prompts, completions, model, prior=prior
-    )
-
-    # Test discount_completions > 0.0
-    _test.predict_proba(
-        classify.predict_proba, prompts, completions, model, discount_completions=1.0
-    )
-
-    # Test discount_completions > 0.0 with prior
-    _test.predict_proba(
-        classify.predict_proba,
+    def test_predict_proba(
+        self,
         prompts,
         completions,
         model,
-        prior=prior,
-        discount_completions=1.0,
-    )
+        _use_prior,
+        discount_completions,
+        normalize,
+    ):
+        super().test_predict_proba(
+            prompts,
+            completions,
+            model,
+            _use_prior=_use_prior,
+            discount_completions=discount_completions,
+            normalize=normalize,
+        )
 
-    # Test bad prior input - wrong size
-    prior_bad = prior + [0]
-    expected_error_msg = re.escape(
-        f"Expected prior to have length {len(completions)} (the number of "
-        f"completions), got {len(prior_bad)}."
-    )
-    with pytest.raises(ValueError, match=expected_error_msg):
-        classify.predict_proba(prompts, completions, model, prior=prior_bad)
-
-    # Test bad prior input - not a probability distr
-    prior_bad = prior[:-1] + [0]
-    expected_error_msg = "prior must sum to 1."
-    with pytest.raises(ValueError, match=expected_error_msg):
-        classify.predict_proba(prompts, completions, model, prior=prior_bad)
-
-    # Test bad normalize input
-    expected_error_msg = "Setting normalize=True when there's only 1 completion"
-    with pytest.raises(ValueError, match=expected_error_msg):
-        classify.predict_proba(prompts, completions[:1], model, normalize=True)
+    def test_predict(self, prompts, completions, model):
+        super().test_predict(prompts, completions, model)
 
 
-def test_predict_proba_examples(examples: list[Ex], model):
-    _test.predict_proba_examples(classify.predict_proba_examples, examples, model)
+class TestExamples(Modules, BaseTestExamples):
+    def test_log_probs_conditional_examples(
+        self, examples: Example | Sequence[Example], model
+    ):
+        super().test_log_probs_conditional_examples(examples, model)
 
+    def test_predict_proba_examples(self, examples: Example | Sequence[Example], model):
+        super().test_predict_proba_examples(examples, model)
 
-def test_predict(prompts, completions, model):
-    _test.predict(classify.predict, prompts, completions, model)
-
-    # Test that you can input a pandas Series w/ an arbitrary index
-    _prompts_series = pd.Series(
-        prompts, index=np.random.choice(len(prompts), size=len(prompts))
-    )
-    _completions_series = pd.Series(
-        completions, index=np.random.choice(len(completions), size=len(completions))
-    )
-    _test.predict(classify.predict, _prompts_series, _completions_series, model)
-
-    # test discount_completions > 0.0
-    _test.predict(
-        classify.predict, prompts, completions, model, discount_completions=1.0
-    )
-
-
-def test_predict_examples(examples: list[Ex], model):
-    _test.predict_examples(classify.predict_examples, examples, model)
+    def test_predict_examples(self, examples: Example | Sequence[Example], model):
+        super().test_predict_examples(examples, model)

@@ -1,31 +1,27 @@
 """
 Unit and integration tests for `cappr.huggingface.classify`. Works by checking that its
 functions' outputs are numerically close to those from
-`cappr.huggingface.classify_no_cache`, which is assumed to be correct (TODO: yeah I
-really should test that).
+`cappr.huggingface.classify_no_cache`.
 """
 from __future__ import annotations
 import os
 import sys
+from typing import Sequence
 
-import numpy as np
-import pandas as pd
 import pytest
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizerBase
 import huggingface_hub as hf_hub
 
-from cappr import Example as Ex
-from cappr.huggingface import classify_no_cache as slow
-from cappr.huggingface import classify as fast
-from cappr.huggingface import classify_no_batch as lmem  # lmem = low memory
+from cappr import Example
+from cappr.huggingface import classify_no_cache, classify, classify_no_batch
 from cappr import huggingface as hf
 from cappr.huggingface._utils import BatchEncoding, ModelForCausalLM
 
 # sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
-import _test
+from _base import BaseTestPromptsCompletions, BaseTestExamples
 
 
 ########################################################################################
@@ -87,7 +83,7 @@ def model_and_tokenizer(
     # set up correctly. For testing, that means we shouldn't just return the fixtures:
     # return model, tokenizer
     # Instead, load them from scratch like a user would:
-    model: ModelForCausalLM = AutoModelForCausalLM.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name)
     tokenizer = _load_tokenizer(model_name)
     return model, tokenizer
 
@@ -150,7 +146,7 @@ def test_set_up_model_and_tokenizer(model_and_tokenizer):
         assert getattr(tokenizer, attribute, None) == old_value
 
 
-@pytest.mark.parametrize("module", (slow, fast, lmem))
+@pytest.mark.parametrize("module", (classify_no_cache, classify, classify_no_batch))
 @pytest.mark.parametrize(
     "texts",
     (["a b", "c d e"], ["a fistful", "of tokens", "for a few", "tokens more"]),
@@ -163,6 +159,7 @@ def test_token_logprobs(
     Tests that the model's token log probabilities are correct by testing against an
     unbatched and carefully, manually indexed result.
     """
+    module: classify = module  # just for the type hint
     log_probs_texts_observed = module.token_logprobs(
         texts, model_and_tokenizer, batch_size=batch_size
     )
@@ -229,10 +226,10 @@ def test__keys_values_prompts(
     Tests that the model's attention keys and values for the prompt are identical. If
     this test fails, all tests which call `_test_logits` will also fail.
     """
-    _outputs_slow = slow._keys_values_prompts(
+    _outputs_slow = classify_no_cache._keys_values_prompts(
         model, tokenizer, prompts, num_completions_per_prompt
     )
-    _outputs_fast = fast._keys_values_prompts(
+    _outputs_fast = classify._keys_values_prompts(
         model, tokenizer, prompts, num_completions_per_prompt
     )
     keys_vals_slow, encodings_slow, offsets_slow, logits_last_slow = _outputs_slow
@@ -255,7 +252,7 @@ def test__keys_values_prompts(
 
 
 ########################################################################################
-############################### Helpers for future tests ###############################
+################################### Helpers for tests ##################################
 ########################################################################################
 
 
@@ -334,303 +331,99 @@ def _test_logits(
             )
 
 
-def _test_log_probs(
-    log_probs_completions_slow: list[list[float]] | list[list[list[float]]],
-    log_probs_completions_fast: list[list[float]] | list[list[list[float]]],
-    expected_len: int,
-    num_completions_per_prompt: list[int] | None,
-    atol,
-):
-    """
-    Tests that the conditional token log-probabilities are the right shape and are
-    numerically close.
-    """
-
-    def test_single_input(log_probs_slow, log_probs_fast, num_completions):
-        assert len(log_probs_fast) == num_completions
-        assert len(log_probs_slow) == num_completions
-        zipped_inner = zip(log_probs_slow, log_probs_fast)
-        for log_probs_tokens_slow, log_probs_tokens_fast in zipped_inner:
-            # cast to tensor so that we are consistent w/ the way "numerical closeness"
-            # is defined for model-dependent outputs
-            assert torch.allclose(
-                torch.tensor(log_probs_tokens_slow),
-                torch.tensor(log_probs_tokens_fast),
-                atol=atol,
-            )
-
-    if num_completions_per_prompt is None:
-        # there's only one prompt and it was fed by itself, not in a Sequence.
-        test_single_input(
-            log_probs_completions_slow, log_probs_completions_fast, expected_len
-        )
-    else:
-        # Test lengths before zipping
-        assert len(log_probs_completions_slow) == len(log_probs_completions_fast)
-        assert len(log_probs_completions_fast) == expected_len
-        assert len(log_probs_completions_slow) == len(num_completions_per_prompt)
-        zipped_outer = zip(
-            log_probs_completions_slow,
-            log_probs_completions_fast,
-            num_completions_per_prompt,
-        )
-        for log_probs_slow, log_probs_fast, num_completions in zipped_outer:
-            test_single_input(log_probs_slow, log_probs_fast, num_completions)
-
-
-def _function_kwargs(function_kwargs: dict, non_args: tuple[str] = ("self", "atol")):
-    """
-    This module tests two implementations of the same thing. This utility grabs their
-    inputs so that arguments don't have to be repeated.
-    """
-    return {arg: value for arg, value in function_kwargs.items() if arg not in non_args}
-
-
 ########################################################################################
 ####################################### Tests ##########################################
 ########################################################################################
 
 
-@pytest.mark.parametrize(
-    "prompts",
-    (
-        ["a b c", "c"],
-        "prompts can be a single string",
-        pd.Series(["prompts can", "be a", "Series"], index=np.random.choice(3, size=3)),
-    ),
-)
-@pytest.mark.parametrize(
-    "completions",
-    (
-        ["d e f g", "1 2", "O"],
-        ######################## Test Single-token optimization ########################
-        ["d", "e", "f"],
-        ########################### Test pandas Series input ###########################
-        pd.Series(["completions as", "a", "Series"], index=np.random.choice(3, size=3)),
-    ),
-)
-class TestPromptsCompletions:
-    """
-    Tests all model-dependent, non-`_examples` functions, sharing the same set of
-    prompts and completions.
-    """
+class Modules:
+    @property
+    def module_correct(self):
+        return classify_no_cache
 
+    @property
+    def modules_to_test(self):
+        return (classify, classify_no_batch)
+
+
+class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
     def test__logits_completions_given_prompts(
         self, model, tokenizer, prompts, completions, atol
     ):
-        """
-        Tests that encodings have the right shape and that logits are numerically close.
-        If this test fails, all of the tests below will fail.
-        """
         # for this function, prompts can't be a single string
+        # TODO: uh yes it can, wrap it in a list, dummy
         if isinstance(prompts, str):
             return
-        kwargs = _function_kwargs(locals())
-        slow_out = slow._logits_completions_given_prompts(**kwargs)
-        fast_out = fast._logits_completions_given_prompts(**kwargs)
+        slow_out = classify_no_cache._logits_completions_given_prompts(
+            model, tokenizer, prompts, completions
+        )
+        fast_out = classify._logits_completions_given_prompts(
+            model, tokenizer, prompts, completions
+        )
         _test_encodings(*slow_out, *fast_out)
         _test_logits(*slow_out, *fast_out, atol)
 
     @pytest.mark.parametrize("batch_size", (2, 1))
     def test_log_probs_conditional(
-        self, prompts, completions, model_and_tokenizer, batch_size, atol
+        self, prompts, completions, model_and_tokenizer, batch_size
     ):
-        kwargs = _function_kwargs(locals())
-        if isinstance(prompts, str):
-            expected_len = len(completions)
-            num_completions_per_prompt = None
-        else:
-            expected_len = len(prompts)
-            num_completions_per_prompt = [len(completions)] * len(prompts)
-        log_probs_completions_slow = slow.log_probs_conditional(**kwargs)
-        log_probs_completions_fast = fast.log_probs_conditional(**kwargs)
-        log_probs_completions_lmem = lmem.log_probs_conditional(**kwargs)
-        _test_log_probs(
-            log_probs_completions_slow,
-            log_probs_completions_fast,
-            expected_len,
-            num_completions_per_prompt,
-            atol,
-        )
-        _test_log_probs(
-            log_probs_completions_slow,
-            log_probs_completions_lmem,
-            expected_len,
-            num_completions_per_prompt,
-            atol,
+        super().test_log_probs_conditional(
+            prompts, completions, model_and_tokenizer, batch_size=batch_size
         )
 
-    @pytest.mark.parametrize("discount_completions", (0.0, 1.0))
-    @pytest.mark.parametrize("normalize", (True, False))
     def test_predict_proba(
         self,
         prompts,
         completions,
         model_and_tokenizer,
+        _use_prior,
+        discount_completions,
         normalize,
-        discount_completions,
-        atol,
     ):
-        kwargs = _function_kwargs(locals())
-        # Test form of output
-        _test.predict_proba(slow.predict_proba, **kwargs)
-        _test.predict_proba(fast.predict_proba, **kwargs)
-
-        # Test that predictions match
-        pred_probs_slow = slow.predict_proba(**kwargs)
-        pred_probs_fast = fast.predict_proba(**kwargs)
-        pred_probs_lmem = lmem.predict_proba(**kwargs)
-        # cast to tensor so that we are consistent w/ the way "numerical closeness"
-        # is defined for model-dependent outputs
-        assert torch.allclose(
-            torch.tensor(pred_probs_fast), torch.tensor(pred_probs_slow), atol=atol
-        )
-        assert torch.allclose(
-            torch.tensor(pred_probs_lmem), torch.tensor(pred_probs_slow), atol=atol
+        super().test_predict_proba(
+            prompts,
+            completions,
+            model_and_tokenizer,
+            _use_prior=_use_prior,
+            discount_completions=discount_completions,
+            normalize=normalize,
         )
 
-    @pytest.mark.parametrize("discount_completions", (0.0, 1.0))
-    def test_predict(
-        self,
-        prompts,
-        completions,
-        model_and_tokenizer,
-        discount_completions,
-    ):
-        kwargs = _function_kwargs(locals())
-        # Test form of output
-        _test.predict(slow.predict, **kwargs)
-        _test.predict(fast.predict, **kwargs)
-        _test.predict(lmem.predict, **kwargs)
-
-        # Test that predictions match
-        preds_slow = slow.predict(**kwargs)
-        preds_fast = fast.predict(**kwargs)
-        preds_lmem = slow.predict(**kwargs)
-        assert preds_fast == preds_slow
-        assert preds_lmem == preds_slow
+    def test_predict(self, prompts, completions, model_and_tokenizer):
+        super().test_predict(prompts, completions, model_and_tokenizer)
 
 
-@pytest.mark.parametrize(
-    "examples",
-    (
-        [
-            Ex("a b c", ["d", "e f g"]),
-            Ex("C", ["p G C p G", "D E F", "ya later alligator"]),
-        ],
-        ############################# Next set of examples #############################
-        [
-            Ex("chi", ["can", "ery"]),
-            Ex("koyaa", ["nisqatsi"], normalize=False),
-            Ex("hi hi", ["bye bye", "yo yo"]),
-        ],
-        ############## Test constant # completions, non-constant # tokens ##############
-        [
-            Ex("jelly", ["fin", "is"]),
-            Ex("a great", ["thing.", "shout"]),
-            Ex("out to", ["open", "source, yo."]),
-        ],
-        ############################ Test singleton example ############################
-        Ex("lonesome", ["singleton", "example"]),
-        ################### Test singleton example single completion ###################
-        Ex("lonely", ["loner"], normalize=False),
-    ),
-)
-class TestExamples:
-    """
-    Tests all model-dependent, `_examples` functions, sharing the same set of examples.
-    """
-
+class TestExamples(Modules, BaseTestExamples):
     def test__logits_completions_given_prompts_examples(
         self, model, tokenizer, examples, atol
     ):
-        """
-        Tests that encodings have the right shape and that logits are numerically close.
-        If this test fails, all of the tests below will fail.
-        """
         # for this helper function, examples can't be an Example
-        if isinstance(examples, Ex):
+        # TODO: uh yes it can, wrap it in a list, dummy
+        if isinstance(examples, Example):
             return
-        kwargs = _function_kwargs(locals())
-        slow_out = slow._logits_completions_given_prompts_examples(**kwargs)
-        fast_out = fast._logits_completions_given_prompts_examples(**kwargs)
+        slow_out = classify_no_cache._logits_completions_given_prompts_examples(
+            model, tokenizer, examples
+        )
+        fast_out = classify._logits_completions_given_prompts_examples(
+            model, tokenizer, examples
+        )
         _test_encodings(*slow_out, *fast_out)
         _test_logits(*slow_out, *fast_out, atol)
 
     @pytest.mark.parametrize("batch_size", (2, 1))
     def test_log_probs_conditional_examples(
-        self, examples: list[Ex], model_and_tokenizer, batch_size, atol
+        self, examples: Example | Sequence[Example], model_and_tokenizer, batch_size
     ):
-        kwargs = _function_kwargs(locals())
-        if isinstance(examples, Ex):
-            expected_len = len(examples.completions)
-            num_completions_per_prompt = None
-        else:
-            expected_len = len(examples)
-            num_completions_per_prompt = [
-                len(example.completions) for example in examples
-            ]
-        log_probs_completions_slow = slow.log_probs_conditional_examples(**kwargs)
-        log_probs_completions_fast = fast.log_probs_conditional_examples(**kwargs)
-        log_probs_completions_lmem = lmem.log_probs_conditional_examples(**kwargs)
-        _test_log_probs(
-            log_probs_completions_slow,
-            log_probs_completions_fast,
-            expected_len,
-            num_completions_per_prompt,
-            atol,
-        )
-        _test_log_probs(
-            log_probs_completions_slow,
-            log_probs_completions_lmem,
-            expected_len,
-            num_completions_per_prompt,
-            atol,
+        super().test_log_probs_conditional_examples(
+            examples, model_and_tokenizer, batch_size=batch_size
         )
 
-    def test_predict_proba_examples(self, examples, model_and_tokenizer, atol):
-        kwargs = _function_kwargs(locals())
-        # Test form of output
-        _test.predict_proba_examples(fast.predict_proba_examples, **kwargs)
-        _test.predict_proba_examples(slow.predict_proba_examples, **kwargs)
+    def test_predict_proba_examples(
+        self, examples: Example | Sequence[Example], model_and_tokenizer
+    ):
+        super().test_predict_proba_examples(examples, model_and_tokenizer)
 
-        # Test that predictions match
-        pred_probs_slow = slow.predict_proba_examples(**kwargs)
-        pred_probs_fast = fast.predict_proba_examples(**kwargs)
-        pred_probs_lmem = lmem.predict_proba_examples(**kwargs)
-        for pred_probs_fast_ex, pred_probs_slow_ex, pred_probs_lmem_ex in zip(
-            pred_probs_fast, pred_probs_slow, pred_probs_lmem
-        ):
-            # cast to tensor so that we are consistent w/ the way "numerical closeness"
-            # is defined for model-dependent outputs
-            assert torch.allclose(
-                torch.tensor(pred_probs_fast_ex),
-                torch.tensor(pred_probs_slow_ex),
-                atol=atol,
-            )
-            assert torch.allclose(
-                torch.tensor(pred_probs_lmem_ex),
-                torch.tensor(pred_probs_slow_ex),
-                atol=atol,
-            )
-
-    def test_predict_examples(self, examples, model_and_tokenizer):
-        kwargs = _function_kwargs(locals())
-        if (
-            isinstance(examples, Ex)
-            and len(examples.completions) == 1
-            and examples.normalize
-        ):
-            # not a valid input for this function. it's fine for predict_proba_examples
-            return
-        # Test form of output
-        _test.predict_examples(slow.predict_examples, **kwargs)
-        _test.predict_examples(fast.predict_examples, **kwargs)
-        _test.predict_examples(lmem.predict_examples, **kwargs)
-
-        # Test that predictions match
-        preds_slow = slow.predict_examples(**kwargs)
-        preds_fast = fast.predict_examples(**kwargs)
-        preds_lmem = lmem.predict_examples(**kwargs)
-        assert preds_fast == preds_slow
-        assert preds_lmem == preds_slow
+    def test_predict_examples(
+        self, examples: Example | Sequence[Example], model_and_tokenizer
+    ):
+        super().test_predict_examples(examples, model_and_tokenizer)

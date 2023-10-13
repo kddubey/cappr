@@ -19,6 +19,7 @@ from cappr import openai
 def token_logprobs(
     texts: Sequence[str],
     model: openai.api.Model,
+    end_of_prompt: Literal[" ", ""] = " ",
     ask_if_ok: bool = False,
     api_key: str | None = None,
     show_progress_bar: bool | None = None,
@@ -36,6 +37,8 @@ def token_logprobs(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
+    end_of_prompt : Literal[' ', ''], optional
+        whitespace or empty string to join prompt and completion, by default whitespace
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
@@ -69,12 +72,13 @@ def token_logprobs(
         raise TypeError("texts cannot be a string. It must be a sequence of strings.")
     _check.nonempty_and_ordered(texts, variable_name="texts")
 
+    texts = list(texts)  # 0-index
     # Need to handle texts which are single tokens. Set their logprobs to [None]
     tokenizer = tiktoken.encoding_for_model(model)
     num_tokens = [len(tokens) for tokens in tokenizer.encode_batch(texts)]
     idxs_multiple_tokens = [i for i, length in enumerate(num_tokens) if length > 1]
     choices = openai.api.gpt_complete(
-        texts=[texts[i] for i in idxs_multiple_tokens],
+        texts=[end_of_prompt + texts[i] for i in idxs_multiple_tokens],
         model=model,
         show_progress_bar=show_progress_bar,
         ask_if_ok=ask_if_ok,
