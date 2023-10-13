@@ -214,6 +214,14 @@ like the convenience of hovering over the function in my IDE itself. So I opted 
 what numpy, scipy, and scikit-learn do in their docstrings: repeat text.
 
 
+### Testing
+
+This package's tests are a bit sophisticated and complicated. It took me a while to
+think about what they should look like. The abstractions seemed to be good enough, as
+they ended up exposing a bug which the previous test module didn't catch. May write more
+later.
+
+
 ## Where I struggled
 
 It's well known that attention keys and values should be cached whenever text is
@@ -229,9 +237,9 @@ enough](https://cappr.readthedocs.io/en/latest/computational_performance.html).
 
 A major todo was to make caching compatible with non-GPT-2 HuggingFace models. I tabled
 that because I figured most users would just use OpenAI, not HuggingFace. Seeing how
-popular self-hosting is today, that was *almost* a mistake. I say *almost* because I
-would've been too early. Quantized Llama 2 models were only released and supported by
-HuggingFace a few weeks ago.
+popular self-hosting is today, that was almost a mistake. I say almost because
+things—model architectures, quantization, formats—change so quickly that it's hard to be
+too early haha.
 
 On a separate note, it's disappointing that OpenAI doesn't support `echo=True,
 logprobs=1` for the highly performant `gpt-3.5-turbo-instruct` model. I'll be focusing
