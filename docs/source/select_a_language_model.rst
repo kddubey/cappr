@@ -75,7 +75,7 @@ implementation, this module may be a bit faster when ``batch_size=1``, where the
 processes one prompt at a time.
 
 .. note:: In the above modules, the ``batch_size`` keyword argument refers to the number
-   of prompts that are processed at at time; completions are always processed in
+   of prompts that are processed at a time; completions are always processed in
    parallel.
 
 :mod:`cappr.huggingface.classify_no_batch` is compatible with all models which

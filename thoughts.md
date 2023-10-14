@@ -1,5 +1,5 @@
 This is the first open source software project I've created. I thought I'd write about
-some of its design, and what I learned from creating it.
+some of the design choices, and what I learned from creating it.
 
 
 ## Design
@@ -29,24 +29,24 @@ The design is simple and uninteresting:
 ```
 
 (I excluded the `_examples` functions from the diagram because they don't contribute to
-understanding the design. They're a convenient way to do batch inference for arbitrary
-combinations of prompts and completions.)
+understanding the design. They're a convenient way to do batch inference / achieve
+higher throughput for arbitrary combinations of prompts and completions.)
 
 The [CAPPr
 scheme](https://stats.stackexchange.com/questions/601159/should-a-language-model-like-gpt-3-be-directly-used-to-perform-classification)
 applies to any autoregressive language model. But different language models have
 different ways of outputting token log-probabilities. OpenAI and other AI companies
-expose their LMs via APIs. So we just hit the API and go from there. Open source LMs are
-usually hosted on HuggingFace. A HuggingFace `CausalLM` model (read: autoregressive LM)
-is a PyTorch `nn.Module`. Calling a `CausalLM` model on tokenized inputs returns
-next-token logits, which we then log-softmax and slice to get token log-probabilities.
+expose their LMs via APIs. So we just hit the API and go from there. Open source
+`CausalLM`s (read: autoregressive LMs) on Huggingface are PyTorch `nn.Module`s. Calling
+a `CausalLM` on tokenized inputs returns next-token logits, which are log-softmax'd and
+sliced to get token log-probabilities.
 
 
 ### How to add a new LM interface module
 
 The only work is in implementing `log_probs_conditional` for your new LM interface.
-`predict_proba` is defined by decorating `log_probs_conditional`. And `predict` is
-defined by decorating `predict_proba`.
+`predict_proba` is immediately defined by decorating `log_probs_conditional`. And
+`predict` is immediately defined by decorating `predict_proba`.
 
 For example, say we're integrating Anthropic's
 [Claude](https://www.anthropic.com/index/introducing-claude). Here's what
@@ -63,8 +63,8 @@ def log_probs_conditional(
     completions: Sequence[str],
     model: str,
     **kwargs,
-) -> list[list[list[float]]]:
-    # 1. Hit Claude API in batches of requests.
+) -> list[list[float]] | list[list[list[float]]]:
+    # 1. Hit the Anthropic API in batches of requests.
     log_probs_completions = []
     # 2. Process the output into this doubly-nested and ragged list:
     #    log_probs_completions[i][j][k] is the log-probability of the
@@ -89,7 +89,7 @@ def predict(
     completions: Sequence[str],
     model: str,
     **kwargs,
-) -> list[str]:
+) -> str | list[str]:
     return predict_proba(prompts, completions, model, **kwargs)
 ```
 
@@ -107,7 +107,7 @@ class which all LM interfaces inherit from / implement.
 from abc import ABC, abstractmethod
 
 
-class _BaseLMClassifier(ABC):
+class _BaseClassifier(ABC):
     @classmethod
     @abstractmethod
     def log_probs_conditional(
@@ -176,22 +176,24 @@ is fundamentally a function is actually a method. Is there some obscure state th
 not supposed to know is being maintained? Is there a useful hierarchy? The answer to
 both of these questions is categorically no. I don't like when that happens.
 
-Overall, this design doesn't align with my style. It introduces complexity. I got away
-with writing decorators, and I'm pretty sure I can keep getting away with it.
+Overall, this design doesn't align with my style. I got away with writing decorators,
+and I'm pretty sure I can keep getting away with it.
 
 
-### I won't write string formatting abstractions
+### I (probably) won't write string formatting abstractions
 
 Every other tool in this space includes some type of string formatting abstraction,
 usually based on LangChain or an internal module which processes a user-created config
 file. These string formatters abstract the process of writing a few-shot prompt, for
 example. Not to sound too dismissive, but anyone who uses Python knows how to format a
-string. And there aren't many tedious quirks in constructing an effective prompt. These
-formatters replace the question of "how do I tell the LM to do what I want?" with "how
-do I use this string formatting interface to tell the LM to do what I want?". The latter
-question takes more time to answer. And while answering that question, you may end up
-realizing that the formatter doesn't let you do what you need to do. Moreover, these
-formatters sometimes obfuscate what the prompt actually looks like, which is a risk.
+string. Formatters replace the question of "how do I tell the LM to do what I want?"
+with "how do I use this string formatting interface to tell the LM to do what I want?".
+The latter question takes more time to answer. And while answering that question, you
+may end up realizing that the formatter doesn't let you do what you need to do.
+Moreover, these formatters sometimes obfuscate what the prompt actually looks like,
+which is a risk. For smaller LLMs, there are
+[quirks](https://cappr.readthedocs.io/en/latest/select_a_prompt_completion_format.html#quirks)
+which prompt writers should be aware of.
 
 I want this package to do one thing well: pick a completion from a user-created prompt.
 If users want to use abstract string formatters, that's on them.
@@ -200,7 +202,7 @@ If users want to use abstract string formatters, that's on them.
 ### A note on docstrings
 
 Lots of text in docstrings are repeated. After all, fundamentally, the three functions
-take the same inputs and produce the same output regardless of the LM interface.
+take the same inputs and produce the same outputs regardless of the LM interface.
 
 I previously experimented with [an
 automation](https://github.com/kddubey/dumpy/tree/main/wrap) that dynamically writes the
@@ -211,68 +213,72 @@ are static. They will only show the immediate `__doc__` attribute of a function,
 attribute you dynamically constructed. I personally am annoyed when I have to open up a
 function's documentation in my browser, and look back and forth at my browser and IDE. I
 like the convenience of hovering over the function in my IDE itself. So I opted to do
-what numpy, scipy, and scikit-learn do in their docstrings: repeat text.
+what numpy, scipy, and scikit-learn do in their docstrings: repeat text. It's definitely
+tedious to make modifications. But that tediousness is outweighed by the benefits to the
+user.
 
 
 ### Testing
 
-This package's tests are a bit sophisticated and complicated. It took me a while to
-think about what they should look like. The abstractions seemed to be good enough, as
-they ended up exposing a bug which the previous test module didn't catch. May write more
-later.
+This package's tests are designed in a sophisticated (complicated) way. It took me a
+while to think about what they should look like. The goal was to allow for 2 things:
+
+  1. shared test cases / tests which are universal to all `classify` modules—these are
+     the parametrizations in `BaseTestPromptsCompletions` and `BaseTestExamples`
+  2. module-specific fixtures and parametrizations to test module-specific setups and
+     arguments, e.g., `batch_size` in the HuggingFace backend.
+
+The current testing design accomplishes these things through inheritance. `pytest`
+proved to be incredibly flexible.
 
 
 ## Where I struggled
 
-It's well known that attention keys and values should be cached whenever text is
-repeated for inference. Getting this feature to align with the CAPPr scheme took a lot
-of nitty gritty handling of pad tokens and position IDs. The current GPTModel
-implementations in HuggingFace don't always handle them correctly (but this will change
+It's well known that attention keys and values can be cached whenever text is repeated
+for inference. Getting this feature to align with the CAPPr scheme took nitty gritty
+handling of pad tokens and position IDs. Many model implementations in HuggingFace don't
+always handle them correctly (but this will change
 [soon](https://github.com/huggingface/transformers/issues/18104#issuecomment-1465629955)).
-Automating testing for caching was [even
-trickier](https://github.com/kddubey/cappr/blob/1ed88ad3672686476965b2738563890178f4c4d4/tests/huggingface/test_huggingface_classify.py#L115-L146).
-TBH my current implementation of caching is far from perfect, partly because it batches
-in a misleading way. But it performed [well
+Automating testing for caching was also tricky. TBH my current implementation of caching
+is far from perfect. It currently doesn't allow for caching of sub-prompt text, and it
+batches in a slightly misleading way. But it performed [well
 enough](https://cappr.readthedocs.io/en/latest/computational_performance.html).
 
-A major todo was to make caching compatible with non-GPT-2 HuggingFace models. I tabled
-that because I figured most users would just use OpenAI, not HuggingFace. Seeing how
-popular self-hosting is today, that was almost a mistake. I say almost because
-things—model architectures, quantization, formats—change so quickly that it's hard to be
-too early haha.
+A major todo was to expand support to more backends, e.g., llama-cpp. I tabled that
+because I thought OpenAI and HuggingFace models were by far the most common interfaces.
+Seeing how popular self-hosting is, that was clearly not true. It didn't matter too much
+though. Model architectures, quantization, file formats, etc. change so quickly that
+it's kinda hard to be too late.
 
 On a separate note, it's disappointing that OpenAI doesn't support `echo=True,
 logprobs=1` for the highly performant `gpt-3.5-turbo-instruct` model. I'll be focusing
-more on open source models.
+more on open source models from now on.
 
 
 ## Marketing matters
 
 The first version of the [User Guide in my
 docs](https://cappr.readthedocs.io/en/latest/user_guide.html) was written for ML types,
-when it should be written broadly for software engineers. What's text classification?
-What are "labeled examples"? What's a prior? Why is a probability distribution useful?
-Docs for other tools answer, or successfully dodge, these questions much more
-effectively. CAPPr could be made way more approachable if the docs are re-worded. In the
-age of LLMs, text classification can be done by any engineer, not just ML engineers.
+when it should've be written for software engineers. What's text classification? What
+are "labeled examples"? What's a prior? Why is a probability distribution useful? Docs
+for other tools answer, or successfully dodge, these questions much more effectively.
+CAPPr could be made way more approachable if the docs are re-worded. In the age of LLMs,
+text classification can be done by any engineer, not just ML engineers.
 
 
 ## Pleasant surprises
 
-Re the algorithm: classification-via-sampling using `text-curie-001` (a smaller GPT-3
-model) performs worse than random guessing, while CAPPr using `text-curie-001` is 80%
-accurate. See the experiments
-[here](https://cappr.readthedocs.io/en/latest/future_research.html). It'd be
+Re the algorithm: text generation using `text-curie-001` (a small model) performs worse
+than random guessing, while CAPPr using `text-curie-001` is 80% accurate. See the
+experiments [here](https://cappr.readthedocs.io/en/latest/future_research.html). It'd be
 cool to demonstrate that CAPPr generally works better for smaller or under-trained LMs.
 
 Besides the algorithmic stuff, I was pleasantly surprised to find that I loved
 engineering this project from the ground up. Mulling over design decisions and managing
-myself was fun. The integration with [AutoGPTQ](https://github.com/PanQiWei/AutoGPTQ)
-worked out-of-the-box. Writing tests was satisfying and easy using pytest. Writing docs
-was satisfying (and [almost](https://github.com/kddubey/dumpy/tree/main/sphinx_setup)
-easy) using Sphinx. Writing GitHub workflows made releases convenient, and it made my
-project feel way more professional lol. I found [ReWrap](https://stkb.github.io/Rewrap/)
-and
+myself was fun. Writing tests was enlightening using pytest. Writing docs was satisfying
+(and [almost](https://github.com/kddubey/dumpy/tree/main/sphinx_setup) easy) using
+Sphinx. Writing GitHub workflows made releases convenient, and it made my project feel
+way more professional lol. I found [ReWrap](https://stkb.github.io/Rewrap/) and
 [autoDocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring)
 for the first time. I'll be using them for every project from now on. Overall, as a
-result of working on this project, I appreciated open source even more.
+result of working on this project, I appreciated open source at a much higher level.

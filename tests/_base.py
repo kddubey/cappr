@@ -1,5 +1,6 @@
 """
-Base classes which are parametrized with an (almost) exhaustive set of test cases.
+Base classes which are parametrized with a set of test cases which every `classify`
+module must pass.
 """
 from __future__ import annotations
 from typing import Collection, Sequence
@@ -42,9 +43,9 @@ class _BaseTest:
 
     def _test(self, function: str, *args, **kwargs):
         """
-        Format of all tests: test all modules' function outputs for form/structure, and
-        then test their content if `self.module_correct is not None`, i.e., there exists
-        a reference implementation to test against.
+        Format of all tests: test all modules' `function` outputs for form/structure,
+        and then test their content if `self.module_correct is not None`, i.e., there
+        exists a reference implementation to test against.
         """
         test_form = getattr(_test_form, function)
         for module in self.modules_to_test:
@@ -91,6 +92,8 @@ class BaseTestPromptsCompletions(_BaseTest):
     ):
         self._test("log_probs_conditional", prompts, completions, *args, **kwargs)
 
+    # Fixtures for predict_proba
+    # TODO: this is a bit dirty. Figure out how to make it simpler.
     @pytest.fixture(scope="class", params=[True, False])
     def _use_prior(self, request: pytest.FixtureRequest) -> bool:
         return request.param
@@ -113,7 +116,6 @@ class BaseTestPromptsCompletions(_BaseTest):
         normalize: bool,
         **kwargs,
     ):
-        # TODO: this is a bit dirty. Figure out how to make it simpler.
         if _use_prior:
             kwargs["prior"] = [1 / len(completions)] * len(completions)
         else:
