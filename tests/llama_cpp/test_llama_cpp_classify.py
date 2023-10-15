@@ -65,7 +65,9 @@ def test__check_model(model: Llama):
 
 
 @pytest.mark.parametrize("shape_and_dim", [((10,), 0), ((3, 10), 1)])
-def test_log_softmax(shape_and_dim: tuple[int] | tuple[int, int], atol: float):
+def test_log_softmax(
+    shape_and_dim: tuple[tuple[int] | tuple[int, int], int], atol: float
+):
     shape, dim = shape_and_dim
     data: np.ndarray = np.random.randn(*shape)
     log_probs_observed = log_softmax(data, dim=dim)
@@ -77,7 +79,7 @@ def test_log_softmax(shape_and_dim: tuple[int] | tuple[int, int], atol: float):
     "texts",
     (["a b", "c d e"], ["a fistful", "of tokens", "for a few", "tokens more"]),
 )
-def test_token_logprobs(texts: Sequence[str], model: Llama, atol: float):
+def test_token_logprobs(texts: Sequence[str], model: Llama):
     """
     Tests that the model's token log probabilities are correct by testing against a
     carefully, manually indexed result.

@@ -16,6 +16,8 @@ while CAPPr using the same model is 80% accurate. Similar results can be seen in
 
 - the 4-bit 4 GB `Llama 2 COPA demo
   <https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb>`_
+- the 4-bit 4 GB `Llama 2 AG News demo
+  <https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/ag_news.ipynb>`_
 - this (minimal but surprising) 3 GB `StableLM demo
   <https://github.com/kddubey/cappr/blob/main/demos/huggingface/auto_gptq.ipynb>`_.
 

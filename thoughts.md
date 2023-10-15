@@ -229,7 +229,9 @@ while to think about what they should look like. The goal was to allow for 2 thi
      arguments, e.g., `batch_size` in the HuggingFace backend.
 
 The current testing design accomplishes these things through inheritance. `pytest`
-proved to be incredibly flexible.
+proved to be incredibly flexible. For an example, see the
+[tests](https://github.com/kddubey/cappr/blob/main/tests/llama_cpp/test_llama_cpp_classify.py)
+for llama-cpp models.
 
 
 ## Where I struggled

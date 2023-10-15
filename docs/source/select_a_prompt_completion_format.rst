@@ -138,12 +138,13 @@ successful format for instruction-trained models, which was pulled from `this de
 .. code:: python
 
    def prompt_yes_or_no(text: str) -> str:
-       return f"""
-   The following sentence was taken from a medical case report:
-   {text}
-   Does the sentence describe an adverse effect of a pharmaceutical drug or
-   substance?
-   Answer Yes or No:"""
+       return (
+           "The following sentence was taken from a medical case report: "
+           f'"{text}"\n'
+           "Does the sentence describe an adverse effect of a pharmaceutical "
+           "drug or substance?\n"
+           "Answer Yes or No:"
+       )
 
    end_of_prompt = " "
    completions = ("Yes", "No")
@@ -173,9 +174,9 @@ Multiple Choice
 Big, instruction-trained models are good at answering multiple choice questions, because
 they've been trained to do so. One caveat is that the number of choices shouldn't be
 more than five, because multiple choice question formats seen during training are
-usually limited to the letters from school exams: (A), (B), (C), (D), (E). Also, ensure
-that the system prompt/message is explicit about answering with one of the letters.
-Here's an example of the system prompt used for the `Llama 2 COPA demo
+usually limited to the letters from school exams: A, B, C, D, E. Also, ensure that the
+system prompt/message is explicit about answering with one of the letters. Here's an
+example of the system prompt used for the `Llama 2 COPA demo
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/superglue/copa.ipynb>`_:
 
 .. code:: python
