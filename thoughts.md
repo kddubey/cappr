@@ -4,7 +4,7 @@ some of the design choices, and what I learned from creating it.
 
 ## Design
 
-The design is simple and uninteresting:
+The design is to implement this protocol:
 
 ```
 ├───(module) {LM interface name}
@@ -144,7 +144,7 @@ class _BaseClassifier(ABC):
         completions: Sequence[str],
         model: str,
         **kwargs,
-    ) -> list[str]:
+    ) -> str | list[str]:
         pred_probs = cls.predict_proba(prompts, completions, model, **kwargs)
         pred_completions = [
             completions[completion_idx]
@@ -160,15 +160,14 @@ writing a new LM interface, it probably has unique `kwargs` which you need to su
 the signature and explain in the docstring. So you need to write out the method anyway.
 Moreover, the amount of repeated code that's saved is insignificant.
 
-There are a few small costs to this design. As a developer, it's a bit more annoying to
-debug code from ABCs. And for users, if I want the simple import interface—
+There are a few small costs to this design. Enabling the simple import interface—
 
 ```python
 from cappr.{LM interface name}.classify import predict_proba
 ```
 
-—I'd need to add a bit of stuff to `__init__.py` and Sphinx's `docs/source/conf.py` for
-every new interface. I could automate this stuff by implementing even more, slightly
+—would require adding a bit of stuff to `__init__.py` and Sphinx's `docs/source/conf.py`
+for every new interface. I could automate this stuff by implementing even more, slightly
 tricky code. But more code is worse than less code.
 
 It's also a bit confusing to users (like me) who want to understand why something which
@@ -199,6 +198,22 @@ I want this package to do one thing well: pick a completion from a user-created 
 If users want to use abstract string formatters, that's on them.
 
 
+### Testing
+
+This package's tests are designed in a sophisticated (complicated) way. It took me a
+while to think about what they should look like. The goal was to allow for 2 things:
+
+  1. share test cases universal to all `classify` modules—these are the parametrizations
+     in `BaseTestPromptsCompletions` and `BaseTestExamples`
+  2. module-specific fixtures and parametrizations to test module-specific setups and
+     arguments, e.g., `batch_size` in the HuggingFace backend.
+
+The current testing design accomplishes these things through inheritance, because
+`pytest` is incredibly powerful with inheritance. For an example, see the
+[tests](https://github.com/kddubey/cappr/blob/main/tests/llama_cpp/test_llama_cpp_classify.py)
+for llama-cpp models.
+
+
 ### A note on docstrings
 
 Lots of text in docstrings are repeated. After all, fundamentally, the three functions
@@ -218,28 +233,12 @@ tedious to make modifications. But that tediousness is outweighed by the benefit
 user.
 
 
-### Testing
-
-This package's tests are designed in a sophisticated (complicated) way. It took me a
-while to think about what they should look like. The goal was to allow for 2 things:
-
-  1. shared test cases / tests which are universal to all `classify` modules—these are
-     the parametrizations in `BaseTestPromptsCompletions` and `BaseTestExamples`
-  2. module-specific fixtures and parametrizations to test module-specific setups and
-     arguments, e.g., `batch_size` in the HuggingFace backend.
-
-The current testing design accomplishes these things through inheritance. `pytest`
-proved to be incredibly flexible. For an example, see the
-[tests](https://github.com/kddubey/cappr/blob/main/tests/llama_cpp/test_llama_cpp_classify.py)
-for llama-cpp models.
-
-
 ## Where I struggled
 
-It's well known that attention keys and values can be cached whenever text is repeated
-for inference. Getting this feature to align with the CAPPr scheme took nitty gritty
-handling of pad tokens and position IDs. Many model implementations in HuggingFace don't
-always handle them correctly (but this will change
+It's well known that attention keys and values can be cached whenever substrings are
+repeated for inference. Getting this feature to align with the CAPPr scheme took nitty
+gritty handling of pad tokens and position IDs. Many model implementations in
+HuggingFace don't always handle them correctly (but this will change
 [soon](https://github.com/huggingface/transformers/issues/18104#issuecomment-1465629955)).
 Automating testing for caching was also tricky. TBH my current implementation of caching
 is far from perfect. It currently doesn't allow for caching of sub-prompt text, and it
@@ -247,10 +246,10 @@ batches in a slightly misleading way. But it performed [well
 enough](https://cappr.readthedocs.io/en/latest/computational_performance.html).
 
 A major todo was to expand support to more backends, e.g., llama-cpp. I tabled that
-because I thought OpenAI and HuggingFace models were by far the most common interfaces.
-Seeing how popular self-hosting is, that was clearly not true. It didn't matter too much
-though. Model architectures, quantization, file formats, etc. change so quickly that
-it's kinda hard to be too late.
+because I thought OpenAI and HuggingFace `transformers` models were by far the most
+common interfaces. Now that I've seen how popular llama.cpp is, that was clearly not
+true. It didn't matter too much though. Model architectures, quantization, file formats,
+etc. change so quickly that it's kinda hard to be too late.
 
 On a separate note, it's disappointing that OpenAI doesn't support `echo=True,
 logprobs=1` for the highly performant `gpt-3.5-turbo-instruct` model. I'll be focusing

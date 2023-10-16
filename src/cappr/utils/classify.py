@@ -77,8 +77,7 @@ def _agg_log_probs_vectorized(
     )
     # likelihoods looks like:
     # array([[likelihood_a1b1,   likelihood_a2b2  ],
-    #        [likelihood_c1d1e1, likelihood_c2d2e2]
-    #       ])
+    #        [likelihood_c1d1e1, likelihood_c2d2e2]])
     # Transpose it to satisfy likelihoods[i][j] = exp(func(log_probs[i][j]))
     return likelihoods.T
 
@@ -154,7 +153,7 @@ def agg_log_probs(
     #    a 3-D input, so we'll wrap it if it's 2-D.
     depth = _sequence_depth(log_probs)
     if depth not in {2, 3}:
-        raise ValueError(
+        raise TypeError(
             f"log_probs is expected to be 2-D or 3-D. Got {depth} dimensions."
         )
     log_probs = [log_probs] if depth == 2 else log_probs
@@ -365,7 +364,7 @@ def _predict_proba(log_probs_conditional):
         discount_completions = kwargs.get("discount_completions", 0)
         log_marg_probs_completions = kwargs.get("log_marg_probs_completions", None)
         if not discount_completions and (log_marg_probs_completions is not None):
-            raise ValueError(
+            raise TypeError(
                 "log_marg_probs_completions is set, but they will not be used "
                 "because discount_completions was not set."
             )
@@ -402,7 +401,7 @@ def _predict_proba_examples(log_probs_conditional_examples):
     `predict_proba_examples` call.
     """
 
-    from cappr import Example  # done locally to avoid circular import lol
+    from cappr import Example  # done locally to avoid circular import
 
     @wraps(log_probs_conditional_examples)
     def wrapper(
@@ -481,7 +480,7 @@ def _predict(predict_proba_func):
             prompts, completions, *args, **kwargs
         )
         if not isinstance(completions, Sequence):
-            # We need completions to support __getitem__ by integer index
+            # We need completions to support 0-indexed __getitem__
             completions = list(completions)
         num_dimensions = pred_probs.ndim
         if isinstance(prompts, str):

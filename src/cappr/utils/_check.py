@@ -1,12 +1,14 @@
 """
-Shared input checks. These check conditions that would cause silent or
-difficult-to-debug errors.
+Shared input checks. These check conditions that would cause silent, difficult-to-debug,
+or expensive errors.
 
 For example:
     - inputting an unordered iterable will cause an output array of predicted
       probabilities to be meaningless
-    - inputting an empty object will cause an index error in some downstream
-      model/tokenization function.
+    - inputting an empty object can cause an obscure index error in some downstream
+      model/tokenization functions
+    - inputting an incorrectly structured prior will cause all of the model's compute to
+      be a total waste.
 """
 from __future__ import annotations
 from typing import Literal, Sequence
@@ -36,6 +38,10 @@ def ordered(object: Sequence, variable_name: str):
     Raises a `TypeError` is `object` is not a sequence.
     """
     # This check isn't perfect, but it works well enough.
+    # I just want [x for x in object] to be meaningful and deterministic.
+    # Note: isinstance(object, Sequence) is not what I want. Sequence requires that
+    # object.__class__ additionally implements index and count. See:
+    # https://docs.python.org/3/library/collections.abc.html#collections-abstract-base-classes
     if not _is_reversible(object):
         raise TypeError(
             f"{variable_name} must be an ordered collection. Consider converting it to "

@@ -54,7 +54,7 @@ completions, given a list of possible answers.
 
 See this idea in action [here in the
 documentation](https://cappr.readthedocs.io/en/latest/select_a_prompt_completion_format.html#wrangle-step-by-step-completions).
-CAPPr is **100% guaranteed** to return an output from the list of answers.
+CAPPr is **100% guaranteed** to return an output from the list of possible answers.
 </details>
 
 

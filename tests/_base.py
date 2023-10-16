@@ -67,8 +67,8 @@ class _BaseTest:
         ["a b c", "c"],
         ############################### Test single-input ##############################
         "prompts single string",
-        ######################## Test different type of sequence #######################
-        pd.Series(["prompts is", "a", "Series"], index=np.random.choice(3, size=3)),
+        ############# Test a different type of sequence w/ corrupt indices #############
+        pd.Series(["prompts is", "a", "Series"], index=[9, 0, 9]),
     ),
 )
 @pytest.mark.parametrize(
@@ -78,13 +78,14 @@ class _BaseTest:
         ["d e f g", "1 2", "O"],
         ######################## Test Single-token optimization ########################
         ["d", "e", "f"],
-        ########################### Test pandas Series input ###########################
-        pd.Series(["completions is", "a", "Series"], index=np.random.choice(3, size=3)),
+        ############# Test a different type of sequence w/ corrupt indices #############
+        pd.Series(["completions is", "a", "Series"], index=[8, 10, 8]),
     ),
 )
 class BaseTestPromptsCompletions(_BaseTest):
     """
-    Test non-`_examples` functions.
+    Test non-`_examples` functions with a basic set of combinations of `prompts` and
+    `completions`.
     """
 
     def test_log_probs_conditional(
@@ -159,7 +160,7 @@ class BaseTestPromptsCompletions(_BaseTest):
 )
 class BaseTestExamples(_BaseTest):
     """
-    Test `_examples` functions.
+    Test `_examples` functions with a basic set of :class:`cappr.Example`(s).
     """
 
     def test_log_probs_conditional_examples(

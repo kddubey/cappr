@@ -61,7 +61,7 @@ with open("README.md", mode="r", encoding="utf-8") as f:
 setup(
     name="cappr",
     version=version,
-    description="Get your LLM to pick the right category.",
+    description="Completion After Prompt Probability. Make your LLM make a choice.",
     long_description=readme,
     long_description_content_type="text/markdown",
     url="https://github.com/kddubey/cappr/",

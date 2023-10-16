@@ -1,7 +1,7 @@
 A note on workflow
 ==================
 
-You've done the hard part of translating a practical problem into a "pick a choice"
+You've done the hard part of translating a practical problem into a "make a choice"
 problem that some LLM may be able to solve. Can you deploy this prompt-LLM system now?
 Probably not. Here's what, and how, you need to do.
 
