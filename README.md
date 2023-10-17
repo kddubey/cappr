@@ -106,6 +106,7 @@ woke with a fright, in the middle of the night, to find that his dream
 had come true.
 
 The moral of the story is to"""
+
 completions = (
   "look at the bright side",
   "use your imagination",
@@ -302,6 +303,8 @@ I'm still evaluating open source models. For now, see
 
 - the 4-bit 4 GB [Llama 2 COPA
   demo](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb)
+- the 4-bit 4 GB [Llama 2 AG News
+  demo](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/ag_news.ipynb)
 - and this (minimal but surprising) 3 GB [StableLM
   demo](https://github.com/kddubey/cappr/blob/main/demos/auto_gptq.ipynb).
 

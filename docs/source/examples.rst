@@ -15,8 +15,6 @@ See the **Example** section for each of these functions:
 
 :func:`cappr.llama_cpp.classify.predict_examples`
 
-And see the `Usage`_ section in the README, and the `demos in the repo`_.
-
-.. _Usage: https://github.com/kddubey/cappr/tree/main#usage
-
-.. _demos in the repo: https://github.com/kddubey/cappr/tree/main/demos
+And see the `Usage <https://github.com/kddubey/cappr/tree/main#usage>`_ section in the
+repo README, and the `demos in the repo
+<https://github.com/kddubey/cappr/tree/main/demos>`_.

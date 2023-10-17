@@ -101,8 +101,9 @@ step cannot be overstated.
 Iterate on the training dataset
 -------------------------------
 
-Evaluate your first prompt-completion format on the training dataset. Examine failure
-cases. Iterate the format and/or language model and/or prior, and evaluate.
+Evaluate your first prompt-completion format on the training dataset. Examine and
+understand failure cases. Is your prompt specific enough? Does it include enough
+context? Iterate the format and/or language model and/or prior, and evaluate.
 
 Be disciplined and vigilant about not seeing or evaluating on the test dataset until
 you've finalized your selections for a format, langauge model, and prior.

@@ -73,21 +73,19 @@ with the cases where:
 - The ``completion`` includes a bit of fluff
 
 - The ``completion``\ 's word casing is different than the one used in ``class_names``,
-  or it's spelled or phrased slightly differently. (These discrepancies typically only
-  occur for domain-specific text.)
+  or it's spelled or phrased slightly differently
 
 - The LM says ``"I'm not sure"`` in three different ways.
 
-The OpenAI community knows that this can be challenging, so `they suggest`_ that you
-modify your code in at least 1 of 2 ways:
+The OpenAI community knows that this can be challenging, so `they suggest
+<https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit>`_
+that you modify your code in at least 1 of 2 ways:
 
 #. Point to multi-token class names using a single token—as in a multiple choice
    question
 
 #. Transform multi-token class names into a single token, and finetune a model so that
    it learns the mapping to the single tokens.
-
-.. _they suggest: https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit
 
 These can be nontrivial modifications. Single-token references can sacrifice performance
 when you have quite a few classes, as it's not a typical instruction format. On the
@@ -108,12 +106,10 @@ Before moving on to the solution, let's recap the text generation workflow:
    choices
 #. Given this prompt, figure out how often the model doesn't output one of the given
    choices—call this an "invalid" output
-#. Figure out how to post-processes invalid outputs, depending on the way they look. Or
+#. Figure out how to post-process invalid outputs, depending on the way they look. Or
    give up, and figure out how to get your application to gracefully fail on an invalid
    output
 #. Figure out if you need to tweak the text generation strategy, loop back to step (2).
-
-This workflow is not scalable, and not necessary.
 
 
 Solution
@@ -128,8 +124,7 @@ Let's now run CAPPr on that product review classification task. Also, let's:
 
 - predict a probability distribution over classes (optional)
 
-- use a smaller, "dumber" model—``text-curie-001``—to showcase the unique strength of
-  the CAPPr method
+- use a smaller, "dumber" model—``text-curie-001``
 
   - Text generation with ``text-curie-001`` typically does not work well for slightly
     complicated tasks, e.g., run that text generation code above with
@@ -175,7 +170,6 @@ Let's now run CAPPr on that product review classification task. Also, let's:
    pred_class_idx = pred_probs.argmax(axis=-1)
    print(class_names[pred_class_idx])
    # The product is difficult to use
-   # correct!
 
 CAPPr is guaranteed to output exactly one choice from a given set of choices. As a
 result, your work is reduced to designing a prompt-completion string format.

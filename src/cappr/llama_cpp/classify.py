@@ -7,15 +7,14 @@ You probably just want the :func:`predict` or :func:`predict_examples` functions
 .. note:: When instantiating your Llama, set ``logits_all=True``.
 
 The examples below use a 6 MB model to quickly demonstrate functionality. To download
-it, first::
+it, first install ``huggingface-hub`` if you don't have it already::
 
-    # install huggingface-hub if you don't have it already
     pip install huggingface-hub
 
 And then download `the model
 <https://huggingface.co/aladar/TinyLLama-v0-GGUF/blob/main/TinyLLama-v0.Q8_0.gguf>`_ (to
 your current working directory)::
-    
+
     huggingface-cli download \\
     aladar/TinyLLama-v0-GGUF \\
     TinyLLama-v0.Q8_0.gguf \\

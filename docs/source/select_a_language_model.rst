@@ -4,7 +4,8 @@ Select a language model
 CAPPr typically works better with larger, instruction-trained models. But it may be able
 to `squeeze more out of smaller models
 <https://cappr.readthedocs.io/en/latest/future_research.html>`_ than other methods. So
-don't sleep on the little Llamas or Mistrals out there.
+don't sleep on the little Llamas or Mistrals out there, especially if they've been
+trained for your domain/application.
 
 Besides that, selecting a language model is almost entirely a process of trial and
 error, balancing statistical performance with computational constraints. It should be
@@ -15,9 +16,9 @@ HuggingFace
 -----------
 
 To work with models which implement the PyTorch ``transformers`` CausalLM interface,
-CAPPr depends on the `transformers <https://github.com/huggingface/transformers>`_
-package. You can search the `HuggingFace model hub
-<https://huggingface.co/models?library=pytorch>`_ for these models.
+including `AutoGPTQ`_ and `AutoAWQ`_ models, CAPPr depends on the `transformers
+<https://github.com/huggingface/transformers>`_ package. You can search the `HuggingFace
+model hub <https://huggingface.co/models?library=pytorch>`_ for these models.
 
 Here's a quick example (which will download a small GPT-2 model to your computer):
 
@@ -98,14 +99,13 @@ minimizing memory usage.
 Examples
 ~~~~~~~~
 
-For an example of running Llama 2 with CAPPr, see `this notebook
+For an example of running Llama 2, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/superglue/copa.ipynb>`_.
 
-For a minimal example of running an `AutoGPTQ <https://github.com/PanQiWei/AutoGPTQ>`_
-model, see `this notebook
+For a minimal example of running an `AutoGPTQ`_ StableLM model, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/auto_gptq.ipynb>`_.
 
-For a minimal example of running an `AutoAWQ`_ model, see `this notebook
+For a minimal example of running an `AutoAWQ`_ Mistral model, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/autoawq.ipynb>`_.
 
 For simple GPT-2 CPU examples, see the **Example** section for each of these functions:
@@ -113,6 +113,8 @@ For simple GPT-2 CPU examples, see the **Example** section for each of these fun
 :func:`cappr.huggingface.classify.predict`
 
 :func:`cappr.huggingface.classify.predict_examples`
+
+.. _AutoGPTQ: https://github.com/PanQiWei/AutoGPTQ
 
 .. _AutoAWQ: https://github.com/casper-hansen/AutoAWQ
 
@@ -143,6 +145,7 @@ Here's a quick example (which assumes you've downloaded `this 6 MB model
    had come true.
 
    The moral of the story is to"""
+
    completions = (
       "look at the bright side",
       "use your imagination",
@@ -161,8 +164,11 @@ need to add a space before each completion string.
 Examples
 ~~~~~~~~
 
-For an example of running Llama 2 with CAPPr, see `this notebook
+For an example of running Llama 2 on the COPA challenge, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb>`_.
+
+For an example of running Llama 2 on the AG News challenge, see `this notebook
+<https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/ag_news.ipynb>`_.
 
 For simple examples, see the **Example** section for each of these functions:
 
@@ -194,17 +200,12 @@ Here's a quick example:
 CAPPr is currently only compatible with `/v1/completions`_ models (because we can
 request log-probabilities of tokens in an *inputted* string). Unfortunately, with the
 exception of ``davinci-002`` and ``babbage-002`` (weak, non-instruction-trained models),
-**OpenAI will deprecate all instruct models on January 4, 2024**.
-
-.. warning:: While ``gpt-3.5-turbo-instruct`` is compatible with `/v1/completions`_, it
-   won't support setting `echo=True` and `logprobs=1` after October 5, 2023. So CAPPr
-   can't support this model. I don't know why OpenAI is disabling this setting. CAPPr
-   with this model `may be SOTA for zero-shot COPA`_ (see the very last section). I
-   contacted support. It's low-key kinda sad, yo.
+**OpenAI will deprecate all instruct models on January 4, 2024**. While
+``gpt-3.5-turbo-instruct`` is compatible with `/v1/completions`_, it won't support
+setting `echo=True` and `logprobs=1` after October 5, 2023. So CAPPr can't support this
+model.
 
 .. _/v1/completions: https://platform.openai.com/docs/models/model-endpoint-compatibility
-
-.. _may be SOTA for zero-shot COPA: https://github.com/kddubey/cappr/blob/main/demos/openai/superglue/copa.ipynb
 
 .. warning:: Currently, :mod:`cappr.openai.classify` must repeat the ``prompt`` for
              however many completions there are. So if your prompt is long and your
@@ -221,6 +222,9 @@ Great zero-shot COPA performance is achieved in `this notebook
 
 Great zero-shot WSC performance with ``text-curie-001`` is achieved in `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/openai/superglue/wsc.ipynb>`_.
+
+Decent performance on RAFT training sets is demonstrated in `these notebooks
+<https://github.com/kddubey/cappr/blob/main/demos/openai/raft>`_.
 
 For simple examples, see the **Example** section for each of these functions:
 

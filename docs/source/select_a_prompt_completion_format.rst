@@ -149,11 +149,9 @@ successful format for instruction-trained models, which was pulled from `this de
    end_of_prompt = " "
    completions = ("Yes", "No")
 
-   medical_case_report = """
-   We describe the case of a 10-year-old girl with two epileptic seizures and
-   subcontinuous spike-waves during sleep, who presented unusual side-effects
-   related to clobazam (CLB) monotherapy.
-   """
+   medical_case_report = """We describe the case of a 10-year-old girl with two
+   epileptic seizures and subcontinuous spike-waves during sleep, who presented
+   unusual side-effects related to clobazam (CLB) monotherapy."""
 
    prompt = prompt_yes_or_no(medical_case_report)
    for completion in completions:
@@ -182,9 +180,10 @@ example of the system prompt used for the `Llama 2 COPA demo
 .. code:: python
 
    system_prompt_copa = (
-       "Identify the cause or effect of a premise given two choices. Each choice "
-       "is identified by a letter, A or B.\n"
-       "Respond only with the letter corresponding to the correct cause or effect."
+       "Identify the cause or effect of a premise given two choices. Each "
+       "choice is identified by a letter, A or B.\n"
+       "Respond only with the letter corresponding to the correct cause or "
+       "effect."
    )
 
 
@@ -210,7 +209,6 @@ Here's a little utility function which automatically writes out the letters and 
        "Bezos II",
    ]
    print(multiple_choice(*choices))
-
    # A. Don't Wanna Know
    # B. Shit
    # C. All Time Low
@@ -264,7 +262,7 @@ Here's an example:
    # Task for a student in school: pick the next prereq to take
    class_to_prereqs = {
        "CS-101": "no prerequisites",
-       "CS-102": "CS-101, MATH-101",
+       "CS-102": "CS-101",
        "MATH-101": "no prerequisites",
        "MATH-102": "MATH-101",
        "ML-101": "CS-101, MATH-102, STAT-101",
@@ -276,12 +274,12 @@ Here's an example:
    )
 
    prompt_raw = f"""
-   Hi Professor. I'm interested in taking ML-101, but I'm struggling to decide which
-   course I need to take before that. I've already taken CS-101. Which course should
-   I take next?
+   Hi Professor. I'm interested in taking ML-101, but I'm struggling to decide
+   which course I need to take before that. I've already taken CS-101. Which
+   course should I take next?
 
-   Here's a list of courses and their prerequisites which I pulled from the course
-   catalog.
+   Here's a list of courses and their prerequisites which I pulled from the
+   course catalog.
 
    {class_to_prereqs_str}
    """
@@ -292,9 +290,9 @@ Here's an example:
       prompt_step_by_step,
       model="gpt-4",
       system_msg=(
-          "You are a computer scientist mentoring a student. End your response to "
-          "the student's question with the final answer, which is the name of a "
-          "course."
+          "You are a computer scientist mentoring a student. End your response "
+          "to the student's question with the final answer, which is the name "
+          "of a course."
       ),
       max_tokens=1_000,
       temperature=0,
@@ -309,8 +307,8 @@ Here's an example:
    {step_by_step_answer}
    """
 
-   According to this answer, the very next course that the student should take is
-   '''
+   According to this answer, the very next course that the student should
+   take is'''
 
    answer = predict(
        prompt_answer,
@@ -337,8 +335,8 @@ Footnotes
 .. [#] These are not hard rules. For example, the `demo for the Winograd Schema
    Challenge
    <https://github.com/kddubey/cappr/blob/main/demos/openai/superglue/wsc.ipynb>`_
-   flips the roles of the ``prompt`` and ``completion``. (Just don't use the ``prior``
-   keyword argument in that case.)
+   flips the roles of the ``prompt`` and ``completion``. Just don't use the ``prior``
+   keyword argument in that case.
 
 .. [#] CAPPr may be able to lean more on what was learned during pretraining than
    methods which rely on instruction-style prompts. Consider the `COPA task

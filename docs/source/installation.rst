@@ -1,7 +1,9 @@
 Installation
 ============
 
-To use PyTorch ``transformers`` models::
+To use PyTorch `transformers <https://github.com/huggingface/transformers>`_, `AutoGPTQ
+<https://github.com/PanQiWei/AutoGPTQ>`_, or `AutoAWQ
+<https://github.com/casper-hansen/AutoAWQ>`_ models::
 
    pip install "cappr[hf]"
 
@@ -27,11 +29,10 @@ OpenAI API, set the environment variable ``OPENAI_API_KEY``, and then::
 Without dependencies
 --------------------
 
-For backwards compatibility reasons, installing this package installs the ``openai``
-`API <https://pypi.org/project/openai/>`_ and its (lightweight) dependencies. You don't
-need these packages to run ``llama-cpp``/GGUF models with ``cappr``. So in case you'd
-like to avoid installing ``openai`` and its dependencies, run these two commands (in any
-order) instead of the one above:
+For backwards compatibility reasons, installing this package installs OpenAI's Python
+`API client <https://pypi.org/project/openai/>`_ and its (lightweight) dependencies. You
+don't need these packages to run GGUF models. So in case you'd like a lighter install,
+run these two commands (in any order) instead of the one above:
 
 ::
 
