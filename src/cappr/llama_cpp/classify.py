@@ -537,8 +537,7 @@ def predict_proba_examples(
 
     Note
     ----
-    The attributes :attr:`cappr.Example.end_of_prompt` and :attr:`cappr.Example.prior`
-    are unused.
+    The attribute :attr:`cappr.Example.end_of_prompt` is unused.
 
     Example
     -------
@@ -705,8 +704,7 @@ def predict_examples(
 
     Note
     ----
-    The attributes :attr:`cappr.Example.end_of_prompt` and :attr:`cappr.Example.prior`
-    are unused.
+    The attribute :attr:`cappr.Example.end_of_prompt` is unused.
 
     Example
     -------

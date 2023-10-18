@@ -20,6 +20,10 @@ OpenAI API, set the environment variable ``OPENAI_API_KEY``, and then::
 
    pip install cappr
 
+(Optional) To use any of the above model formats::
+
+   pip install "cappr[all]"
+
 (Optional) Install requirements for running the repo's `demos
 <https://github.com/kddubey/cappr/tree/main/demos>`_::
 

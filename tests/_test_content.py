@@ -28,6 +28,7 @@ def token_logprobs(
     log_probs_texts_from_unbatched: Sequence[Sequence[Sequence[float]]],
     input_ids_from_unbatched: Sequence[Sequence[int]],
 ):
+    # TODO: separate form and content checks so that openai can be tested
     # The first logprob of every text must be None b/c no CausalLM estimates Pr(token)
     for log_probs_text_observed in log_probs_texts_observed:
         assert log_probs_text_observed[0] is None
@@ -67,7 +68,7 @@ def _test_log_probs_conditional(
     log_probs_completions2: list[list[float]] | list[list[list[float]]],
     is_single_input: bool,
 ):
-    def test_single_input(log_probs1, log_probs2):
+    def test_single_input(log_probs1: list[list[float]], log_probs2: list[list[float]]):
         assert len(log_probs1) == len(log_probs2)
         for log_probs_tokens1, log_probs_tokens2 in zip(log_probs1, log_probs2):
             assert torch.allclose(
@@ -95,7 +96,6 @@ def log_probs_conditional(
     """
     Tests that the conditional token log-probabilities are numerically close.
     """
-    is_single_input = isinstance(prompts, str)
     log_probs_completions1 = classify1.log_probs_conditional(
         prompts, completions, *args, **kwargs
     )
@@ -103,7 +103,9 @@ def log_probs_conditional(
         prompts, completions, *args, **kwargs
     )
     _test_log_probs_conditional(
-        log_probs_completions1, log_probs_completions2, is_single_input
+        log_probs_completions1,
+        log_probs_completions2,
+        is_single_input=isinstance(prompts, str),
     )
 
 
@@ -117,7 +119,6 @@ def log_probs_conditional_examples(
     """
     Tests that the conditional token log-probabilities are numerically close.
     """
-    is_single_input = isinstance(examples, str)
     log_probs_completions1 = classify1.log_probs_conditional_examples(
         examples, *args, **kwargs
     )
@@ -125,7 +126,9 @@ def log_probs_conditional_examples(
         examples, *args, **kwargs
     )
     _test_log_probs_conditional(
-        log_probs_completions1, log_probs_completions2, is_single_input
+        log_probs_completions1,
+        log_probs_completions2,
+        is_single_input=isinstance(examples, Example),
     )
 
 

@@ -170,13 +170,7 @@ def predict_proba_examples(
     ):
         assert pred_prob_example.shape == (len(example.completions),)
         assert np.all(pred_prob_example >= 0)
-        if len(example.completions) > 1:
-            # Testing artifact: for mocked log-prob API endpoints, we currently return
-            # integers, not log-probs. This fact combined with the fact that we obv
-            # don't normalize when there's 1 completion causes the test "probability"
-            # output to be > 1. So let's only run this test for examples w/ more than 1
-            # completion
-            assert np.all(pred_prob_example <= 1)
+        assert np.all(pred_prob_example <= 1)
         if len(example.completions) == 1:
             # We don't normalize if there's one completion. It's almost definitely the
             # case that the predicted probability is < 1 by a decent amount.

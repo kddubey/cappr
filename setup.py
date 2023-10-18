@@ -71,6 +71,7 @@ setup(
     extras_require={
         "hf": requirements_huggingface,
         "llama-cpp": requirements_llama_cpp,
+        "all": requirements_huggingface + requirements_llama_cpp,
         "demos": (
             requirements_huggingface_dev + requirements_llama_cpp + requirements_demos
         ),

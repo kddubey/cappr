@@ -5,7 +5,6 @@ module must pass.
 from __future__ import annotations
 from typing import Collection, Sequence
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -26,8 +25,8 @@ class _BaseTest:
     def module_correct(self) -> classify_module:
         """
         `classify` module which is correct, and serves as a reference implementation.
-        Have it return None if there's no way to determine whether an implementation is
-        correct. Usually that's the case if you're integrating an API endpoint like
+        Have it return `None` if there's no way to determine whether an implementation
+        is correct. Usually that's the case if you're integrating an API endpoint like
         OpenAI.
         """
         raise NotImplementedError
