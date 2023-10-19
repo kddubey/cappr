@@ -1,7 +1,7 @@
 Related work
 ============
 
-The idea of aggregating token probabilities is well-known. You'll find it as a
+The idea of aggregating token probabilities is well known. You'll find it as a
 subroutine in papers from `GPT-2
 <https://paperswithcode.com/paper/language-models-are-unsupervised-multitask>`_\ [#]_ to
 `Self-Consistency <https://arxiv.org/abs/2203.11171>`_\ [#]_. The ``cappr``

@@ -8,7 +8,7 @@ For example:
     - inputting an empty object can cause an obscure index error in some downstream
       model/tokenization functions
     - inputting an incorrectly structured prior will cause all of the model's compute to
-      be a total waste.
+      be a waste.
 """
 from __future__ import annotations
 from typing import Literal, Sequence

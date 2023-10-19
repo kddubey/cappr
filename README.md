@@ -19,7 +19,9 @@ prompt. Squeeze more out of open source LLMs.
 
 Specifically, this model must be compatible with the
 [/v1/completions](https://platform.openai.com/docs/models/model-endpoint-compatibility)
-endpoint.
+endpoint
+([excluding](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#openai)
+``gpt-3.5-turbo-instruct``).
 
 ```python
 from cappr.openai.classify import predict

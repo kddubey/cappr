@@ -31,7 +31,7 @@ Model = Literal[  # Literal so that docs and IDEs easily parse it
     "text-davinci-003",
 ]
 """
-These are `v1/completions` models where `echo=True, logprobs=1` can be passed. On
+These are /v1/completions models where `echo=True, logprobs=1` can be passed. On
 October 5, 2023, OpenAI deprecated this combination of arguments for the
 ``gpt-3.5-turbo-instruct`` model. So it cannot supported by CAPPr.
 """
