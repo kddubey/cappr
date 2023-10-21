@@ -43,6 +43,7 @@ requirements_demos = [
 requirements_dev = [
     "black>=23.1.0",
     "docutils<0.19",
+    "pre-commit>=3.5.0",
     "pydata-sphinx-theme>=0.13.1",
     "pytest>=7.2.1",
     "pytest-cov>=4.0.0",

@@ -394,6 +394,8 @@ documentation](https://cappr.readthedocs.io/en/latest/related_work.html).
    cd cappr
 
    python -m pip install -e ".[dev]"
+
+   pre-commit install
    ```
 
 4. Download [the tiny GGUF Llama model](https://huggingface.co/aladar/TinyLLama-v0-GGUF)
