@@ -43,11 +43,15 @@ def log_probs_conditional(
     prompts: str | Sequence[str],
     completions: Sequence[str],
     model: Llama,
+    prompt_prefix: str = "",
     **kwargs,
 ) -> list[list[list[float]]]:
     # Flat list of prompts and their completions. Will post-process
+    prefix = "" if not prompt_prefix else prompt_prefix + " "
     texts = [
-        prompt + " " + completion for prompt in prompts for completion in completions
+        prefix + prompt + " " + completion
+        for prompt in prompts
+        for completion in completions
     ]
     log_probs = token_logprobs(texts, model, add_bos=True)
     # Since log_probs is a flat list, we'll need to batch them by the size and order of
@@ -98,6 +102,7 @@ def predict_proba(
     discount_completions: float = 0.0,
     log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
     show_progress_bar: bool | None = None,
+    prompt_prefix: str = "",
 ) -> npt.NDArray[np.floating]:
     return log_probs_conditional(**locals())
 
@@ -120,6 +125,7 @@ def predict(
     discount_completions: float = 0.0,
     log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
     show_progress_bar: bool | None = None,
+    prompt_prefix: str = "",
 ) -> str | list[str]:
     return predict_proba(**locals())
 

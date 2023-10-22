@@ -125,8 +125,11 @@ class Modules:
 
 
 class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
-    def test_log_probs_conditional(self, prompts, completions, model):
-        super().test_log_probs_conditional(prompts, completions, model)
+    @pytest.mark.parametrize("prompt_prefix", ("p r e",))
+    def test_log_probs_conditional(self, prompts, completions, model, prompt_prefix):
+        super().test_log_probs_conditional(
+            prompts, completions, model, prompt_prefix=prompt_prefix
+        )
 
     def test_predict_proba(
         self,

@@ -137,8 +137,10 @@ def _cache(model: Llama, prefix: str = ""):
     In this context, `prefix` is concatenated to the `model`'s KV cache and logits.
     """
     n_tokens = model.n_tokens
-    input_ids_prefix = model.tokenize(prefix.encode("utf-8"), add_bos=n_tokens == 0)
-    model.eval(input_ids_prefix)
+    if prefix:
+        # W/o the if condition, we'd eval on <bos> if there's no prefix and no cache
+        input_ids_prefix = model.tokenize(prefix.encode("utf-8"), add_bos=n_tokens == 0)
+        model.eval(input_ids_prefix)
 
     yield
 
@@ -226,6 +228,9 @@ def log_probs_conditional(
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
+    prompt_prefix : str, optional
+        prefix for all `prompts`, e.g., a set of shared exemplars or instructions, by
+        default ""
 
     Returns
     -------
@@ -234,12 +239,13 @@ def log_probs_conditional(
         If `prompts` is a string, then a 2-D list is returned:
         `log_probs_completions[completion_idx][completion_token_idx]` is the
         log-probability of the completion token in `completions[completion_idx]`,
-        conditional on `prompt` and previous completion tokens.
+        conditional on `prompt_prefix + prompt` and previous completion tokens.
 
         If `prompts` is a sequence of strings, then a 3-D list is returned:
         `log_probs_completions[prompt_idx][completion_idx][completion_token_idx]` is the
         log-probability of the completion token in `completions[completion_idx]`,
-        conditional on `prompts[prompt_idx]` and previous completion tokens.
+        conditional on `prompt_prefix + prompts[prompt_idx]` and previous completion
+        tokens.
 
     Note
     ----
@@ -385,7 +391,6 @@ def log_probs_conditional_examples(
             examples, show_progress_bar=show_progress_bar, desc="conditional log-probs"
         )
     ]
-    model.reset()
     return log_probs_completions
 
 
@@ -399,6 +404,7 @@ def predict_proba(
     discount_completions: float = 0.0,
     log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
     show_progress_bar: bool | None = None,
+    prompt_prefix: str = "",
 ) -> npt.NDArray[np.floating]:
     """
     Predict probabilities of each completion coming after each prompt.
@@ -435,6 +441,9 @@ def predict_proba(
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
+    prompt_prefix : str, optional
+        prefix for all `prompts`, e.g., a set of shared exemplars or instructions, by
+        default ""
 
     Returns
     -------
@@ -442,12 +451,13 @@ def predict_proba(
 
         If `prompts` is a string, then an array with shape `len(completions),` is
         returned: `pred_probs[completion_idx]` is the model's estimate of the
-        probability that `completions[completion_idx]` comes after `prompt`.
+        probability that `completions[completion_idx]` comes after `prompt_prefix +
+        prompt`.
 
         If `prompts` is a sequence of strings, then an array with shape `(len(prompts),
         len(completions))` is returned: `pred_probs[prompt_idx, completion_idx]` is the
         model's estimate of the probability that `completions[completion_idx]` comes
-        after `prompts[prompt_idx]`.
+        after `prompt_prefix + prompts[prompt_idx]`.
 
     Note
     ----
@@ -460,33 +470,24 @@ def predict_proba(
     -------
     Let's have our little Llama predict some story beginnings::
 
-        from llama_cpp import Llama
-        from cappr.llama_cpp.classify import predict_proba
+        from llama_cpp import Llama from cappr.llama_cpp.classify import predict_proba
 
-        # Load model
-        # The top of this page has instructions to download this model
-        model_path = "./TinyLLama-v0.Q8_0.gguf"
-        # Always set logits_all=True for CAPPr
+        # Load model # The top of this page has instructions to download this model
+        model_path = "./TinyLLama-v0.Q8_0.gguf" # Always set logits_all=True for CAPPr
         model = Llama(model_path, logits_all=True, verbose=False)
 
-        # Define a classification task
-        prompts = ["In a hole in", "Once upon"]
+        # Define a classification task prompts = ["In a hole in", "Once upon"]
         completions = ("a time", "the ground")
 
-        # Compute
-        pred_probs = predict_proba(prompts, completions, model)
+        # Compute pred_probs = predict_proba(prompts, completions, model)
 
         pred_probs_rounded = pred_probs.round(2)  # just for cleaner output
 
-        # predicted probability that the ending for the clause
-        # "In a hole in" is "the ground"
-        print(pred_probs_rounded[0, 1])
-        # 0.98
+        # predicted probability that the ending for the clause # "In a hole in" is "the
+        ground" print(pred_probs_rounded[0, 1]) # 0.98
 
-        # predicted probability that the ending for the clause
-        # "Once upon" is "a time"
-        print(pred_probs_rounded[1, 0])
-        # 1.0
+        # predicted probability that the ending for the clause # "Once upon" is "a time"
+        print(pred_probs_rounded[1, 0]) # 1.0
     """
     return log_probs_conditional(**locals())
 
@@ -582,6 +583,7 @@ def predict(
     discount_completions: float = 0.0,
     log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
     show_progress_bar: bool | None = None,
+    prompt_prefix: str = "",
 ) -> str | list[str]:
     """
     Predict which completion is most likely to follow each prompt.
@@ -612,17 +614,20 @@ def predict(
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
+    prompt_prefix : str, optional
+        prefix for all `prompts`, e.g., a set of shared exemplars or instructions, by
+        default ""
 
     Returns
     -------
     preds : str | list[str]
 
         If `prompts` is a string, then the completion from `completions` which is
-        predicted to most likely follow `prompt` is returned.
+        predicted to most likely follow `prompt_prefix + prompt` is returned.
 
         If `prompts` is a sequence of strings, then a list with length `len(prompts)` is
         returned. `preds[prompt_idx]` is the completion in `completions` which is
-        predicted to follow `prompts[prompt_idx]`.
+        predicted to follow `prompt_prefix + prompts[prompt_idx]`.
 
     Note
     ----
