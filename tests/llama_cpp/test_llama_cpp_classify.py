@@ -39,7 +39,10 @@ _ABS_PATH_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 )
 def model(request: pytest.FixtureRequest) -> Llama:
     model_path = os.path.join(_ABS_PATH_THIS_DIR, "fixtures", "models", request.param)
-    return Llama(model_path, logits_all=True, verbose=False)
+    model = Llama(model_path, logits_all=True, verbose=False)
+    # Correctness should not be affected by a user's previous actions
+    model.eval(model.tokenize("a b c".encode("utf-8")))
+    return model
 
 
 @pytest.fixture(scope="module")

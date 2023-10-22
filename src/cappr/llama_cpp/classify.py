@@ -23,6 +23,7 @@ your current working directory)::
 """
 # TODO: may need to support end_of_prompt for GPT/BPE models
 from __future__ import annotations
+from contextlib import contextmanager
 from typing import Sequence
 
 from llama_cpp import Llama
@@ -130,29 +131,18 @@ def token_logprobs(
     return log_probs
 
 
-def _log_probs_conditional_prompt_single_token_completions(
-    prompt: str,
-    input_ids_completions: Sequence[Sequence[int]],  # inner list is [token]
-    model: Llama,
-) -> list[list[float]]:
+@contextmanager
+def _cache(model: Llama, prefix: str = ""):
     """
-    Runs a single inference on `prompt`.
+    In this context, `prefix` is concatenated to the `model`'s KV cache and logits.
     """
-    _check_model(model)
-    # 1. Clear the model's KV cache and logits (just in case)
-    model.reset()
-    # 2. Compute the prompt's next-token log-probs—a 1-D array
-    input_ids_prompt = model.tokenize(prompt.encode("utf-8"), add_bos=True)
-    model.eval(input_ids_prompt)
-    prompt_next_token_log_probs = log_softmax(_check_logits(model.eval_logits[-1]))
-    # 3. Grab each completion token's log-prob
-    log_probs_completions: list[list[float]] = []
-    for input_ids_completion in input_ids_completions:
-        assert len(input_ids_completion) == 1
-        input_id = input_ids_completion[0]
-        log_probs_completions.append([prompt_next_token_log_probs[input_id]])
-    model.reset()
-    return log_probs_completions
+    n_tokens = model.n_tokens
+    input_ids_prefix = model.tokenize(prefix.encode("utf-8"), add_bos=n_tokens == 0)
+    model.eval(input_ids_prefix)
+
+    yield
+
+    model.n_tokens = n_tokens
 
 
 def _log_probs_conditional_prompt(
@@ -161,49 +151,54 @@ def _log_probs_conditional_prompt(
     model: Llama,
 ) -> list[list[float]]:
     _check_model(model)
-    # 1. Clear the model's KV cache and logits (just in case)
-    model.reset()
-    # 2. Set the model's KV cache to the prompt
-    input_ids_prompt = model.tokenize(prompt.encode("utf-8"), add_bos=True)
-    num_tokens_prompt = len(input_ids_prompt)
-    model.eval(input_ids_prompt)
-    # 3. Tokenize completions to determine whether or not we can do the single-token
-    #    optimization. For Llama (and probably others) we don't want the completions to
-    #    start w/ a bos token <s> b/c we need to mimic sending the prompt + completion
-    #    together. For example, if 'a b' is the prompt and 'c' is the completion, the
-    #    encoding should correspond to '<s> a b c' not '<s> a b <s> c'.
-    input_ids_completions = [
-        model.tokenize(completion.encode("utf-8"), add_bos=False)
-        for completion in completions
-    ]
-    if all(
-        len(input_ids_completion) == 1 for input_ids_completion in input_ids_completions
-    ):
-        return _log_probs_conditional_prompt_single_token_completions(
-            prompt, input_ids_completions, model
-        )
-    # 4. Loop through completions, b/c llama cpp currently doesn't support batch
-    #    inference
-    log_probs_completions: list[list[float]] = []
-    for input_ids_completion in input_ids_completions:
-        # 4.1. Given the prompt, compute all next-token logits for each completion
-        #      token.
-        model.eval(input_ids_completion)
-        # 4.2. Logits -> log-probs. We need the prompt's last token's logits b/c it
-        # contains the first completion token's log-prob. But we don't need the last
-        # completion token's next-token logits ofc. Also, it's num_tokens_prompt - 1 b/c
-        # of 0-indexing.
-        logits_completion = _check_logits(model.eval_logits)[num_tokens_prompt - 1 : -1]
-        log_probs_completion: list[float] = logits_to_log_probs(
-            logits_completion, np.array(input_ids_completion)
-        ).tolist()
-        log_probs_completions.append(log_probs_completion)
-        # 4.3. Most critical step: reset the model's KV cache to the prompt! Without
-        #      this line, the cache would include this completion's KVs, which is mega
-        #      wrong.
-        model.n_tokens = num_tokens_prompt
-    model.reset()
-    return log_probs_completions
+    # 1. Cache the prompt's KVs and logits
+    with _cache(model, prompt):
+        num_tokens_prompt = model.n_tokens
+        # 2. Tokenize completions to determine whether or not we can do the single-token
+        #    optimization.
+        #
+        #    For Llama (and probably others) we don't want the completions to start w/ a
+        #    bos token <s> b/c we need to mimic sending the prompt + completion
+        #    together. For example, if 'a b' is the prompt and 'c' is the completion,
+        #    the encoding should correspond to '<s> a b c' not '<s> a b <s> c'.
+        input_ids_completions = [
+            model.tokenize(completion.encode("utf-8"), add_bos=False)
+            for completion in completions
+        ]
+        if all(
+            len(input_ids_completion) == 1
+            for input_ids_completion in input_ids_completions
+        ):
+            # Single-token optimization
+            prompt_next_token_log_probs = log_softmax(
+                _check_logits(model.eval_logits[-1])
+            )
+            return [
+                [prompt_next_token_log_probs[input_ids_completion[0]]]
+                for input_ids_completion in input_ids_completions
+            ]
+        # 3. Loop through completions, b/c llama cpp currently doesn't support batch
+        #    inference
+        log_probs_completions: list[list[float]] = []
+        for input_ids_completion in input_ids_completions:
+            # 3.1. Given the prompt, compute all next-token logits for each completion
+            #      token.
+            model.eval(input_ids_completion)
+            # 3.2. Logits -> log-probs. We need the prompt's last token's logits b/c it
+            #      contains the first completion token's log-prob. But we don't need the
+            #      last completion token's next-token logits ofc. Also, it's
+            #      num_tokens_prompt - 1 b/c of 0-indexing
+            logits_completion = _check_logits(model.eval_logits)[
+                num_tokens_prompt - 1 : -1
+            ]
+            log_probs_completion: list[float] = logits_to_log_probs(
+                logits_completion, np.array(input_ids_completion)
+            ).tolist()
+            log_probs_completions.append(log_probs_completion)
+            # 3.3. Reset the model's KV cache to the prompt. Without this line, the
+            #      cache would include this completion's KVs, which is mega wrong
+            model.n_tokens = num_tokens_prompt
+        return log_probs_completions
 
 
 @classify._log_probs_conditional
@@ -212,6 +207,7 @@ def log_probs_conditional(
     completions: Sequence[str],
     model: Llama,
     show_progress_bar: bool | None = None,
+    prompt_prefix: str = "",
     **kwargs,
 ) -> list[list[float]] | list[list[list[float]]]:
     """
@@ -283,12 +279,17 @@ def log_probs_conditional(
         # [[-9.5],        [[log Pr(z | a, b, c)],
         #  [-9.9, -10.0]]  [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
-    return [
-        _log_probs_conditional_prompt(prompt, completions, model)
-        for prompt in ProgressBar(
-            prompts, show_progress_bar=show_progress_bar, desc="conditional log-probs"
-        )
-    ]
+    model.reset()
+    with _cache(model, prompt_prefix):
+        log_probs_completions = [
+            _log_probs_conditional_prompt(prompt, completions, model)
+            for prompt in ProgressBar(
+                prompts,
+                show_progress_bar=show_progress_bar,
+                desc="conditional log-probs",
+            )
+        ]
+    return log_probs_completions
 
 
 @classify._log_probs_conditional_examples
@@ -377,12 +378,15 @@ def log_probs_conditional_examples(
     # Little weird. I want my IDE to know that examples is always a Sequence[Example]
     # b/c of the decorator.
     examples: Sequence[Example] = examples
-    return [
+    model.reset()
+    log_probs_completions = [
         _log_probs_conditional_prompt(example.prompt, example.completions, model)
         for example in ProgressBar(
             examples, show_progress_bar=show_progress_bar, desc="conditional log-probs"
         )
     ]
+    model.reset()
+    return log_probs_completions
 
 
 @classify._predict_proba
