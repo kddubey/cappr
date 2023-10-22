@@ -11,7 +11,6 @@ from typing import Any, Callable, Literal, Mapping, Sequence
 
 import openai
 import tiktoken
-from tqdm.auto import tqdm
 
 from cappr.utils import _batch, _check
 
@@ -302,12 +301,11 @@ def gpt_complete(
         if ask_if_ok:
             _ = _openai_api_call_is_ok(texts, model, max_tokens=max_tokens)
         choices = []
-        total = len(texts)
-        if show_progress_bar is None:
-            disable = total < _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
-        else:
-            disable = not show_progress_bar
-        with tqdm(total=total, desc=progress_bar_desc, disable=disable) as progress_bar:
+        with _batch.ProgressBar(
+            total=len(texts),
+            show_progress_bar=show_progress_bar,
+            desc=progress_bar_desc,
+        ) as progress_bar:
             for texts_batch in _batch.constant(texts, _batch_size):
                 response = openai_method_retry(
                     openai.Completion.create,
@@ -386,13 +384,10 @@ def gpt_chat_complete(
             texts = [texts]
         if ask_if_ok:
             _ = _openai_api_call_is_ok(texts, model, max_tokens=max_tokens)
-        total = len(texts)
-        if show_progress_bar is None:
-            disable = total < _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
-        else:
-            disable = not show_progress_bar
         choices = []
-        for text in tqdm(texts, total=total, desc="Completing chats", disable=disable):
+        for text in _batch.ProgressBar(
+            texts, show_progress_bar=show_progress_bar, desc="Completing chats"
+        ):
             messages = [
                 {"role": "system", "content": system_msg},
                 {"role": "user", "content": text},

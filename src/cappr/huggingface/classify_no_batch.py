@@ -16,7 +16,6 @@ from typing import Literal, Sequence
 
 import numpy as np
 import numpy.typing as npt
-from tqdm.auto import tqdm
 from transformers import PreTrainedTokenizerBase
 
 from cappr.utils import _batch, classify
@@ -146,16 +145,12 @@ def log_probs_conditional(
         # [[-9.7],        [[log Pr(z | a, b, c)],
         #  [-0.2, -0.03]]  [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
-    total = len(prompts)
-    if show_progress_bar is None:
-        disable = total < _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
-    else:
-        disable = not show_progress_bar
-    desc = "conditional log-probs"
     with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
         model, tokenizer = model_and_tokenizer
         log_probs_completions = []
-        for prompt in tqdm(prompts, total=total, disable=disable, desc=desc):
+        for prompt in _batch.ProgressBar(
+            prompts, show_progress_bar=show_progress_bar, desc="conditional log-probs"
+        ):
             for completion in completions:
                 logits, encodings = hf_no_cache._logits_completions_given_prompts(
                     model,
@@ -255,16 +250,12 @@ def log_probs_conditional_examples(
     # Little weird. I want my IDE to know that examples is always a Sequence[Example]
     # b/c of the decorator.
     examples: Sequence[Example] = examples
-    total = len(examples)
-    if show_progress_bar is None:
-        disable = total < _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
-    else:
-        disable = not show_progress_bar
-    desc = "conditional log-probs"
-    log_probs_completions = []
     with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
         model, tokenizer = model_and_tokenizer
-        for example in tqdm(examples, total=total, disable=disable, desc=desc):
+        log_probs_completions = []
+        for example in _batch.ProgressBar(
+            examples, show_progress_bar=show_progress_bar, desc="conditional log-probs"
+        ):
             for completion in example.completions:
                 logits, encodings = hf_no_cache._logits_completions_given_prompts(
                     model,

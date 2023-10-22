@@ -4,16 +4,16 @@ Batch lists into sublists of constant or variable sizes, and batchify functions.
 from __future__ import annotations
 from functools import wraps
 import inspect
-from typing import Any, Sequence
+from typing import Any, Generic, Iterable, Iterator, Sequence, TypeVar
 
 import numpy as np
 from tqdm.auto import tqdm
 
 
-MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR = 5
+_T = TypeVar("_T")
 
 
-def constant(lst: list, size: int):
+def constant(lst: list[_T], size: int):
     """
     Generates sublists in the order of `lst` which partition `lst`. All sublists (except
     potentially the last) have length `size`.
@@ -25,7 +25,7 @@ def constant(lst: list, size: int):
         yield lst[idx : (idx + size)]
 
 
-def variable(lst: list, sizes: Sequence[int]):
+def variable(lst: list[_T], sizes: Sequence[int]):
     """
     Generates sublists in the order of `lst` which partition `lst`. The `i`'th generated
     sublist has length `sizes[i]`.
@@ -43,6 +43,35 @@ def variable(lst: list, sizes: Sequence[int]):
     lst = list(lst)  # 0-index and/or fully evaluate generator
     for start, stop in zip(cumulative_sizes[:-1], cumulative_sizes[1:]):
         yield lst[start:stop]
+
+
+class ProgressBar(tqdm, Generic[_T]):
+    """
+    Wrapper around `tqdm` which handles auto-show logic.
+    """
+
+    def __init__(
+        self,
+        iterable: Iterable[_T] = None,
+        total: int | None = None,
+        *args,
+        show_progress_bar: bool | None = None,
+        min_total_for_showing_progress_bar: int = 5,
+        **kwargs,
+    ):
+        if iterable is None and total is None:
+            disable = None
+        else:
+            total = total if total is not None else len(iterable)
+            if show_progress_bar is None:
+                disable = total < min_total_for_showing_progress_bar
+            else:
+                disable = not show_progress_bar
+        kwargs = {"total": total, "disable": disable, **kwargs}
+        super().__init__(iterable, *args, **kwargs)
+
+    def __iter__(self) -> Iterator[_T]:  # infer type for elements of the iterable
+        return super().__iter__()
 
 
 def _kwarg_name_to_value(func) -> dict[str, Any]:
@@ -92,15 +121,12 @@ def batchify(
             show_progress_bar: bool | None = kwargs.get(
                 "show_progress_bar", show_progress_bar_default
             )
-            total = len(batchable)
-            if show_progress_bar is None:
-                disable = total < MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
-            else:
-                disable = not show_progress_bar
             # run func along batches of batchable
             outputs = []
-            with tqdm(
-                total=total, desc=progress_bar_desc, disable=disable
+            with ProgressBar(
+                total=len(batchable),
+                show_progress_bar=show_progress_bar,
+                desc=progress_bar_desc,
             ) as progress_bar:
                 for batch_ in constant(batchable, batch_size):
                     args[batchable_arg_idx] = batch_

@@ -8,6 +8,25 @@ import pytest
 from cappr.utils import _batch
 
 
+@pytest.fixture(scope="module")
+def lst():
+    return list(range(10))
+
+
+def test_ProgressBar(lst: list):
+    # test basic loop
+    assert [x for x in _batch.ProgressBar(lst)] == lst
+    assert [x for x in _batch.ProgressBar(lst, show_progress_bar=False)] == lst
+    # test blank init like tqdm
+    assert _batch.ProgressBar() is not None
+    # test context manager
+    lst_after_progress_bar = []
+    with _batch.ProgressBar(total=len(lst), desc="context manager") as progress_bar:
+        for x in lst:
+            lst_after_progress_bar.append(x)
+            progress_bar.update()
+
+
 def _test_partition_and_order(batches: list[list], source_lst: list):
     """
     Asserts that `batches` partitions `source_lst` and are in the same order as in
@@ -17,13 +36,8 @@ def _test_partition_and_order(batches: list[list], source_lst: list):
     assert lst_from_batches == source_lst
 
 
-@pytest.fixture(scope="module")
-def lst():
-    return list(range(10))
-
-
 @pytest.mark.parametrize("size", (2, 3))
-def test_constant(lst, size: int):
+def test_constant(lst: list, size: int):
     batches = list(_batch.constant(lst, size))
 
     _test_partition_and_order(batches, lst)

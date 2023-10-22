@@ -28,9 +28,9 @@ from typing import Sequence
 from llama_cpp import Llama
 import numpy as np
 import numpy.typing as npt
-from tqdm.auto import tqdm
 
-from cappr.utils import _batch, _check, classify
+from cappr.utils import _check, classify
+from cappr.utils._batch import ProgressBar
 from cappr import Example
 from cappr.llama_cpp._utils import log_softmax, logits_to_log_probs
 
@@ -52,7 +52,7 @@ def _check_logits(logits) -> np.ndarray:
     Returns back `logits` if there are no NaNs. Else raises a `TypeError`.
     """
     logits = np.array(logits)
-    if np.isnan(logits).any():
+    if np.any(np.isnan(logits)):
         raise TypeError(
             "There are nan logits. This can happen if the model is re-loaded too many "
             "times in the same session. Please raise this as an issue so that I can "
@@ -108,17 +108,14 @@ def token_logprobs(
     _check.nonempty_and_ordered(texts, variable_name="texts")
     _check_model(model)
 
-    total = len(texts)
-    if show_progress_bar is None:
-        disable = total < _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
-    else:
-        disable = not show_progress_bar
     first_token_log_prob = [None]  # no CausalLM estimates Pr(token), so call it None
     # Loop through completions, b/c llama cpp currently doesn't support batch inference
     # Note: we could instead run logits_to_log_probs over a batch to save a bit of time,
     # but that'd cost more memory.
     log_probs = []
-    for text in tqdm(texts, total=total, desc="marginal log-probs", disable=disable):
+    for text in ProgressBar(
+        texts, show_progress_bar=show_progress_bar, desc="marginal log-probs"
+    ):
         input_ids = model.tokenize(text.encode("utf-8"), add_bos=add_bos)
         model.reset()  # clear the model's KV cache and logits
         model.eval(input_ids)
@@ -286,15 +283,11 @@ def log_probs_conditional(
         # [[-9.5],        [[log Pr(z | a, b, c)],
         #  [-9.9, -10.0]]  [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
-    total = len(prompts)
-    if show_progress_bar is None:
-        disable = total < _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
-    else:
-        disable = not show_progress_bar
-    desc = "conditional log-probs"
     return [
         _log_probs_conditional_prompt(prompt, completions, model)
-        for prompt in tqdm(prompts, total=total, disable=disable, desc=desc)
+        for prompt in ProgressBar(
+            prompts, show_progress_bar=show_progress_bar, desc="conditional log-probs"
+        )
     ]
 
 
@@ -384,15 +377,11 @@ def log_probs_conditional_examples(
     # Little weird. I want my IDE to know that examples is always a Sequence[Example]
     # b/c of the decorator.
     examples: Sequence[Example] = examples
-    total = len(examples)
-    if show_progress_bar is None:
-        disable = total < _batch.MIN_TOTAL_FOR_SHOWING_PROGRESS_BAR
-    else:
-        disable = not show_progress_bar
-    desc = "conditional log-probs"
     return [
         _log_probs_conditional_prompt(example.prompt, example.completions, model)
-        for example in tqdm(examples, total=total, disable=disable, desc=desc)
+        for example in ProgressBar(
+            examples, show_progress_bar=show_progress_bar, desc="conditional log-probs"
+        )
     ]
 
 
