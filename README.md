@@ -471,6 +471,8 @@ version](https://github.com/kddubey/cappr/commit/d1f7dd51fa702c123bdfb0bcb975359
 and then create a new release on GitHub. A new version of the package will then be
 automatically published on PyPI.
 
+Try to follow [semantic versioning](https://semver.org/) guidelines, even though I
+haven't been great at that so far.
 
 ## Todo
 

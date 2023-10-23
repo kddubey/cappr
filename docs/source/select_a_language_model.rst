@@ -167,7 +167,8 @@ Examples
 For an example of running Llama 2 on the COPA challenge, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb>`_.
 
-For an example of running Llama 2 on the AG News challenge, see `this notebook
+For an example of running Llama 2 on the AG News challenge, where instructions are
+cached, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/ag_news.ipynb>`_.
 
 For simple examples, see the **Example** section for each of these functions:
