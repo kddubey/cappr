@@ -10,17 +10,6 @@ import pytest
 from cappr.utils import classify
 
 
-def test_agg_log_probs():
-    log_probs = [
-        [[0, 1], [2, 3, 4]],
-        [[5], [6, 7, 8], [9, 10]],
-    ]
-    log_probs_agg = classify.agg_log_probs(log_probs, func=sum)
-    assert len(log_probs_agg) == len(log_probs)
-    assert np.allclose(log_probs_agg[0], np.exp([0 + 1, 2 + 3 + 4]))
-    assert np.allclose(log_probs_agg[1], np.exp([5, 6 + 7 + 8, 9 + 10]))
-
-
 def test___agg_log_probs_vectorized():
     log_probs = [[[2, 2], [1]], [[1 / 2, 1 / 2], [4]]]
     log_probs_agg = classify._agg_log_probs_vectorized(log_probs, func=np.sum)
@@ -41,6 +30,24 @@ def test__sequence_depth(sequence_and_depth_expected: tuple[Any, int]):
     depth_observed = classify._sequence_depth(sequence)
     assert isinstance(depth_observed, int)
     assert depth_observed == depth_expected
+
+
+def test_agg_log_probs():
+    log_probs = [
+        [[0, 1], [2, 3, 4]],
+        [[5], [6, 7, 8], [9, 10]],
+    ]
+    log_probs_agg = classify.agg_log_probs(log_probs, func=sum)
+    assert len(log_probs_agg) == len(log_probs)
+    assert np.allclose(log_probs_agg[0], np.exp([0 + 1, 2 + 3 + 4]))
+    assert np.allclose(log_probs_agg[1], np.exp([5, 6 + 7 + 8, 9 + 10]))
+
+    # Test bad input
+    log_probs = [[[[0, 1]]]]
+    with pytest.raises(
+        TypeError, match="log_probs is expected to be 2-D or 3-D. Got 4 dimensions."
+    ):
+        _ = classify.agg_log_probs(log_probs)
 
 
 @pytest.mark.parametrize("likelihoods", ([[4, 1], [1, 4]],))
@@ -94,6 +101,13 @@ def test_posterior_prob_2d_or_mixed_prior():
         ]
     )
     assert np.allclose(posteriors, expected_output)
+
+    # Test bad input
+    expected_error_msg = (
+        "If normalize is a Sequence, it must have the same length as likelihoods."
+    )
+    with pytest.raises(ValueError, match=expected_error_msg):
+        _ = classify.posterior_prob(likelihoods, axis=1, normalize=[True, True, False])
 
 
 @pytest.mark.parametrize("likelihoods", (np.array([4, 1]),))

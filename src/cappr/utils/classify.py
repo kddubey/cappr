@@ -306,9 +306,6 @@ def _discount(
     completion probabilities. Useful when particular completions are getting
     over-predicted. Currently isn't used by `_examples` functions.
     """
-    if not discount_completions:
-        return log_probs_completions
-
     # log Pr(completion token i | completion tokens :i) for each completion
     if log_marg_probs_completions is None:
         log_marg_probs_completions = token_logprobs_func(

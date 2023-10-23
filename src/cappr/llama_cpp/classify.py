@@ -132,10 +132,63 @@ def token_logprobs(
 
 
 @contextmanager
-def _cache(model: Llama, prefix: str = ""):
+def cache(model: Llama, prefix: str, reset_model: bool = True):
     """
-    In this context, `prefix` is concatenated to the `model`'s KV cache and logits.
+    In this context, every prompt processed by the `model` starts with `prefix + " "`.
+
+    Parameters
+    ----------
+    model : Llama
+        a model instantiated with ``logits_all=True``
+    prefix : str
+        prefix for all strings/prompts in this context, e.g., a set of shared
+        instructions, or exemplars for few-shot prompting
+    reset_model : bool, optional
+        whether or not to reset the model's KV cache and logits. Set this to False when
+        you're in a :func:`cache` context. By default, True
+
+    Note
+    ----
+    For functions in this context, set their `reset_model=False`.
+
+    Example
+    -------
+    Usage with :func:`predict_proba`::
+
+        import numpy as np
+        from llama_cpp import Llama
+        from cappr.llama_cpp.classify import cache, predict_proba
+
+        # Load model
+        # The top of this page has instructions to download this model
+        model_path = "./TinyLLama-v0.Q8_0.gguf"
+        # Always set logits_all=True for CAPPr
+        model = Llama(model_path, logits_all=True, verbose=False)
+
+        # Create data
+        prompt_prefix = "Once upon a time,"
+        prompts = ["there was", "in a land far far, far away,"]
+        completions = [
+            "a llama in pajamas",
+            "an alpaca in Havana",
+        ]
+
+        # Compute
+        with cache(model, prompt_prefix):
+            # Always set reset_model=False
+            pred_probs = predict_proba(
+                prompts, completions, model, reset_model=False
+            )
+
+        # The above computation is equivalent to this one:
+        prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
+        pred_probs_wo_cache = predict_proba(
+            prompts_full, completions, model
+        )
+        assert np.allclose(pred_probs, pred_probs_wo_cache)
     """
+    if reset_model:
+        model.reset()
     n_tokens = model.n_tokens
     if prefix:
         # W/o the if condition, we'd eval on <bos> if there's no prefix and no cache
@@ -154,7 +207,7 @@ def _log_probs_conditional_prompt(
 ) -> list[list[float]]:
     _check_model(model)
     # 1. Cache the prompt's KVs and logits
-    with _cache(model, prompt):
+    with cache(model, prompt, reset_model=False):
         num_tokens_prompt = model.n_tokens
         # 2. Tokenize completions to determine whether or not we can do the single-token
         #    optimization.
@@ -209,7 +262,7 @@ def log_probs_conditional(
     completions: Sequence[str],
     model: Llama,
     show_progress_bar: bool | None = None,
-    prompt_prefix: str = "",
+    reset_model: bool = True,
     **kwargs,
 ) -> list[list[float]] | list[list[list[float]]]:
     """
@@ -228,9 +281,9 @@ def log_probs_conditional(
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
-    prompt_prefix : str, optional
-        prefix for all `prompts`, e.g., a set of shared exemplars or instructions, by
-        default ""
+    reset_model : bool, optional
+        whether or not to reset the model's KV cache and logits. Set this to False when
+        you're in a :func:`cache` context. By default, True
 
     Returns
     -------
@@ -239,13 +292,12 @@ def log_probs_conditional(
         If `prompts` is a string, then a 2-D list is returned:
         `log_probs_completions[completion_idx][completion_token_idx]` is the
         log-probability of the completion token in `completions[completion_idx]`,
-        conditional on `prompt_prefix + prompt` and previous completion tokens.
+        conditional on `prompt` and previous completion tokens.
 
         If `prompts` is a sequence of strings, then a 3-D list is returned:
         `log_probs_completions[prompt_idx][completion_idx][completion_token_idx]` is the
         log-probability of the completion token in `completions[completion_idx]`,
-        conditional on `prompt_prefix + prompts[prompt_idx]` and previous completion
-        tokens.
+        conditional on `prompts[prompt_idx]` and previous completion tokens.
 
     Note
     ----
@@ -285,16 +337,16 @@ def log_probs_conditional(
         # [[-9.5],        [[log Pr(z | a, b, c)],
         #  [-9.9, -10.0]]  [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
-    model.reset()
-    with _cache(model, prompt_prefix):
-        log_probs_completions = [
-            _log_probs_conditional_prompt(prompt, completions, model)
-            for prompt in ProgressBar(
-                prompts,
-                show_progress_bar=show_progress_bar,
-                desc="conditional log-probs",
-            )
-        ]
+    if reset_model:
+        model.reset()
+    log_probs_completions = [
+        _log_probs_conditional_prompt(prompt, completions, model)
+        for prompt in ProgressBar(
+            prompts, show_progress_bar=show_progress_bar, desc="conditional log-probs"
+        )
+    ]
+    if reset_model:
+        model.reset()
     return log_probs_completions
 
 
@@ -303,6 +355,7 @@ def log_probs_conditional_examples(
     examples: Example | Sequence[Example],
     model: Llama,
     show_progress_bar: bool | None = None,
+    reset_model: bool = True,
 ) -> list[list[float]] | list[list[list[float]]]:
     """
     Log-probabilities of each completion token conditional on each prompt and previous
@@ -318,6 +371,9 @@ def log_probs_conditional_examples(
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 `examples`
+    reset_model : bool, optional
+        whether or not to reset the model's KV cache and logits. Set this to False when
+        you're in a :func:`cache` context. By default, True
 
     Returns
     -------
@@ -384,13 +440,16 @@ def log_probs_conditional_examples(
     # Little weird. I want my IDE to know that examples is always a Sequence[Example]
     # b/c of the decorator.
     examples: Sequence[Example] = examples
-    model.reset()
+    if reset_model:
+        model.reset()
     log_probs_completions = [
         _log_probs_conditional_prompt(example.prompt, example.completions, model)
         for example in ProgressBar(
             examples, show_progress_bar=show_progress_bar, desc="conditional log-probs"
         )
     ]
+    if reset_model:
+        model.reset()
     return log_probs_completions
 
 
@@ -404,7 +463,7 @@ def predict_proba(
     discount_completions: float = 0.0,
     log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
     show_progress_bar: bool | None = None,
-    prompt_prefix: str = "",
+    reset_model: bool = True,
 ) -> npt.NDArray[np.floating]:
     """
     Predict probabilities of each completion coming after each prompt.
@@ -441,9 +500,9 @@ def predict_proba(
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
-    prompt_prefix : str, optional
-        prefix for all `prompts`, e.g., a set of shared exemplars or instructions, by
-        default ""
+    reset_model : bool, optional
+        whether or not to reset the model's KV cache and logits. Set this to False when
+        you're in a :func:`cache` context. By default, True
 
     Returns
     -------
@@ -451,13 +510,12 @@ def predict_proba(
 
         If `prompts` is a string, then an array with shape `len(completions),` is
         returned: `pred_probs[completion_idx]` is the model's estimate of the
-        probability that `completions[completion_idx]` comes after `prompt_prefix +
-        prompt`.
+        probability that `completions[completion_idx]` comes after `prompt`.
 
         If `prompts` is a sequence of strings, then an array with shape `(len(prompts),
         len(completions))` is returned: `pred_probs[prompt_idx, completion_idx]` is the
         model's estimate of the probability that `completions[completion_idx]` comes
-        after `prompt_prefix + prompts[prompt_idx]`.
+        after `prompts[prompt_idx]`.
 
     Note
     ----
@@ -497,6 +555,7 @@ def predict_proba_examples(
     examples: Example | Sequence[Example],
     model: Llama,
     show_progress_bar: bool | None = None,
+    reset_model: bool = True,
 ) -> npt.NDArray[np.floating] | list[npt.NDArray[np.floating]]:
     """
     Predict probabilities of each completion coming after each prompt.
@@ -511,6 +570,9 @@ def predict_proba_examples(
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 `examples`
+    reset_model : bool, optional
+        whether or not to reset the model's KV cache and logits. Set this to False when
+        you're in a :func:`cache` context. By default, True
 
     Returns
     -------
@@ -583,7 +645,7 @@ def predict(
     discount_completions: float = 0.0,
     log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
     show_progress_bar: bool | None = None,
-    prompt_prefix: str = "",
+    reset_model: bool = True,
 ) -> str | list[str]:
     """
     Predict which completion is most likely to follow each prompt.
@@ -614,20 +676,20 @@ def predict(
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
-    prompt_prefix : str, optional
-        prefix for all `prompts`, e.g., a set of shared exemplars or instructions, by
-        default ""
+    reset_model : bool, optional
+        whether or not to reset the model's KV cache and logits. Set this to False when
+        you're in a :func:`cache` context. By default, True
 
     Returns
     -------
     preds : str | list[str]
 
         If `prompts` is a string, then the completion from `completions` which is
-        predicted to most likely follow `prompt_prefix + prompt` is returned.
+        predicted to most likely follow `prompt` is returned.
 
         If `prompts` is a sequence of strings, then a list with length `len(prompts)` is
         returned. `preds[prompt_idx]` is the completion in `completions` which is
-        predicted to follow `prompt_prefix + prompts[prompt_idx]`.
+        predicted to follow `prompts[prompt_idx]`.
 
     Note
     ----
@@ -672,6 +734,7 @@ def predict_examples(
     examples: Example | Sequence[Example],
     model: Llama,
     show_progress_bar: bool | None = None,
+    reset_model: bool = True,
 ) -> str | list[str]:
     """
     Predict which completion is most likely to follow each prompt.
@@ -686,6 +749,9 @@ def predict_examples(
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 `examples`
+    reset_model : bool, optional
+        whether or not to reset the model's KV cache and logits. Set this to False when
+        you're in a :func:`cache` context. By default, True
 
     Returns
     -------

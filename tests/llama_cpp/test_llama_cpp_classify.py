@@ -20,7 +20,8 @@ from cappr.llama_cpp._utils import log_softmax
 # sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
 from _base import BaseTestPromptsCompletions, BaseTestExamples
-from _test_content import token_logprobs as _test_token_logprobs
+import _test_form
+import _test_content
 
 
 _ABS_PATH_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -40,7 +41,7 @@ _ABS_PATH_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 def model(request: pytest.FixtureRequest) -> Llama:
     model_path = os.path.join(_ABS_PATH_THIS_DIR, "fixtures", "models", request.param)
     model = Llama(model_path, logits_all=True, verbose=False)
-    # Correctness should not be affected by a user's previous actions
+    # Correctness should not be affected by a user's previous actions. Mimic that:
     model.eval(model.tokenize("a b c".encode("utf-8")))
     return model
 
@@ -102,10 +103,68 @@ def test_token_logprobs(texts: Sequence[str], model: Llama):
         input_ids_from_unbatched.append(input_ids)
     model.reset()
 
-    _test_token_logprobs(
+    _test_content.token_logprobs(
         log_probs_texts_observed,
         log_probs_texts_from_unbatched,
         input_ids_from_unbatched,
+    )
+
+
+def test_cache(model: Llama):
+    prompt_prefix = "a b c"
+    prompts = ["d", "d e"]
+    completions = ["e f", "f g"]
+
+    n_tokens = model.n_tokens
+    with classify.cache(model, prompt_prefix):
+        log_probs_completions = classify.log_probs_conditional(
+            prompts, completions, model, reset_model=False
+        )
+    assert model.n_tokens == n_tokens
+    _test_form._test_log_probs_conditional(
+        log_probs_completions,
+        expected_len=len(prompts),
+        num_completions_per_prompt=[len(completions)] * len(prompts),
+    )
+
+    prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
+    log_probs_completions_wo_cache = classify.log_probs_conditional(
+        prompts_full, completions, model, reset_model=True
+    )
+    assert model.n_tokens == 0
+    _test_content._test_log_probs_conditional(
+        log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
+    )
+
+
+def test_cache_examples(model: Llama):
+    prompt_prefix = "a b c"
+    _prompts = ["d", "d e"]
+    completions = ["e f", "f g"]
+    examples = [Example(prompt, completions) for prompt in _prompts]
+
+    n_tokens = model.n_tokens
+    with classify.cache(model, prompt_prefix):
+        log_probs_completions = classify.log_probs_conditional_examples(
+            examples, model, reset_model=False
+        )
+    assert model.n_tokens == n_tokens
+    _test_form._test_log_probs_conditional(
+        log_probs_completions,
+        expected_len=len(examples),
+        num_completions_per_prompt=[len(example.completions) for example in examples],
+    )
+
+    examples_full = [
+        Example(prompt_prefix + " " + example.prompt, example.completions)
+        for example in examples
+    ]
+    log_probs_completions_wo_cache = classify.log_probs_conditional_examples(
+        examples_full, model, reset_model=True
+    )
+    assert model.n_tokens == 0
+    _test_content._test_log_probs_conditional(
+        log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
     )
 
 
@@ -125,11 +184,8 @@ class Modules:
 
 
 class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
-    @pytest.mark.parametrize("prompt_prefix", ("p r e",))
-    def test_log_probs_conditional(self, prompts, completions, model, prompt_prefix):
-        super().test_log_probs_conditional(
-            prompts, completions, model, prompt_prefix=prompt_prefix
-        )
+    def test_log_probs_conditional(self, prompts, completions, model):
+        super().test_log_probs_conditional(prompts, completions, model)
 
     def test_predict_proba(
         self,

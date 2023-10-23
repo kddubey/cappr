@@ -147,7 +147,7 @@ class BaseTestPromptsCompletions(_BaseTest):
         ],
         ############## Test constant # completions, non-constant # tokens ##############
         [
-            Example("jelly", ["fin", "is"]),
+            Example("jelly", ["fin", "is"], prior=(1 / 3, 2 / 3)),
             Example("a great", ["thing.", "shout"]),
             Example("out to", ["open", "source, yo."]),
         ],
