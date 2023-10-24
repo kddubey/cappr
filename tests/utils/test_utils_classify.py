@@ -25,11 +25,11 @@ def test___agg_log_probs_vectorized():
         ([[[0, 1], [2]], [[4, 5], [6]]], 3),  # jagged. np.shape would raise an error
     ),
 )
-def test__sequence_depth(sequence_and_depth_expected: tuple[Any, int]):
+def test__ndim(sequence_and_depth_expected: tuple[Any, int]):
     sequence, depth_expected = sequence_and_depth_expected
-    depth_observed = classify._sequence_depth(sequence)
-    assert isinstance(depth_observed, int)
-    assert depth_observed == depth_expected
+    ndim_observed = classify._ndim(sequence)
+    assert isinstance(ndim_observed, int)
+    assert ndim_observed == depth_expected
 
 
 def test_agg_log_probs():
@@ -43,11 +43,10 @@ def test_agg_log_probs():
     assert np.allclose(log_probs_agg[1], np.exp([5, 6 + 7 + 8, 9 + 10]))
 
     # Test bad input
-    log_probs = [[[[0, 1]]]]
     with pytest.raises(
-        TypeError, match="log_probs is expected to be 2-D or 3-D. Got 4 dimensions."
+        ValueError, match="log_probs must be 2-D or 3-D. Got 4 dimensions."
     ):
-        _ = classify.agg_log_probs(log_probs)
+        _ = classify.agg_log_probs([[[[0, 1]]]])
 
 
 @pytest.mark.parametrize("likelihoods", ([[4, 1], [1, 4]],))

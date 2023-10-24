@@ -12,7 +12,7 @@ import numpy.typing as npt
 import pytest
 
 from cappr import Example
-from cappr.utils.classify import _sequence_depth
+from cappr.utils.classify import _ndim
 
 from _protocol import classify_module
 
@@ -52,11 +52,11 @@ def log_probs_conditional(
         prompts, completions, *args, **kwargs
     )
     if isinstance(prompts, str):
-        assert _sequence_depth(log_probs_completions) == 2
+        assert _ndim(log_probs_completions) == 2
         expected_len = len(completions)
         num_completions_per_prompt = None
     else:
-        assert _sequence_depth(log_probs_completions) == 3
+        assert _ndim(log_probs_completions) == 3
         expected_len = len(prompts)
         num_completions_per_prompt = [len(completions)] * len(prompts)
     _test_log_probs_conditional(
@@ -79,11 +79,11 @@ def log_probs_conditional_examples(
         examples, *args, **kwargs
     )
     if isinstance(examples, Example):
-        assert _sequence_depth(log_probs_completions) == 2
+        assert _ndim(log_probs_completions) == 2
         expected_len = len(examples.completions)
         num_completions_per_prompt = None
     else:
-        assert _sequence_depth(log_probs_completions) == 3
+        assert _ndim(log_probs_completions) == 3
         expected_len = len(examples)
         num_completions_per_prompt = [len(example.completions) for example in examples]
     _test_log_probs_conditional(

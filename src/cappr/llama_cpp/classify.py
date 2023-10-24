@@ -135,6 +135,7 @@ def token_logprobs(
 def cache(model: Llama, prefix: str, reset_model: bool = True):
     """
     In this context, every prompt processed by the `model` starts with `prefix + " "`.
+    As a result, computations in this context are slightly faster.
 
     Parameters
     ----------

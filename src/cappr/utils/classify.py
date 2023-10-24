@@ -98,7 +98,7 @@ def _agg_log_probs(
     ]
 
 
-def _sequence_depth(sequence) -> int:
+def _ndim(sequence) -> int:
     """
     Like `array.ndim` or `len(np.shape(sequence))` but `sequence` can be more jagged. It
     can't be nested inconsistently though, since we'll just check the first element.
@@ -112,17 +112,17 @@ def _sequence_depth(sequence) -> int:
         else:
             return True
 
-    depth = 0
+    ndim = 0
     while _is_sliceable(sequence):
-        depth += 1
+        ndim += 1
         sequence = sequence[0]
-    return depth
+    return ndim
 
 
 def agg_log_probs(
     log_probs: Sequence[Sequence[float]] | Sequence[Sequence[Sequence[float]]],
     func: Callable[[Sequence[float]], float] = np.mean,
-) -> list[float] | list[list[float]]:
+) -> npt.NDArray[np.floating] | list[float] | list[list[float]]:
     """
     Aggregate token log-probabilities along the last dimension into probabilities.
 
@@ -140,23 +140,27 @@ def agg_log_probs(
 
     Returns
     -------
-    probs: list[float] | list[list[float]]
-        If `log_probs` is 2-D, then `probs` is a list of probabilities where::
+    probs: npt.NDArray[np.floating] | list[float] | list[list[float]]
+        If `log_probs` is 2-D, then `probs` is an array or list of probabilities where::
 
             probs[j] = exp(func(log_probs[j]))
 
-        If `log_probs` is 3-D, then `probs` is a list of list of probabilities where::
+        If `log_probs` is 3-D, then `probs` is an array or a list of list of
+        probabilities where::
 
             probs[i][j] = exp(func(log_probs[i][j]))
+
+    Raises
+    ------
+    ValueError
+        if `log_probs` is not 2-D or 3-D
     """
     # 1. Determine the dimensionality of log_probs. The aggregation computation assumes
     #    a 3-D input, so we'll wrap it if it's 2-D.
-    depth = _sequence_depth(log_probs)
-    if depth not in {2, 3}:
-        raise TypeError(
-            f"log_probs is expected to be 2-D or 3-D. Got {depth} dimensions."
-        )
-    log_probs = [log_probs] if depth == 2 else log_probs
+    ndim = _ndim(log_probs)
+    if ndim not in {2, 3}:
+        raise ValueError(f"log_probs must be 2-D or 3-D. Got {ndim} dimensions.")
+    log_probs = [log_probs] if ndim == 2 else log_probs
 
     # 2. Run the aggregation computation, vectorizing if possible.
     try:
@@ -167,8 +171,8 @@ def agg_log_probs(
     ):
         likelihoods = _agg_log_probs(log_probs, func)
 
-    # 3. If we wrapped it, unwrap it for user convencience.
-    return likelihoods[0] if depth == 2 else likelihoods
+    # 3. If we wrapped it, unwrap it for user convenience.
+    return likelihoods[0] if ndim == 2 else likelihoods
 
 
 def posterior_prob(
@@ -398,7 +402,7 @@ def _predict_proba_examples(log_probs_conditional_examples):
     `predict_proba_examples` call.
     """
 
-    from cappr import Example  # done locally to avoid circular import
+    from cappr import Example
 
     @wraps(log_probs_conditional_examples)
     def wrapper(
@@ -497,7 +501,7 @@ def _predict_examples(predict_proba_examples_func):
     `predict_examples` call.
     """
 
-    from cappr import Example  # done locally to avoid circular import lol
+    from cappr import Example
 
     @wraps(predict_proba_examples_func)
     def wrapper(examples: Example | Sequence[Example], *args, **kwargs) -> list[str]:
