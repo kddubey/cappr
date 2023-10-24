@@ -25,7 +25,7 @@ The output of a `tokenizer(texts, return_tensors="pt")` call.
 
 ModelForCausalLM = TypeVar("ModelForCausalLM", bound=PreTrainedModel)
 """
-A pretrained model with the same interface as a model loaded via
+A pretrained model with the same inference interface as a model loaded via
 `transformers.AutoModelForCausalLM.from_pretrained`.
 """
 
@@ -39,8 +39,8 @@ def does_tokenizer_prepend_space_to_first_token(
         from transformers import AutoTokenizer
 
         model_name = "Maykeye/TinyLLama-v0"
-        # After running the code below on Llama, try the following model
-        # (with BPE tokenization) instead
+        # After running all of the code below on Llama, try the following
+        # model (with BPE tokenization) instead
         # model_name = "gpt2"
         tokenizer = AutoTokenizer.from_pretrained(model_name)
 

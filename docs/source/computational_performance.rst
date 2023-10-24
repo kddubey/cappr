@@ -31,15 +31,14 @@ See `this notebook
 the code which produced the figure above.
 
 .. note:: For :mod:`cappr.llama_cpp.classify`, batch inference currently isn't possible.
-          As a result, memory is saved at the cost of greater runtime compared to text
-          generation.
+          As a result, text generation is slightly faster.
 
 
 Future experiments
 ------------------
 
 :mod:`cappr.huggingface.classify` and :mod:`cappr.huggingface.classify_no_cache`
-currently process completions in parallel.  Memory savings can be achieved by using
+currently process completions in parallel. Memory savings can be achieved by using
 :mod:`cappr.huggingface.classify_no_batch`, which processes each prompt-completion pair
 one at a time. This should result in memory savings over text generation because a CAPPr
 prompt is typically smaller than a text generation prompt. A text generation prompt must
