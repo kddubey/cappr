@@ -307,8 +307,8 @@ I'm still evaluating open source models. For now, see
   demo](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb)
 - the 4-bit 4 GB [Llama 2 AG News
   demo](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/ag_news.ipynb)
-- and this (minimal but surprising) 3 GB [StableLM
-  demo](https://github.com/kddubey/cappr/blob/main/demos/auto_gptq.ipynb).
+- the 4 GB [Mistral Craigslist Bargains
+  demo](https://github.com/kddubey/cappr/blob/main/demos/huggingface/craigslist_bargains.ipynb)
 
 For OpenAI models, see
 
