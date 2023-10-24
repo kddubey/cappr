@@ -310,6 +310,9 @@ I'm still evaluating open source models. For now, see
 - the 4 GB [Mistral Craigslist Bargains
   demo](https://github.com/kddubey/cappr/blob/main/demos/huggingface/craigslist_bargains.ipynb)
 
+In general, you should expect similar or identical performance to text generation when
+every completion is 1 token long.
+
 For OpenAI models, see
 
 [2 SuperGLUE

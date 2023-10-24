@@ -47,7 +47,7 @@ def variable(lst: list[_T], sizes: Sequence[int]):
 
 class ProgressBar(tqdm, Generic[_T]):
     """
-    Wrapper around `tqdm` which handles auto-show logic.
+    `tqdm` progress bar which handles auto-show logic.
     """
 
     def __init__(
@@ -76,8 +76,8 @@ class ProgressBar(tqdm, Generic[_T]):
 
 def _kwarg_name_to_value(func) -> dict[str, Any]:
     """
-    Returns a dictionary mapping keyword arguments to their default values `func`'s
-    signature.
+    Returns a dictionary mapping keyword arguments to their default values according to
+    `func`'s signature.
     """
     # ty https://stackoverflow.com/a/12627202/18758987
     signature = inspect.signature(func)
@@ -117,15 +117,13 @@ def batchify(
             batchable: Sequence = args[batchable_arg_idx]
             batch_size: int = kwargs.get("batch_size", batch_size_default)
             args = list(args)  # needs to be mutable to modify the batch argument value
-            # set up progress bar
-            show_progress_bar: bool | None = kwargs.get(
-                "show_progress_bar", show_progress_bar_default
-            )
             # run func along batches of batchable
             outputs = []
             with ProgressBar(
                 total=len(batchable),
-                show_progress_bar=show_progress_bar,
+                show_progress_bar=kwargs.get(
+                    "show_progress_bar", show_progress_bar_default
+                ),
                 desc=progress_bar_desc,
             ) as progress_bar:
                 for batch_ in constant(batchable, batch_size):
