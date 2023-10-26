@@ -79,10 +79,10 @@ processes one prompt at a time.
    of prompts that are processed at a time; completions are always processed in
    parallel.
 
-:mod:`cappr.huggingface.classify_no_batch` is compatible with all models which
-:mod:`cappr.huggingface.classify_no_cache` is compatible with. The difference is that
-the no-batch module has the model process one prompt-completion pair at a time,
-minimizing memory usage.
+:mod:`cappr.huggingface.classify_no_batch` is currently not compatible with `AutoAWQ`_
+models. The difference between this module and :mod:`cappr.huggingface.classify` is that
+this module has the model process one prompt-completion pair at a time, minimizing
+memory usage.
 
 .. warning:: When instantiating your `AutoAWQ`_ model, you must set an extra attribute
              indicating the device(s) which the model is on, e.g.,

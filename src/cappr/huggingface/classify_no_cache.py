@@ -127,9 +127,10 @@ def _prompts_offsets(
         num_completions_per_prompt, torch.Tensor
     ):
         num_completions_per_prompt = torch.tensor(num_completions_per_prompt)
-    prompts = list(prompts)  # tokenizer requires list
+    prompts = list(prompts)
+    padding = len(prompts) > 1
     offsets: torch.Tensor = (
-        tokenizer(prompts, return_tensors="pt", padding=True)["attention_mask"]
+        tokenizer(prompts, return_tensors="pt", padding=padding)["attention_mask"]
         .sum(dim=1)
         .repeat_interleave(num_completions_per_prompt, dim=0)
     )

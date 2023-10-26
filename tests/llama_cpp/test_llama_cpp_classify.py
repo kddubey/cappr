@@ -128,8 +128,9 @@ def test_cache(model: Llama):
     )
 
     prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
-    log_probs_completions_wo_cache = classify.log_probs_conditional(
-        prompts_full, completions, model, reset_model=True
+    model.reset()
+    log_probs_completions_wo_cache = _classify_no_cache.log_probs_conditional(
+        prompts_full, completions, model
     )
     assert model.n_tokens == 0
     _test_content._test_log_probs_conditional(
@@ -159,8 +160,9 @@ def test_cache_examples(model: Llama):
         Example(prompt_prefix + " " + example.prompt, example.completions)
         for example in examples
     ]
-    log_probs_completions_wo_cache = classify.log_probs_conditional_examples(
-        examples_full, model, reset_model=True
+    model.reset()
+    log_probs_completions_wo_cache = _classify_no_cache.log_probs_conditional_examples(
+        examples_full, model
     )
     assert model.n_tokens == 0
     _test_content._test_log_probs_conditional(

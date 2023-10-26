@@ -81,10 +81,7 @@ def token_logprobs(
         model, tokenizer = model_and_tokenizer
 
         # bleh
-        if (
-            end_of_prompt == " "
-            and not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer)
-        ):
+        if not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer):
             end_of_prompt = ""
         texts = [end_of_prompt + text for text in texts]
 
@@ -252,7 +249,7 @@ def _blessed_helper(
     # token <s> b/c we need to mimic sending the prompt + completion together.
     # For example, if 'a b' is the prompt and 'c' is the completion, the encoding
     # should correspond to '<s> a b c' not '<s> a b <s> c'.
-    with hf._utils.disable_add_bos_token(tokenizer):
+    with hf._utils.dont_add_bos_token(tokenizer):
         completions_encoding: BatchEncoding = tokenizer(
             completions, return_tensors="pt", padding=True
         ).to(model.device)

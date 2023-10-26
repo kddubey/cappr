@@ -22,7 +22,8 @@ from cappr.huggingface._utils import BatchEncoding, ModelForCausalLM
 # sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
 from _base import BaseTestPromptsCompletions, BaseTestExamples
-from _test_content import token_logprobs as _test_token_logprobs
+import _test_form
+import _test_content
 
 
 ########################################################################################
@@ -34,9 +35,9 @@ from _test_content import token_logprobs as _test_token_logprobs
     scope="module",
     params=[
         "hf-internal-testing/tiny-random-GPT2LMHeadModel",
+        "Maykeye/TinyLLama-v0",
         "hf-internal-testing/tiny-random-GPTJForCausalLM",
         "hf-internal-testing/tiny-random-GPTNeoXForCausalLM",
-        "Maykeye/TinyLLama-v0",
         "hf-internal-testing/tiny-random-MistralForCausalLM",
     ],
 )
@@ -167,11 +168,8 @@ def test_token_logprobs(
 
     # Gather un-batched un-sliced log probs for the expected result
     # bleh
-    if (
-        end_of_prompt == " "
-        and not hf._utils.does_tokenizer_prepend_space_to_first_token(
-            model_and_tokenizer[1]
-        )
+    if not hf._utils.does_tokenizer_prepend_space_to_first_token(
+        model_and_tokenizer[1]
     ):
         end_of_prompt = ""
     log_probs_texts_from_unbatched = []
@@ -186,7 +184,7 @@ def test_token_logprobs(
         log_probs_texts_from_unbatched.append(_logits[0].log_softmax(dim=1))
         input_ids_from_unbatched.append(_encoding["input_ids"][0])
 
-    _test_token_logprobs(
+    _test_content.token_logprobs(
         log_probs_texts_observed,
         log_probs_texts_from_unbatched,
         input_ids_from_unbatched,
@@ -225,6 +223,109 @@ def test__keys_values_prompts(
     assert torch.equal(offsets_slow, offsets_fast)
 
     assert torch.allclose(logits_last_slow, logits_last_fast, atol=atol)
+
+
+########################################################################################
+################################## Test cache context ##################################
+########################################################################################
+
+
+def test_cache_logits(model_and_tokenizer, atol):
+    prompt = "a b c d"
+    completions = ["e f", "x y z"]
+    end_of_prompt = " "
+    model, tokenizer = model_and_tokenizer
+
+    # bleh
+    if not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer):
+        end_of_prompt = ""
+
+    logits = lambda *args, **kwargs: hf._utils.logits_texts(*args, **kwargs)[0]
+
+    logits1_correct = logits(
+        [prompt + " " + completions[0]], model, tokenizer, drop_bos_token=False
+    )
+    logits2_correct = logits(
+        [prompt + " " + completions[1]], model, tokenizer, drop_bos_token=False
+    )
+
+    with hf.classify_no_batch.cache(model_and_tokenizer, "a") as cached_prompt_prefix:
+        with hf.classify_no_batch.cache(
+            cached_prompt_prefix, end_of_prompt + "b c"
+        ) as cached_prompt:
+            with hf.classify_no_batch.cache(
+                cached_prompt, end_of_prompt + "d"
+            ) as cached_exemplars:
+                logits1 = logits([end_of_prompt + completions[0]], *cached_exemplars)
+                logits2 = logits([end_of_prompt + completions[1]], *cached_exemplars)
+            logits3 = logits([end_of_prompt + "d e f"], *cached_prompt)
+        logits4 = logits([end_of_prompt + "b c d x y z"], *cached_prompt_prefix)
+
+    assert logits1_correct.shape == logits1.shape
+    assert torch.allclose(logits1_correct, logits1, atol=atol)
+
+    assert logits2_correct.shape == logits2.shape
+    assert torch.allclose(logits2_correct, logits2, atol=atol)
+
+    assert logits1_correct.shape == logits3.shape
+    assert torch.allclose(logits1_correct, logits3, atol=atol)
+
+    assert logits2_correct.shape == logits4.shape
+    assert torch.allclose(logits2_correct, logits4, atol=atol)
+
+
+# TODO: this is almost completely copy-pasted from tests/test_llama_cpp_classify. Should
+# be factored out since a cache context manager should have the same interface
+def test_cache(model_and_tokenizer):
+    prompt_prefix = "a b c"
+    prompts = ["d", "d e"]
+    completions = ["e f", "f g"]
+
+    with classify_no_batch.cache(model_and_tokenizer, prompt_prefix) as cached:
+        log_probs_completions = classify_no_batch.log_probs_conditional(
+            prompts, completions, cached
+        )
+    _test_form._test_log_probs_conditional(
+        log_probs_completions,
+        expected_len=len(prompts),
+        num_completions_per_prompt=[len(completions)] * len(prompts),
+    )
+
+    prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
+    log_probs_completions_wo_cache = classify_no_cache.log_probs_conditional(
+        prompts_full, completions, model_and_tokenizer
+    )
+    _test_content._test_log_probs_conditional(
+        log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
+    )
+
+
+def test_cache_examples(model_and_tokenizer):
+    prompt_prefix = "a b c"
+    _prompts = ["d", "d e"]
+    completions = ["e f", "f g"]
+    examples = [Example(prompt, completions) for prompt in _prompts]
+
+    with classify_no_batch.cache(model_and_tokenizer, prompt_prefix) as cached:
+        log_probs_completions = classify_no_batch.log_probs_conditional_examples(
+            examples, cached
+        )
+    _test_form._test_log_probs_conditional(
+        log_probs_completions,
+        expected_len=len(examples),
+        num_completions_per_prompt=[len(example.completions) for example in examples],
+    )
+
+    examples_full = [
+        Example(prompt_prefix + " " + example.prompt, example.completions)
+        for example in examples
+    ]
+    log_probs_completions_wo_cache = classify_no_cache.log_probs_conditional_examples(
+        examples_full, model_and_tokenizer
+    )
+    _test_content._test_log_probs_conditional(
+        log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
+    )
 
 
 ########################################################################################

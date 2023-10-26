@@ -135,15 +135,15 @@ def token_logprobs(
 def cache(model: Llama, prefix: str, reset_model: bool = True):
     """
     In this context, every prompt processed by the `model` starts with `prefix + " "`.
-    As a result, computations in this context are slightly faster.
+    As a result, computations in this context are faster.
 
     Parameters
     ----------
     model : Llama
         a model instantiated with ``logits_all=True``
     prefix : str
-        prefix for all strings/prompts in this context, e.g., a set of shared
-        instructions, or exemplars for few-shot prompting
+        prefix for all strings/prompts that will be processed in this context, e.g., a
+        set of shared instructions, or exemplars for few-shot prompting
     reset_model : bool, optional
         whether or not to reset the model's KV cache and logits. Set this to False when
         you're in a :func:`cache` context. By default, True
@@ -196,7 +196,7 @@ def cache(model: Llama, prefix: str, reset_model: bool = True):
         input_ids_prefix = model.tokenize(prefix.encode("utf-8"), add_bos=n_tokens == 0)
         model.eval(input_ids_prefix)
 
-    yield
+    yield model
 
     model.n_tokens = n_tokens
 
@@ -208,7 +208,7 @@ def _log_probs_conditional_prompt(
 ) -> list[list[float]]:
     _check_model(model)
     # 1. Cache the prompt's KVs and logits
-    with cache(model, prompt, reset_model=False):
+    with cache(model, prompt, reset_model=False) as model:
         num_tokens_prompt = model.n_tokens
         # 2. Tokenize completions to determine whether or not we can do the single-token
         #    optimization.

@@ -17,7 +17,7 @@ from transformers.modeling_outputs import CausalLMOutput
 
 BatchEncoding = TypeVar("BatchEncoding", bound=Mapping[str, torch.Tensor])
 """
-The output of a `tokenizer(texts, return_tensors="pt")` call.
+Type of the output of `tokenizer(texts, return_tensors="pt", ...)`.
 """
 # transformers.BatchEncoding doesn't annotate values as tensors b/c tokenizers can
 # return other objects. In this package, tokenizers will always return PyTorch tensors.
@@ -40,8 +40,9 @@ def does_tokenizer_prepend_space_to_first_token(
 
         model_name = "Maykeye/TinyLLama-v0"
         # After running all of the code below on Llama, try the following
-        # model (with BPE tokenization) instead
+        # model (with BPE tokenization) instead:
         # model_name = "gpt2"
+
         tokenizer = AutoTokenizer.from_pretrained(model_name)
 
         # Run on the whole input text
@@ -71,7 +72,7 @@ def does_tokenizer_prepend_space_to_first_token(
 ########################################################################################
 class _model_eval_mode:
     """
-    Set the model in eval mode. CAPPr only makes sense as an inference computation.
+    In this context, the model is set in eval mode.
     """
 
     def __init__(self, model: ModelForCausalLM):
@@ -126,8 +127,7 @@ class _tokenizer_pad_on_right:
 
 class _tokenizer_dont_add_eos_token:
     """
-    Don't add an end-of-sentence token. We'll never need it for the CAPPr scheme.
-    Adding them would throw off :mod:`cappr.huggingface.classify`
+    In this context, don't add an end-of-sentence token.
     """
 
     def __init__(self, tokenizer: PreTrainedTokenizerBase):
@@ -175,6 +175,7 @@ def set_up_model_and_tokenizer(
     """
     model, tokenizer = model_and_tokenizer
 
+    # TODO: there should be something in contextlib for this
     init_contexts_model = [context(model) for context in contexts_tokenizer]
     init_contexts_tokenizer = [context(tokenizer) for context in contexts_model]
     init_contexts = init_contexts_model + init_contexts_tokenizer
@@ -188,7 +189,10 @@ def set_up_model_and_tokenizer(
 
 
 @contextmanager
-def disable_add_bos_token(tokenizer: PreTrainedTokenizerBase):
+def dont_add_bos_token(tokenizer: PreTrainedTokenizerBase):
+    """
+    In this context, don't add a beginning-of-sentence token.
+    """
     if hasattr(tokenizer, "add_bos_token"):
         add_bos_token: bool = tokenizer.add_bos_token
         tokenizer.add_bos_token = False
@@ -202,28 +206,39 @@ def disable_add_bos_token(tokenizer: PreTrainedTokenizerBase):
 ########################################################################################
 ##################################### Logits stuff #####################################
 ########################################################################################
+def drop_first_token(
+    logits: torch.Tensor, encodings: BatchEncoding
+) -> tuple[torch.Tensor, BatchEncoding]:
+    logits = logits[:, 1:, :]
+    encodings: BatchEncoding = {key: value[:, 1:] for key, value in encodings.items()}
+    return logits, encodings
+
+
 def logits_texts(
     texts: Sequence[str],
     model: ModelForCausalLM,
     tokenizer: PreTrainedTokenizerBase,
+    padding: bool | None = None,
+    drop_bos_token: bool = True,
 ) -> tuple[torch.Tensor, BatchEncoding]:
     """
-    Basically `model(**tokenizer(texts)), tokenizer(texts)`.
+    Basically::
+
+        return model(**tokenizer(texts)).logits, tokenizer(texts)
     """
-    # TODO: auto-batch? consider adding a batch_size kwarg, and decorating the func like
-    # token_logprobs
-    encodings: BatchEncoding = tokenizer(texts, return_tensors="pt", padding=True).to(
-        model.device
-    )
+    # TODO: auto-batch?
+    if padding is None:
+        padding = getattr(tokenizer, "pad_token_id", None) is not None
+    encodings: BatchEncoding = tokenizer(
+        texts, return_tensors="pt", padding=padding
+    ).to(model.device)
     with torch.no_grad():
         out: CausalLMOutput = model(**encodings)
-    if getattr(tokenizer, "add_bos_token", False):
+    if drop_bos_token and getattr(tokenizer, "add_bos_token", False):
         # Drop the first bos token after we're done encoding so that the shape is
-        # consistent w/ other tokenizers
-        logits = out.logits[:, 1:, :]
-        encodings: BatchEncoding = {
-            key: value[:, 1:] for key, value in encodings.items()
-        }
+        # consistent w/ other tokenizers. For CAPPr, we'll never be interested in
+        # Pr(token | <bos>). We're only interested in completion tokens.
+        logits, encodings = drop_first_token(out.logits, encodings)
     else:
         logits = out.logits
     return logits, encodings
