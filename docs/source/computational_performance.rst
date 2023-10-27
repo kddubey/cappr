@@ -34,16 +34,21 @@ the code which produced the figure above.
           As a result, text generation is slightly faster.
 
 
-Future experiments
-------------------
+Weaknesses
+----------
 
-:mod:`cappr.huggingface.classify` and :mod:`cappr.huggingface.classify_no_cache`
-currently process completions in parallel. Memory savings can be achieved by using
-:mod:`cappr.huggingface.classify_no_batch`, which processes each prompt-completion pair
-one at a time. This should result in memory savings over text generation because a CAPPr
-prompt is typically smaller than a text generation prompt. A text generation prompt must
-describe each class in the prompt, and the model must attend to all of this information
-to perform well. A CAPPr prompt sometimes doesn't need to include info about the classes
-to perform well. A completion is only one of the classes. As a result, model context and
-memory requirements can be relaxed. I'll need to run experiments to demonstrate the
-extent to which this is true.
+CAPPr currently does not computationally perform well when there are 10s-100s of classes
+and the prompt must be long—long enough that text generation cannot be batched without
+running out of memory. In these cases, CAPPr's memory requirements are higher because
+:mod:`cappr.huggingface.classify` currently processes completions in parallel.
+:mod:`cappr.huggingface.classify_no_batch` minimizes memory but costs a lot of time
+because it processes each completion one at a time.
+
+In the future, 2 things will be explored:
+
+1. Implement a middle ground in :mod:`cappr.huggingface.classify` by, e.g., batching
+   completions. This feature would trade off runtime for reduced memory requirements.
+2. Are there classification tasks where classes don't need to be provided in context
+   (and instead as a completion) for CAPPr to statistically perform well? If so, CAPPr's
+   computational issues can be worked around through better prompt engineering. And the
+   model's context window can be reduced.
