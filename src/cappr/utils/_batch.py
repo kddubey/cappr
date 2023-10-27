@@ -90,7 +90,7 @@ def _kwarg_name_to_value(func) -> dict[str, Any]:
 
 def batchify(
     batchable_arg: str,
-    batch_size: int = 32,
+    batch_size: int = 2,
     progress_bar_desc: str = "",
     show_progress_bar: bool | None = None,
 ):

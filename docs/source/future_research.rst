@@ -17,6 +17,7 @@ while CAPPr using the same model is 80% accurate. Similar results can be seen in
 - the 4-bit 4 GB Llama 2 `COPA demo`_
 - the 4-bit 4 GB Llama 2 `AG News demo
   <https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/ag_news.ipynb>`_
+- the 4 GB Mistral `Craigslist Bargains demo`_
 - the 4 GB Mistral `Banking 77 demo`_ (with 77 multi-token choices).
 
 I'll study how replicable this result is across datasets, model sizes, architectures,
@@ -27,7 +28,8 @@ hypothesis is two-fold:
   demonstrated in the `COPA demo`_.
 - In text generation, the model can generate "I don't know", or make a choice that isn't
   one in the given list of choices. CAPPr instead has the model to make its "best" guess
-  among the given choices. This is demonstrated in the `Banking 77 demo`_.
+  among the given choices. This is demonstrated in the `Craigslist Bargains demo`_ and
+  the `Banking 77 demo`_.
 
 The `calibration
 <https://en.wikipedia.org/wiki/Probabilistic_classification#Probability_calibration>`_
@@ -38,6 +40,10 @@ usual next-token probability estimates because:
 
 #. CAPPr can incorporate a prior specific to your classification data.
 
+The `Banking 77 demo`_ contains two low-resolution but interesting calibration curves.
+
 .. _COPA demo: https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb
+
+.. _Craigslist Bargains demo: https://github.com/kddubey/cappr/blob/main/demos/huggingface/craigslist_bargains.ipynb
 
 .. _Banking 77 demo: https://github.com/kddubey/cappr/blob/main/demos/huggingface/banking_77_classes.ipynb

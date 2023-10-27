@@ -31,7 +31,7 @@ def token_logprobs(
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     end_of_prompt: Literal[" ", ""] = " ",
     show_progress_bar: bool | None = None,
-    batch_size: int = 32,
+    batch_size: int = 16,
     **kwargs,
 ) -> list[list[float]]:
     """
@@ -52,7 +52,7 @@ def token_logprobs(
         there are at least 5 texts
     batch_size : int, optional
         the maximum number of `texts` that the model will process in parallel, by
-        default 32
+        default 16
 
     Returns
     -------
@@ -418,7 +418,7 @@ def log_probs_conditional(
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     end_of_prompt: Literal[" ", ""] = " ",
     show_progress_bar: bool | None = None,
-    batch_size: int = 32,
+    batch_size: int = 2,
     **kwargs,
 ) -> list[list[float]] | list[list[list[float]]]:
     """
@@ -441,7 +441,7 @@ def log_probs_conditional(
         there are at least 5 prompts
     batch_size : int, optional
         the maximum number of `prompts` that the model will process in parallel, by
-        default 32
+        default 2
 
     Returns
     -------
@@ -520,7 +520,7 @@ def log_probs_conditional_examples(
     examples: Example | Sequence[Example],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     show_progress_bar: bool | None = None,
-    batch_size: int = 32,
+    batch_size: int = 2,
 ) -> list[list[float]] | list[list[list[float]]]:
     """
     Log-probabilities of each completion token conditional on each prompt and previous
@@ -538,7 +538,7 @@ def log_probs_conditional_examples(
         there are at least 5 `examples`
     batch_size : int, optional
         the maximum number of `examples` that the model will process in parallel, by
-        default 32
+        default 2
 
     Returns
     -------
@@ -638,7 +638,7 @@ def predict_proba(
     discount_completions: float = 0.0,
     log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
     show_progress_bar: bool | None = None,
-    batch_size: int = 32,
+    batch_size: int = 2,
 ) -> npt.NDArray[np.floating]:
     """
     Predict probabilities of each completion coming after each prompt.
@@ -679,7 +679,7 @@ def predict_proba(
         there are at least 5 prompts
     batch_size : int, optional
         the maximum number of `prompts` that the model will process in parallel, by
-        default 32
+        default 2
 
     Returns
     -------
@@ -747,7 +747,7 @@ def predict_proba_examples(
     examples: Example | Sequence[Example],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     show_progress_bar: bool | None = None,
-    batch_size: int = 32,
+    batch_size: int = 2,
 ) -> npt.NDArray[np.floating] | list[npt.NDArray[np.floating]]:
     """
     Predict probabilities of each completion coming after each prompt.
@@ -764,7 +764,7 @@ def predict_proba_examples(
         there are at least 5 `examples`
     batch_size : int, optional
         the maximum number of `examples` that the model will process in parallel, by
-        default 32
+        default 2
 
     Returns
     -------
@@ -833,7 +833,7 @@ def predict(
     discount_completions: float = 0.0,
     log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
     show_progress_bar: bool | None = None,
-    batch_size: int = 32,
+    batch_size: int = 2,
 ) -> str | list[str]:
     """
     Predict which completion is most likely to follow each prompt.
@@ -868,7 +868,7 @@ def predict(
         there are at least 5 prompts
     batch_size : int, optional
         the maximum number of `prompts` that the model will process in parallel, by
-        default 32
+        default 2
 
     Returns
     -------
@@ -922,7 +922,7 @@ def predict_examples(
     examples: Example | Sequence[Example],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     show_progress_bar: bool | None = None,
-    batch_size: int = 32,
+    batch_size: int = 2,
 ) -> str | list[str]:
     """
     Predict which completion is most likely to follow each prompt.
@@ -939,7 +939,7 @@ def predict_examples(
         there are at least 5 `examples`
     batch_size : int, optional
         the maximum number of `examples` that the model will process in parallel, by
-        default 32
+        default 2
 
     Returns
     -------
