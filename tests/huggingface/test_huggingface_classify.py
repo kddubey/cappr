@@ -1,7 +1,8 @@
 """
 Unit and integration tests for `cappr.huggingface.classify`. Works by checking that its
 functions' outputs are numerically close to those from
-`cappr.huggingface.classify_no_cache`.
+`cappr.huggingface.classify_no_cache` and
+`cappr.huggingface.classify_no_cache_no_batch`.
 """
 from __future__ import annotations
 import os
@@ -15,7 +16,12 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenize
 import huggingface_hub as hf_hub
 
 from cappr import Example
-from cappr.huggingface import classify_no_cache, classify, classify_no_batch
+from cappr.huggingface import (
+    classify,
+    classify_no_batch,
+    classify_no_cache,
+    classify_no_cache_no_batch,
+)
 from cappr import huggingface as hf
 from cappr.huggingface._utils import BatchEncoding, ModelForCausalLM
 
@@ -166,7 +172,10 @@ def test_set_up_model_and_tokenizer(model_and_tokenizer):
         assert getattr(tokenizer, attribute, None) == old_value
 
 
-@pytest.mark.parametrize("module", (classify_no_cache, classify, classify_no_batch))
+@pytest.mark.parametrize(
+    "module",
+    (classify, classify_no_batch, classify_no_cache, classify_no_cache_no_batch),
+)
 @pytest.mark.parametrize(
     "texts",
     (["a b", "c d e"], ["a fistful", "of tokens", "for a few", "tokens more"]),
@@ -307,7 +316,7 @@ def test_cache(model_and_tokenizer):
     )
 
     prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
-    log_probs_completions_wo_cache = classify_no_cache.log_probs_conditional(
+    log_probs_completions_wo_cache = classify_no_cache_no_batch.log_probs_conditional(
         prompts_full, completions, model_and_tokenizer
     )
     _test_content._test_log_probs_conditional(
@@ -335,8 +344,10 @@ def test_cache_examples(model_and_tokenizer):
         Example(prompt_prefix + " " + example.prompt, example.completions)
         for example in examples
     ]
-    log_probs_completions_wo_cache = classify_no_cache.log_probs_conditional_examples(
-        examples_full, model_and_tokenizer
+    log_probs_completions_wo_cache = (
+        classify_no_cache_no_batch.log_probs_conditional_examples(
+            examples_full, model_and_tokenizer
+        )
     )
     _test_content._test_log_probs_conditional(
         log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
@@ -431,11 +442,11 @@ def _test_logits(
 class Modules:
     @property
     def module_correct(self):
-        return classify_no_cache
+        return classify_no_cache_no_batch
 
     @property
     def modules_to_test(self):
-        return (classify, classify_no_batch)
+        return (classify, classify_no_batch, classify_no_cache)
 
 
 class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
