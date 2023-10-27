@@ -5,8 +5,8 @@ Modern language models undergo two training stages: pretraining, and instruction
 training. When solving a classification task, it's tempting to lean on instruction-style
 prompts in combination with text generation. This combination works incredibly well for
 multi-GPU, proprietary models. But what about open source ones? Perhaps there are
-untapped, smaller, or undertrained models which are not good at generating text from
-instructions, but are good at estimating probabilities.
+untapped, smaller, or undertrained models which are not good at generating a choice, but
+are good at estimating probabilities.
 
 A handful of experiments suggest that CAPPr squeezes more out of smaller LLMs. In the
 `OpenAI COPA demo
@@ -14,21 +14,30 @@ A handful of experiments suggest that CAPPr squeezes more out of smaller LLMs. I
 generation using OpenAI's smaller model, ``text-curie-001``, is less than 50% accurate,
 while CAPPr using the same model is 80% accurate. Similar results can be seen in:
 
-- the 4-bit 4 GB `Llama 2 COPA demo
-  <https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb>`_
-- the 4-bit 4 GB `Llama 2 AG News demo
+- the 4-bit 4 GB Llama 2 `COPA demo`_
+- the 4-bit 4 GB Llama 2 `AG News demo
   <https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/ag_news.ipynb>`_
-- this (minimal but surprising) 3 GB `StableLM demo
-  <https://github.com/kddubey/cappr/blob/main/demos/huggingface/auto_gptq.ipynb>`_.
+- the 4 GB Mistral `Banking 77 demo`_ (with 77 multi-token choices).
 
 I'll study how replicable this result is across datasets, model sizes, architectures,
-and levels of quantization.
+and levels of quantization. I'll also study explanations for these results. The working
+hypothesis is two-fold:
 
-The `calibration`_ of CAPPr estimates has not yet been studied. These estimates are
-slightly different than usual next-token probability estimates because:
+- CAPPr-style prompt-completion formats can look more like pretraining data. This is
+  demonstrated in the `COPA demo`_.
+- In text generation, the model can generate "I don't know", or make a choice that isn't
+  one in the given list of choices. CAPPr instead has the model to make its "best" guess
+  among the given choices. This is demonstrated in the `Banking 77 demo`_.
+
+The `calibration
+<https://en.wikipedia.org/wiki/Probabilistic_classification#Probability_calibration>`_
+of CAPPr estimates has barely been studied. These estimates are slightly different than
+usual next-token probability estimates because:
 
 #. CAPPr hackily takes a mean over next-token probabilities
 
-#. CAPPr incorporates a prior specific to your classification data.
+#. CAPPr can incorporate a prior specific to your classification data.
 
-.. _calibration: https://en.wikipedia.org/wiki/Probabilistic_classification#Probability_calibration
+.. _COPA demo: https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb
+
+.. _Banking 77 demo: https://github.com/kddubey/cappr/blob/main/demos/huggingface/banking_77_classes.ipynb

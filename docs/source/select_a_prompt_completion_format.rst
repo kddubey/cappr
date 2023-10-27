@@ -124,8 +124,7 @@ each of these functions:
 :func:`cappr.llama_cpp.classify.predict_examples`
 
 .. warning:: I haven't evaluated CAPPr on completion strings which are longer than 15
-             tokens. And I don't think CAPPr works well when there are ≥50 possible
-             completions. Consider these domains uncharted and risky for CAPPr.
+             tokens. Consider this domains uncharted and risky for CAPPr.
 
 
 Yes-No

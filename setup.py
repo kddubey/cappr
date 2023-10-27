@@ -36,6 +36,7 @@ requirements_llama_cpp = ["llama-cpp-python>=0.2.11"]
 requirements_demos = [
     "datasets>=2.10.0",
     "jupyter>=1.0.0",
+    "matplotlib>=3.7.3",
     "pandas>=1.5.3",
     "scikit-learn>=1.2.2",
 ]

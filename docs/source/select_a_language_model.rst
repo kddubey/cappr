@@ -71,9 +71,9 @@ module and :mod:`cappr.huggingface.classify_no_batch` are currently incompatible
 `AutoAWQ`_ models.
 
 :mod:`cappr.huggingface.classify_no_batch` has the model process one prompt-completion
-pair at a time, minimizing memory usage. Furthermore, it allows for caching of prefixes
-for prompts: see :func:`cappr.huggingface.classify_no_batch.cache`. As a result, this
-module is the most well-suited for online applications if there aren't many completions.
+pair at a time, minimizing memory usage. Furthermore, it can cache shared prefixes for
+prompts: see :func:`cappr.huggingface.classify_no_batch.cache`. As a result, this module
+is the most well-suited for online applications if there aren't many completions.
 
 :mod:`cappr.huggingface.classify_no_cache` and
 :mod:`cappr.huggingface.classify_no_cache_no_batch` are compatible with `AutoAWQ`_
