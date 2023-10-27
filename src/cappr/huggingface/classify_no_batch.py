@@ -89,8 +89,15 @@ class _ModelWithCache:
     def forward(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor, *args, **kwargs
     ) -> CausalLMOutputWithPast:
-        encoding = {"input_ids": input_ids, "attention_mask": attention_mask}
+        if not hasattr(self, "_cappr_past"):
+            raise AttributeError(
+                "This model is no longer usable. It was used in a temporary context "
+                "where clear_cache_on_exit=True to save memory. If you meant to retain "
+                "the cache for future use, then do: "
+                "`with cache(..., clear_cache_on_exit=False)`"
+            )
 
+        encoding = {"input_ids": input_ids, "attention_mask": attention_mask}
         if self._cappr_past is None:
             with hf._utils.set_up_model(self._model):
                 out: CausalLMOutputWithPast = self._model(**encoding)
@@ -137,7 +144,9 @@ class _ModelWithCache:
 
 @contextmanager
 def cache(
-    model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase], prefix: str
+    model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
+    prefix: str,
+    clear_cache_on_exit: bool = True,
 ):
     """
     In this context, every prompt processed by `model_and_tokenizer` starts with
@@ -150,6 +159,29 @@ def cache(
     prefix : str
         prefix for all strings/prompts that will be processed in this context, e.g., a
         set of shared instructions, or exemplars for few-shot prompting
+    clear_cache_on_exit : bool, optional
+        whether or not to clear the cache and render the returned model and tokenizer
+        unusable when we exit the context. This is important because it saves memory,
+        and makes code more explicit about the model's state. By default, True
+
+    Note
+    ----
+    Do NOT::
+
+        with cache(model_and_tokenizer, "string") as model_and_tokenizer:
+            # use model_and_tokenizer
+
+        # The original, uncached model_and_tokenizer object has been
+        # overwritten!
+        # This is almost always not what you want. Name the returned model
+        # and tokenizer something else:
+        with cache(
+            model_and_tokenizer, "string"
+        ) as cached_model_and_tokenizer:
+            # use cached_model_and_tokenizer
+
+        # Now you can use model_and_tokenizer for computations outside of
+        # the context. Its state is completely unchanged.
 
     Warning
     -------
@@ -272,7 +304,13 @@ def cache(
         with hf._utils.dont_add_bos_token(tokenizer):
             yield model_with_cache, tokenizer
 
-    model_with_cache._cappr_past = past
+    if clear_cache_on_exit:
+        # model_with_cache._cappr_past contains a ton of data—logits, past_key_values,
+        # hidden_states (usually taking up GPU RAM)—that should be cleared when we exit
+        # the context
+        delattr(model_with_cache, "_cappr_past")
+    else:
+        model_with_cache._cappr_past = past
 
 
 def _log_probs_conditional_prompt(

@@ -446,12 +446,6 @@ To test a specific module, e.g., `huggingface`:
 pytest -k huggingface
 ```
 
-To see uncovered line changes:
-
-```
-pytest --cov=cappr --cov-report term-missing
-```
-
 ### Docs
 
 To test changes to documentation, first locally build them from the repo home directory

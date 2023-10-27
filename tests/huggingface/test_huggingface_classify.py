@@ -149,6 +149,7 @@ def test_set_up_model_and_tokenizer(model_and_tokenizer):
     # Enter the context
     assert torch.is_grad_enabled()
     with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
+        # TODO: add manual checks for correct attribute values!
         assert not torch.is_grad_enabled()
         model, tokenizer = model_and_tokenizer
     assert torch.is_grad_enabled()
@@ -248,47 +249,44 @@ def test__keys_values_prompts(
 
 
 def test_cache_logits(model_and_tokenizer, atol):
-    prompt = "a b c d"
-    completions = ["e f", "x y z"]
-    end_of_prompt = " "
-    model, tokenizer = model_and_tokenizer
-
-    # bleh
-    if not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer):
-        end_of_prompt = ""
+    delim = " "
+    if not hf._utils.does_tokenizer_prepend_space_to_first_token(
+        model_and_tokenizer[1]
+    ):
+        # for SentencePiece tokenizers like Llama's
+        delim = ""
 
     logits = lambda *args, **kwargs: hf._utils.logits_texts(*args, **kwargs)[0]
+    """
+    Returns next-token logits for each token in an inputted text.
+    """
 
-    logits1_correct = logits(
-        [prompt + " " + completions[0]], model, tokenizer, drop_bos_token=False
+    with classify_no_batch.cache(model_and_tokenizer, "a") as cached_a:
+        with classify_no_batch.cache(cached_a, delim + "b c") as cached_a_b_c:
+            with classify_no_batch.cache(cached_a_b_c, delim + "d") as cached_a_b_c_d:
+                logits1 = logits([delim + "e f"], *cached_a_b_c_d)
+                logits2 = logits([delim + "x"], *cached_a_b_c_d)
+            logits3 = logits([delim + "1 2 3"], *cached_a_b_c)
+        logits4 = logits([delim + "b c d"], *cached_a)
+
+    logits_correct = lambda texts, **kwargs: logits(
+        texts, *model_and_tokenizer, drop_bos_token=False
     )
-    logits2_correct = logits(
-        [prompt + " " + completions[1]], model, tokenizer, drop_bos_token=False
-    )
 
-    with hf.classify_no_batch.cache(model_and_tokenizer, "a") as cached_prompt_prefix:
-        with hf.classify_no_batch.cache(
-            cached_prompt_prefix, end_of_prompt + "b c"
-        ) as cached_prompt:
-            with hf.classify_no_batch.cache(
-                cached_prompt, end_of_prompt + "d"
-            ) as cached_exemplars:
-                logits1 = logits([end_of_prompt + completions[0]], *cached_exemplars)
-                logits2 = logits([end_of_prompt + completions[1]], *cached_exemplars)
-            logits3 = logits([end_of_prompt + "d e f"], *cached_prompt)
-        logits4 = logits([end_of_prompt + "b c d x y z"], *cached_prompt_prefix)
+    assert torch.allclose(logits1, logits_correct(["a b c d e f"]), atol=atol)
+    assert torch.allclose(logits2, logits_correct(["a b c d x"]), atol=atol)
+    assert torch.allclose(logits3, logits_correct(["a b c 1 2 3"]), atol=atol)
+    assert torch.allclose(logits4, logits_correct(["a b c d"]), atol=atol)
 
-    assert logits1_correct.shape == logits1.shape
-    assert torch.allclose(logits1_correct, logits1, atol=atol)
+    # Test clear_cache_on_exit
+    with pytest.raises(AttributeError, match="This model is no longer usable."):
+        cached_a[0](input_ids=None, attention_mask=None)
 
-    assert logits2_correct.shape == logits2.shape
-    assert torch.allclose(logits2_correct, logits2, atol=atol)
-
-    assert logits1_correct.shape == logits3.shape
-    assert torch.allclose(logits1_correct, logits3, atol=atol)
-
-    assert logits2_correct.shape == logits4.shape
-    assert torch.allclose(logits2_correct, logits4, atol=atol)
+    with hf.classify_no_batch.cache(
+        model_and_tokenizer, "a", clear_cache_on_exit=False
+    ) as cached_a:
+        logits(["whatever"], *cached_a)
+    assert hasattr(cached_a[0], "_cappr_past")
 
 
 # TODO: this is almost completely copy-pasted from tests/test_llama_cpp_classify. Should

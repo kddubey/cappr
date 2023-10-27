@@ -63,7 +63,8 @@ def does_tokenizer_prepend_space_to_first_token(
         # For GPT-2, they're different.
     """
     # TODO: should somehow check if it's not a SentencePiece tokenizer / if it's a BPE
-    # tokenizer? TBH I'm not sure how to generalize this properly.
+    # tokenizer? We should be able to try running the tokenizer on something and seeing
+    # what happens. That'd also let us get rid of the crude isinstance check
     return not isinstance(tokenizer, (LlamaTokenizer, LlamaTokenizerFast))
 
 
