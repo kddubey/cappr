@@ -92,7 +92,7 @@ class _ModelWithCache:
         encoding = {"input_ids": input_ids, "attention_mask": attention_mask}
 
         if self._cappr_past is None:
-            with torch.no_grad(), hf._utils._model_eval_mode(self._model):
+            with hf._utils.set_up_model(self._model):
                 out: CausalLMOutputWithPast = self._model(**encoding)
             self._cappr_past = encoding, out
             return out
@@ -109,7 +109,7 @@ class _ModelWithCache:
             (encoding_past["attention_mask"], encoding["attention_mask"]), dim=1
         )
         # Everything should now be aligned 🤞 🙏
-        with torch.no_grad(), hf._utils._model_eval_mode(self._model):
+        with hf._utils.set_up_model(self._model):
             out = self._model(
                 input_ids=encoding["input_ids"],
                 attention_mask=attention_mask,

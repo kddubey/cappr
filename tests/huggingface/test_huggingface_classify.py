@@ -60,7 +60,7 @@ def _load_tokenizer(model_name: str) -> PreTrainedTokenizerBase:
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_name)
     except:
-        # tokenizer_file not found b/c it was hard-coded. Find it locally.
+        # tokenizer_file not found. Find it locally
         local_path = hf_hub.try_to_load_from_cache(model_name, "tokenizer.json")
         tokenizer = AutoTokenizer.from_pretrained(model_name, tokenizer_file=local_path)
     return tokenizer
@@ -81,12 +81,23 @@ def tokenizer(model_name: str) -> PreTrainedTokenizerBase:
 def model_and_tokenizer(
     model_name: str,
 ) -> tuple[ModelForCausalLM, PreTrainedTokenizerBase]:
-    # This input is directly from a user, so we can't assume the model and tokenizer are
+    # The model_and_tokenizer input is directly from a user, so we can't assume they're
     # set up correctly. For testing, that means we shouldn't just return the fixtures:
     # return model, tokenizer
     # Instead, load them from scratch like a user would:
-    model = AutoModelForCausalLM.from_pretrained(model_name)
+    model: ModelForCausalLM = AutoModelForCausalLM.from_pretrained(model_name)
     tokenizer = _load_tokenizer(model_name)
+
+    # Also, assume the worst case: set attributes of the model and tokenizer to values
+    # that would break CAPPr, if not for the context managers
+    model.train()  # LMs w/ dropout (GPT-2) will cause mismatched logits b/c random
+    model.config.return_dict = False  # out.logits fails (?)
+    setattr(model.config, "use_cache", False)  # out.past_key_values fails
+
+    tokenizer.padding_side = "left"  # mismatched logits content b/c of position IDs
+    if hasattr(tokenizer, "add_eos_token"):
+        setattr(tokenizer, "add_eos_token", True)  # mismatched logits shape
+
     return model, tokenizer
 
 
@@ -106,10 +117,7 @@ def atol() -> float:
 def test_set_up_model_and_tokenizer(model_and_tokenizer):
     """
     Tests that the context manager doesn't change any attributes of the model or
-    tokenizer when we've exited the context. It's conceivable that someone uses CAPPr to
-    evaluate their model on a downstream application during a train-and-validate loop.
-    Or they're using CAPPr as part of a larger system where the tokenizer needs to be
-    configured differently.
+    tokenizer after exiting the context.
     """
     model, tokenizer = model_and_tokenizer
     # Not sure why type inference isn't catching these
@@ -119,8 +127,11 @@ def test_set_up_model_and_tokenizer(model_and_tokenizer):
     # Grab old attribute values.
     model_attribute_to_old_value = {
         "training": model.training,
-        # we could keep recursing on children, but whatever
         **{i: module.training for i, module in enumerate(model.children())},
+    }
+    model_config_attribute_to_old_value = {
+        "return_dict": model.config.return_dict,
+        "use_cache": getattr(model.config, "use_cache", None),
     }
     tokenizer_attributes = [
         "pad_token_id",
@@ -136,13 +147,19 @@ def test_set_up_model_and_tokenizer(model_and_tokenizer):
     }
 
     # Enter the context
+    assert torch.is_grad_enabled()
     with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
+        assert not torch.is_grad_enabled()
         model, tokenizer = model_and_tokenizer
+    assert torch.is_grad_enabled()
 
     # Exit the context. No attributes should have changed.
     assert model.training == model_attribute_to_old_value["training"]
     for i, module in enumerate(model.children()):
         assert module.training == model_attribute_to_old_value[i]
+
+    for attribute, old_value in model_config_attribute_to_old_value.items():
+        assert getattr(model.config, attribute, None) == old_value
 
     for attribute, old_value in tokenizer_attribute_to_old_value.items():
         assert getattr(tokenizer, attribute, None) == old_value

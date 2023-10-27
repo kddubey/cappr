@@ -103,7 +103,7 @@ def _keys_values_prompts(
     encodings = tokenizer(prompts_repeated, return_tensors="pt", padding=True).to(
         model.device
     )
-    with torch.no_grad():
+    with hf._utils.set_up_model(model):
         out: CausalLMOutputWithPast = model(**encodings)
 
     offsets: torch.Tensor = encodings["attention_mask"].sum(dim=1)

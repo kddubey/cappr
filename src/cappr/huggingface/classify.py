@@ -178,7 +178,7 @@ def _keys_values_prompts(
     encodings: BatchEncoding = tokenizer(prompts, return_tensors="pt", padding=True).to(
         model.device
     )
-    with torch.no_grad():
+    with hf._utils.set_up_model(model):
         out: CausalLMOutputWithPast = model(**encodings)
 
     past_key_values: tuple[tuple[torch.Tensor, torch.Tensor]] = out.past_key_values
@@ -301,7 +301,7 @@ def _blessed_helper(
     )
 
     # Everything should now be aligned 🤞 🙏
-    with torch.no_grad():
+    with hf._utils.set_up_model(model):
         completions_out: CausalLMOutputWithPast = model(
             input_ids=completions_input_ids,
             attention_mask=attention_mask,
@@ -342,31 +342,6 @@ def _logits_completions_given_prompts(
     completions: Sequence[str],
     end_of_prompt: Literal[" ", ""] = " ",
 ):
-    """
-    TODO: convert docstring to numpy style
-
-    If `texts` is
-
-    ```python
-    [prompt + end_of_prompt + completions
-     for prompt in prompts
-     for completion in completions]
-    ```
-
-    then this function returns
-
-    1. `logits`: tensor with shape
-
-        (`len(texts)`, max # tokens `completions`, `tokenizer.vocab_size`)
-
-    where `logits[i,j]` are the `model`'s logits for token `j+1` of the completion in
-    `texts[i]` given the prompt in `texts[i]`. This tensor includes logits for
-    right-padded tokens. Use the `encodings["attention_mask"]` to ignore them before
-    further processing.
-
-    2. `encodings`: `BatchEncoding` containing the input IDs, attention mask,
-    and position offsets.
-    """
     if not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer):
         end_of_prompt = ""
     completions = [end_of_prompt + completion for completion in completions]
@@ -385,30 +360,6 @@ def _logits_completions_given_prompts_examples(
     tokenizer: PreTrainedTokenizerBase,
     examples: Sequence[Example],
 ):
-    """
-    TODO: convert docstring to numpy style
-
-    If `texts` is
-
-    ```python
-    [example.prompt + example.end_of_prompt + completion
-     for example in examples
-     for completion in example.completions]
-    ```
-    then this function returns
-
-    1. `logits`: tensor with shape
-
-        (`len(texts)`, max # tokens `completions`, `tokenizer.vocab_size`)
-
-    where `logits[i,j]` are the `model`'s logits for token `j+1` of the completion in
-    `texts[i]` given the prompt in `texts[i]`. This tensor includes logits for
-    right-padded tokens. Use the `encodings["attention_mask"]` to ignore them before
-    further processing.
-
-    2. `encodings`: `BatchEncoding` containing the input IDs, attention mask,
-    and position offsets.
-    """
     should_end_of_prompt_be_empty = (
         not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer)
     )
@@ -434,23 +385,6 @@ def _logits_completions_given_prompts_examples(
 def _logits_to_log_probs_completions(
     logits: torch.Tensor, encodings: Mapping[str, torch.Tensor], from_examples: bool
 ) -> list[list[float]]:
-    """
-    TODO: convert docstring to numpy style
-
-    Returns a list `log_probs_completions` where `log_probs_completions[i][j]` is the
-    log-probablity of *completion* token
-
-        `encodings['input_ids'][i,j]`
-
-    given its previous tokens
-
-        `encodings['input_ids'][i,:j]`
-
-    Pad tokens, i.e., tokens where `encodings['attention_mask'] == 0` are excluded.
-
-    `logits[i,j]` is assumed to be an unnormalized distribution (over tokens in
-    the vocab) given tokens `input_ids[i,:j]`.
-    """
     if (not from_examples) and logits.shape[1] == 1:
         # Single-token optimization: all of the completions are always a single token.
         # So we just need to intelligently slice out their tokens from the prompts' last
