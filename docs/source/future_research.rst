@@ -28,8 +28,7 @@ hypothesis is two-fold:
   demonstrated in the `COPA demo`_.
 - In text generation, the model can generate "I don't know", or make a choice that isn't
   one in the given list of choices. CAPPr instead has the model to make its "best" guess
-  among the given choices. This is demonstrated in the `Craigslist Bargains demo`_ and
-  the `Banking 77 demo`_.
+  among the given choices. This is demonstrated in the `Banking 77 demo`_.
 
 The `calibration
 <https://en.wikipedia.org/wiki/Probabilistic_classification#Probability_calibration>`_

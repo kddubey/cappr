@@ -106,7 +106,7 @@ class _ModelWithCache:
 
         encoding_past, out_past = self._cappr_past
 
-        # Set position_ids to what they'd had we fed prompt + completion together
+        # Set position_ids to what they'd be had we fed prompt + completion together
         _num_completion_tokens = encoding["input_ids"].shape[1]
         position_ids = (
             torch.arange(_num_completion_tokens, device=self._model.device)
@@ -166,7 +166,7 @@ def cache(
 
     Note
     ----
-    Do NOT::
+    Do **not**::
 
         with cache(model_and_tokenizer, "string") as model_and_tokenizer:
             # use model_and_tokenizer

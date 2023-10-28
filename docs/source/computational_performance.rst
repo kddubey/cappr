@@ -31,7 +31,8 @@ See `this notebook
 the code which produced the figure above.
 
 .. note:: For :mod:`cappr.llama_cpp.classify`, batch inference currently isn't possible.
-          As a result, text generation is slightly faster.
+          As a result, text generation is typically faster when there are many
+          completions.
 
 
 Weaknesses
