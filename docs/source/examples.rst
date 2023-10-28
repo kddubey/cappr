@@ -1,7 +1,8 @@
 Examples
 ========
 
-See the **Example** section for each of these functions:
+For minimal examples you can run right now, see the **Example** section for each of
+these functions:
 
 :func:`cappr.openai.classify.predict`
 
@@ -15,6 +16,8 @@ See the **Example** section for each of these functions:
 
 :func:`cappr.llama_cpp.classify.predict_examples`
 
-And see the `Usage <https://github.com/kddubey/cappr/tree/main#usage>`_ section in the
-repo README, and the `demos in the repo
+Also see the `Usage <https://github.com/kddubey/cappr/tree/main#usage>`_ section in the
+repo README.
+
+For fully worked out examples, see the `demos in the repo
 <https://github.com/kddubey/cappr/tree/main/demos>`_.

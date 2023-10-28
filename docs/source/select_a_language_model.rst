@@ -106,7 +106,8 @@ For a minimal example of running an `AutoGPTQ`_ StableLM model, see `this notebo
 For a minimal example of running an `AutoAWQ`_ Mistral model, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/autoawq.ipynb>`_.
 
-For simple GPT-2 CPU examples, see the **Example** section for each of these functions:
+For minimal examples you can run right now, see the **Example** section for each of
+these functions:
 
 :func:`cappr.huggingface.classify.predict`
 
@@ -169,7 +170,8 @@ For an example of running Llama 2 on the AG News challenge, where instructions a
 cached, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/ag_news.ipynb>`_.
 
-For simple examples, see the **Example** section for each of these functions:
+For minimal examples you can run right now, see the **Example** section for each of
+these functions:
 
 :func:`cappr.llama_cpp.classify.predict`
 
@@ -197,12 +199,12 @@ Here's a quick example:
    # too long
 
 CAPPr is currently only compatible with `/v1/completions`_ models (because we can
-request log-probabilities of tokens in an *inputted* string). Unfortunately, with the
-exception of ``davinci-002`` and ``babbage-002`` (weak, non-instruction-trained models),
-**OpenAI will deprecate all instruct models on January 4, 2024**. While
-``gpt-3.5-turbo-instruct`` is compatible with `/v1/completions`_, it won't support
-setting `echo=True` and `logprobs=1` after October 5, 2023. So CAPPr can't support this
-model.
+request log-probabilities of tokens in an *inputted* string). **OpenAI will deprecate
+all instruct models on January 4, 2024**, leaving only ``davinci-002`` and
+``babbage-002`` (weak, non-instruction-trained models) to be compatible with CAPPr.
+While ``gpt-3.5-turbo-instruct`` is compatible with `/v1/completions`_, this model
+doesn't support `echo=True, logprobs=1` since October 5, 2023. So CAPPr can't support
+this model.
 
 .. _/v1/completions: https://platform.openai.com/docs/models/model-endpoint-compatibility
 
@@ -225,7 +227,8 @@ Great zero-shot WSC performance with ``text-curie-001`` is achieved in `this not
 Decent performance on RAFT training sets is demonstrated in `these notebooks
 <https://github.com/kddubey/cappr/blob/main/demos/openai/raft>`_.
 
-For simple examples, see the **Example** section for each of these functions:
+For minimal examples you can run right now, see the **Example** section for each of
+these functions:
 
 :func:`cappr.openai.classify.predict`
 
