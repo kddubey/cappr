@@ -30,6 +30,7 @@ sys.path.insert(1, os.path.join(sys.path[0], ".."))
 from _base import BaseTestPromptsCompletions, BaseTestExamples
 import _test_form
 import _test_content
+from _protocol import classify_module
 
 
 ########################################################################################
@@ -162,13 +163,12 @@ def test_set_up_model_and_tokenizer(
 )
 @pytest.mark.parametrize("batch_size", (2, 1))
 def test_token_logprobs(
-    module, texts, model_and_tokenizer, batch_size, end_of_prompt=" "
+    module: classify_module, texts, model_and_tokenizer, batch_size, end_of_prompt=" "
 ):
     """
     Tests that the model's token log probabilities are correct by testing against an
     unbatched and carefully, manually indexed result.
     """
-    module: classify = module  # just for the type hint
     log_probs_texts_observed = module.token_logprobs(
         texts, model_and_tokenizer, batch_size=batch_size
     )
