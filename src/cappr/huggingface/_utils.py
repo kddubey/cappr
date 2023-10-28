@@ -76,18 +76,20 @@ def does_tokenizer_prepend_space_to_first_token(
 
 
 @contextmanager
-def _model_eval_mode(model: ModelForCausalLM):
+def _eval_mode(model: ModelForCausalLM):
     """
     In this context, the model is set in eval mode.
     """
     is_training = model.training
-    model.eval()
-    yield
-    model.train(is_training)
+    try:
+        model.eval()
+        yield
+    finally:
+        model.train(is_training)
 
 
 @contextmanager
-def _model_no_grad(model: ModelForCausalLM):  # model given to keep interface the same
+def _no_grad(model: ModelForCausalLM):  # model given to keep interface the same
     """
     In this context, gradients are not computed. This saves memory.
     """
@@ -96,7 +98,7 @@ def _model_no_grad(model: ModelForCausalLM):  # model given to keep interface th
 
 
 @contextmanager
-def _model_return_dict(model: ModelForCausalLM):
+def _return_dict(model: ModelForCausalLM):
     """
     In this context, the model returns a dataclass when it's called. (B/c of previous
     versions of `transformers`, the attribute is called `return_dict`.)
@@ -104,76 +106,38 @@ def _model_return_dict(model: ModelForCausalLM):
     hasattr_return_dict = hasattr(model, "config") and hasattr(
         model.config, "return_dict"
     )
-    if hasattr_return_dict:
-        return_dict = model.config.return_dict
-        model.config.return_dict = True
-    yield
-    if hasattr_return_dict:
-        model.config.return_dict = return_dict
+    try:
+        if hasattr_return_dict:
+            return_dict = model.config.return_dict
+            model.config.return_dict = True
+        yield
+    finally:
+        if hasattr_return_dict:
+            model.config.return_dict = return_dict
 
 
 @contextmanager
-def _model_use_cache(model: ModelForCausalLM):
+def _use_cache(model: ModelForCausalLM):
     """
     In this context, the model output includes a `past_key_values` attribute.
     """
     hasattr_use_cache = hasattr(model, "config") and hasattr(model.config, "use_cache")
     if hasattr_use_cache:
         use_cache: bool = getattr(model.config, "use_cache")
-        setattr(model.config, "use_cache", True)
-    yield
-    if hasattr_use_cache:
-        setattr(model.config, "use_cache", use_cache)
+    try:
+        if hasattr_use_cache:
+            setattr(model.config, "use_cache", True)
+        yield
+    finally:
+        if hasattr_use_cache:
+            setattr(model.config, "use_cache", use_cache)
 
 
-@contextmanager
-def _tokenizer_pad(tokenizer: PreTrainedTokenizerBase):
-    """
-    In this context, the pad token is set (if it's not set already) to the EOS token so
-    that batch inference is possible. These get masked out. Keep in mind that you need
-    to be careful about setting position IDs correctly.
-    """
-    pad_token_id = tokenizer.pad_token_id
-    # Note: a PreTrainedTokenizerBase tokenizer is smart about setting auxiliary
-    # attributes, e.g., it updates tokenizer.special_tokens_map after setting
-    # tokenizer.pad_token_id
-    if pad_token_id is None:
-        tokenizer.pad_token_id = tokenizer.eos_token_id
-    yield
-    tokenizer.pad_token_id = pad_token_id
-
-
-@contextmanager
-def _tokenizer_pad_on_right(tokenizer: PreTrainedTokenizerBase):
-    """
-    In this context, the padding side is set to right. Left-padding would alter position
-    IDs for non-pad tokens, which makes things a bit more confusing.
-    """
-    padding_side = tokenizer.padding_side
-    tokenizer.padding_side = "right"
-    yield
-    tokenizer.padding_side = padding_side
-
-
-@contextmanager
-def _tokenizer_dont_add_eos_token(tokenizer: PreTrainedTokenizerBase):
-    """
-    In this context, don't add an end-of-sentence token.
-    """
-    has_attr_add_eos_token = hasattr(tokenizer, "add_eos_token")
-    if has_attr_add_eos_token:
-        add_eos_token: bool = getattr(tokenizer, "add_eos_token")
-        setattr(tokenizer, "add_eos_token", False)
-    yield
-    if has_attr_add_eos_token:
-        setattr(tokenizer, "add_eos_token", add_eos_token)
-
-
-_DEFAULT_CONTEXTS_MODEL = (
-    _model_eval_mode,
-    _model_no_grad,
-    _model_return_dict,
-    _model_use_cache,
+_DEFAULT_CONTEXT_MANAGERS_MODEL = (
+    _eval_mode,
+    _no_grad,
+    _return_dict,
+    _use_cache,
 )
 """
 Default model settings:
@@ -184,10 +148,49 @@ Default model settings:
 """
 
 
-_DEFAULT_CONTEXTS_TOKENIZER = (
-    _tokenizer_pad,
-    _tokenizer_pad_on_right,
-    _tokenizer_dont_add_eos_token,
+@contextmanager
+def _pad_on_right(tokenizer: PreTrainedTokenizerBase):
+    """
+    In this context, the pad token is set (if it's not set already) to the EOS token so
+    that batch inference is possible. These get masked out. The padding side is set to
+    right. Left-padding would alter position IDs for non-pad tokens, which makes things
+    a bit more confusing.
+    """
+    pad_token_id = tokenizer.pad_token_id
+    padding_side = tokenizer.padding_side
+    try:
+        if pad_token_id is None:
+            tokenizer.pad_token_id = tokenizer.eos_token_id
+            # Note: a PreTrainedTokenizerBase tokenizer is smart about setting auxiliary
+            # attributes, e.g., it updates tokenizer.special_tokens_map after setting
+            # tokenizer.pad_token_id
+        tokenizer.padding_side = "right"
+        yield
+    finally:
+        tokenizer.pad_token_id = pad_token_id
+        tokenizer.padding_side = padding_side
+
+
+@contextmanager
+def dont_add_eos_token(tokenizer: PreTrainedTokenizerBase):
+    """
+    In this context, don't add an end-of-sentence token.
+    """
+    has_attr_add_eos_token = hasattr(tokenizer, "add_eos_token")
+    if has_attr_add_eos_token:
+        add_eos_token: bool = getattr(tokenizer, "add_eos_token")
+    try:
+        if has_attr_add_eos_token:
+            setattr(tokenizer, "add_eos_token", False)
+        yield
+    finally:
+        if has_attr_add_eos_token:
+            setattr(tokenizer, "add_eos_token", add_eos_token)
+
+
+_DEFAULT_CONTEXT_MANAGERS_TOKENIZER = (
+    _pad_on_right,
+    dont_add_eos_token,
 )
 """
 Default tokenizer settings:
@@ -207,14 +210,17 @@ def _combine_context_managers(context_managers, obj):
 
 
 @contextmanager
-def set_up_model(model: ModelForCausalLM, context_managers=_DEFAULT_CONTEXTS_MODEL):
+def set_up_model(
+    model: ModelForCausalLM, context_managers=_DEFAULT_CONTEXT_MANAGERS_MODEL
+):
     with _combine_context_managers(context_managers, model):
         yield
 
 
 @contextmanager
 def set_up_tokenizer(
-    tokenizer: PreTrainedTokenizerBase, context_managers=_DEFAULT_CONTEXTS_TOKENIZER
+    tokenizer: PreTrainedTokenizerBase,
+    context_managers=_DEFAULT_CONTEXT_MANAGERS_TOKENIZER,
 ):
     with _combine_context_managers(context_managers, tokenizer):
         yield
@@ -222,21 +228,15 @@ def set_up_tokenizer(
 
 @contextmanager
 def set_up_model_and_tokenizer(
-    model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
-    context_managers_model: Collection = _DEFAULT_CONTEXTS_MODEL,
-    context_managers_tokenizer: Collection = _DEFAULT_CONTEXTS_TOKENIZER,
+    model: ModelForCausalLM,
+    tokenizer: PreTrainedTokenizerBase,
+    context_managers_model: Collection = _DEFAULT_CONTEXT_MANAGERS_MODEL,
+    context_managers_tokenizer: Collection = _DEFAULT_CONTEXT_MANAGERS_TOKENIZER,
 ):
     """
     In this context, internal attributes of the model and tokenizer are set to enable
     correct, batched inference.
-
-    Usage::
-
-        with set_up_model_and_tokenizer(model_and_tokenizer):
-            model, tokenizer = model_and_tokenizer
-            # your model/tokenization code
     """
-    model, tokenizer = model_and_tokenizer
     with set_up_model(model, context_managers_model), set_up_tokenizer(
         tokenizer, context_managers_tokenizer
     ):
@@ -248,14 +248,16 @@ def dont_add_bos_token(tokenizer: PreTrainedTokenizerBase):
     """
     In this context, don't add a beginning-of-sentence token.
     """
-    if hasattr(tokenizer, "add_bos_token"):
+    hasattr_add_bos_token = hasattr(tokenizer, "add_bos_token")
+    if hasattr_add_bos_token:
         add_bos_token: bool = getattr(tokenizer, "add_bos_token")
-        setattr(tokenizer, "add_bos_token", False)
-
-    yield
-
-    if hasattr(tokenizer, "add_bos_token"):
-        setattr(tokenizer, "add_bos_token", add_bos_token)
+    try:
+        if hasattr_add_bos_token:
+            setattr(tokenizer, "add_bos_token", False)
+        yield
+    finally:
+        if hasattr_add_bos_token:
+            setattr(tokenizer, "add_bos_token", add_bos_token)
 
 
 ########################################################################################
@@ -271,11 +273,10 @@ def drop_first_token(
 
 def logits_texts(
     texts: Sequence[str],
-    model: ModelForCausalLM,
-    tokenizer: PreTrainedTokenizerBase,
+    model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     padding: bool | None = None,
     drop_bos_token: bool = True,
-    dont_add_eos_token: bool = True,
+    do_not_add_eos_token: bool = True,
 ) -> tuple[torch.Tensor, BatchEncoding]:
     """
     Basically::
@@ -284,12 +285,11 @@ def logits_texts(
 
     The kwargs are set for CAPPr's convenience.
     """
+    model, tokenizer = model_and_tokenizer
     # TODO: auto-batch?
     if padding is None:
         padding = getattr(tokenizer, "pad_token_id", None) is not None
-    with _tokenizer_dont_add_eos_token(
-        tokenizer
-    ) if dont_add_eos_token else nullcontext():
+    with dont_add_eos_token(tokenizer) if do_not_add_eos_token else nullcontext():
         encodings: BatchEncoding = tokenizer(
             texts, return_tensors="pt", padding=padding
         ).to(model.device)

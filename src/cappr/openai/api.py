@@ -231,14 +231,14 @@ def _set_openai_api_key(api_key: str | None = None):
     is closest in scope.
     """
     api_key_from_module = openai.api_key
-    # Priority is kinda in increasing order of scope
-    openai.api_key = api_key or api_key_from_module or os.getenv("OPENAI_API_KEY")
-    # The openai module will raise a good error (when a request is submitted) if this
-    # module attr is None in the end
-
-    yield
-
-    openai.api_key = api_key_from_module
+    try:
+        # Priority is kinda in increasing order of scope
+        openai.api_key = api_key or api_key_from_module or os.getenv("OPENAI_API_KEY")
+        # The openai module will raise a good error (when a request is submitted) if
+        # this module attr is None in the end
+        yield
+    finally:
+        openai.api_key = api_key_from_module
 
 
 def gpt_complete(

@@ -267,13 +267,13 @@ def cache(
         with cache(model_and_tokenizer, "a") as cached_a:
             with cache(cached_a, delim + "b c") as cached_a_b_c:
                 with cache(cached_a_b_c, delim + "d") as cached_a_b_c_d:
-                    logits1 = logits([delim + "e f"], *cached_a_b_c_d)
-                    logits2 = logits([delim + "x"], *cached_a_b_c_d)
-                logits3 = logits([delim + "1 2 3"], *cached_a_b_c)
-            logits4 = logits([delim + "b c d"], *cached_a)
+                    logits1 = logits([delim + "e f"], cached_a_b_c_d)
+                    logits2 = logits([delim + "x"], cached_a_b_c_d)
+                logits3 = logits([delim + "1 2 3"], cached_a_b_c)
+            logits4 = logits([delim + "b c d"], cached_a)
 
         logits_correct = lambda texts, **kwargs: logits(
-            texts, *model_and_tokenizer, drop_bos_token=False
+            texts, model_and_tokenizer, drop_bos_token=False
         )
 
         atol = 1e-4
@@ -288,7 +288,7 @@ def cache(
     past = getattr(model, "_cappr_past", None)
 
     # Because we're implicitly concatenating strings, we should never add an EOS token
-    with hf._utils._tokenizer_dont_add_eos_token(tokenizer):
+    with hf._utils.dont_add_eos_token(tokenizer):
         is_first = past is None
         with hf._utils.dont_add_bos_token(tokenizer) if not is_first else nullcontext():
             encoding: BatchEncoding = tokenizer([prefix], return_tensors="pt").to(
@@ -331,7 +331,7 @@ def _log_probs_conditional_prompt(
         )
         for completion in completions:
             logits, encodings = hf._utils.logits_texts(
-                [end_of_prompt + completion], *cached
+                [end_of_prompt + completion], cached
             )
             encodings = {
                 key: torch.cat((encoding_prompt[key], encodings[key]), dim=1)

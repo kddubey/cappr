@@ -81,8 +81,6 @@ def _keys_values_prompts(
     """
     Only for testing purposes.
     """
-    if not tokenizer.padding_side == "right":
-        raise ValueError("Gotta use right padding to ensure position IDs are correct.")
     if isinstance(prompts, str):
         raise TypeError("prompts must be a sequence of strings, not a string itself.")
     if not isinstance(num_completions_per_prompt, int):
@@ -100,10 +98,10 @@ def _keys_values_prompts(
         for prompt, num_repeats in zip(prompts, num_completions_per_prompt)
         for _ in range(num_repeats)
     ]
-    encodings = tokenizer(prompts_repeated, return_tensors="pt", padding=True).to(
-        model.device
-    )
-    with hf._utils.set_up_model(model):
+    with hf._utils.set_up_model_and_tokenizer(model, tokenizer):
+        encodings = tokenizer(prompts_repeated, return_tensors="pt", padding=True).to(
+            model.device
+        )
         out: CausalLMOutputWithPast = model(**encodings)
 
     offsets: torch.Tensor = encodings["attention_mask"].sum(dim=1)
@@ -129,11 +127,12 @@ def _prompts_offsets(
         num_completions_per_prompt = torch.tensor(num_completions_per_prompt)
     prompts = list(prompts)
     padding = len(prompts) > 1
-    offsets: torch.Tensor = (
-        tokenizer(prompts, return_tensors="pt", padding=padding)["attention_mask"]
-        .sum(dim=1)
-        .repeat_interleave(num_completions_per_prompt, dim=0)
-    )
+    with hf._utils.set_up_tokenizer(tokenizer):
+        offsets: torch.Tensor = (
+            tokenizer(prompts, return_tensors="pt", padding=padding)["attention_mask"]
+            .sum(dim=1)
+            .repeat_interleave(num_completions_per_prompt, dim=0)
+        )
     if getattr(tokenizer, "add_bos_token", False):
         # Drop the first <s> token after we're done encoding so that the shape is
         # consistent w/ other tokenizers
@@ -156,7 +155,8 @@ def _logits_completions_given_prompts(
         for prompt in prompts
         for completion in completions
     ]
-    logits, encodings = hf._utils.logits_texts(texts, model, tokenizer)
+    with hf._utils.set_up_model_and_tokenizer(model, tokenizer):
+        logits, encodings = hf._utils.logits_texts(texts, (model, tokenizer))
     # Need these indices to slice completion tokens
     encodings["offsets"] = _prompts_offsets(
         tokenizer, prompts, num_completions_per_prompt=len(completions)
@@ -174,7 +174,8 @@ def _logits_completions_given_prompts_examples(
         for example in examples
         for completion in example.completions
     ]
-    logits, encodings = hf._utils.logits_texts(texts, model, tokenizer)
+    with hf._utils.set_up_model_and_tokenizer(model, tokenizer):
+        logits, encodings = hf._utils.logits_texts(texts, (model, tokenizer))
     # Need these indices to slice completion tokens
     prompts = [example.prompt for example in examples]
     num_completions_per_prompt = [len(example.completions) for example in examples]
@@ -283,24 +284,22 @@ def log_probs_conditional(
         # [[-9.7],        [[log Pr(z | a, b, c)],
         #  [-0.2, -0.03]]  [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
-    with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
-        model, tokenizer = model_and_tokenizer
 
-        @_batch.flatten
-        @_batch.batchify(
-            batchable_arg="prompts",
-            progress_bar_desc="conditional log-probs (no cache)",
+    @_batch.flatten
+    @_batch.batchify(
+        batchable_arg="prompts",
+        progress_bar_desc="conditional log-probs (no cache)",
+    )
+    def log_probs_completions_batch(
+        prompts, show_progress_bar=show_progress_bar, batch_size=batch_size
+    ):
+        logits, encodings = _logits_completions_given_prompts(
+            *model_and_tokenizer, prompts, completions, end_of_prompt=end_of_prompt
         )
-        def log_probs_completions_batch(
-            prompts, show_progress_bar=show_progress_bar, batch_size=batch_size
-        ):
-            logits, encodings = _logits_completions_given_prompts(
-                model, tokenizer, prompts, completions, end_of_prompt=end_of_prompt
-            )
-            return _logits_to_log_probs_completions(logits, encodings)
+        return _logits_to_log_probs_completions(logits, encodings)
 
-        log_probs_completions = log_probs_completions_batch(prompts)
-        return list(_batch.constant(log_probs_completions, size=len(completions)))
+    log_probs_completions = log_probs_completions_batch(prompts)
+    return list(_batch.constant(log_probs_completions, size=len(completions)))
 
 
 @classify._log_probs_conditional_examples
@@ -391,27 +390,25 @@ def log_probs_conditional_examples(
     # Little weird. I want my IDE to know that examples is always a Sequence[Example]
     # b/c of the decorator.
     examples: Sequence[Example] = examples
-    with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
-        model, tokenizer = model_and_tokenizer
 
-        @_batch.flatten
-        @_batch.batchify(
-            batchable_arg="examples",
-            progress_bar_desc="conditional log-probs (no cache)",
+    @_batch.flatten
+    @_batch.batchify(
+        batchable_arg="examples",
+        progress_bar_desc="conditional log-probs (no cache)",
+    )
+    def log_probs_completions_batch(
+        examples, show_progress_bar=show_progress_bar, batch_size=batch_size
+    ):
+        logits, encodings = _logits_completions_given_prompts_examples(
+            *model_and_tokenizer, examples
         )
-        def log_probs_completions_batch(
-            examples, show_progress_bar=show_progress_bar, batch_size=batch_size
-        ):
-            logits, encodings = _logits_completions_given_prompts_examples(
-                model, tokenizer, examples
-            )
-            return _logits_to_log_probs_completions(logits, encodings)
+        return _logits_to_log_probs_completions(logits, encodings)
 
-        log_probs_completions = log_probs_completions_batch(examples)
-        num_completions_per_prompt = [len(example.completions) for example in examples]
-        return list(
-            _batch.variable(log_probs_completions, sizes=num_completions_per_prompt)
-        )
+    log_probs_completions = log_probs_completions_batch(examples)
+    num_completions_per_prompt = [len(example.completions) for example in examples]
+    return list(
+        _batch.variable(log_probs_completions, sizes=num_completions_per_prompt)
+    )
 
 
 @classify._predict_proba

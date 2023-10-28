@@ -147,23 +147,20 @@ def log_probs_conditional(
         # [[-9.7],        [[log Pr(z | a, b, c)],
         #  [-0.2, -0.03]]  [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
-    with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
-        model, tokenizer = model_and_tokenizer
-        log_probs_completions = []
-        for prompt in _batch.ProgressBar(
-            prompts, show_progress_bar=show_progress_bar, desc="conditional log-probs"
-        ):
-            for completion in completions:
-                logits, encodings = hf_no_cache._logits_completions_given_prompts(
-                    model,
-                    tokenizer,
-                    [prompt],
-                    [completion],
-                    end_of_prompt=end_of_prompt,
-                )
-                log_probs_completions.append(
-                    hf_no_cache._logits_to_log_probs_completions(logits, encodings)[0]
-                )
+    log_probs_completions = []
+    for prompt in _batch.ProgressBar(
+        prompts, show_progress_bar=show_progress_bar, desc="conditional log-probs"
+    ):
+        for completion in completions:
+            logits, encodings = hf_no_cache._logits_completions_given_prompts(
+                *model_and_tokenizer,
+                [prompt],
+                [completion],
+                end_of_prompt=end_of_prompt,
+            )
+            log_probs_completions.append(
+                hf_no_cache._logits_to_log_probs_completions(logits, encodings)[0]
+            )
     return list(_batch.constant(log_probs_completions, size=len(completions)))
 
 
@@ -254,23 +251,20 @@ def log_probs_conditional_examples(
     # Little weird. I want my IDE to know that examples is always a Sequence[Example]
     # b/c of the decorator.
     examples: Sequence[Example] = examples
-    with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
-        model, tokenizer = model_and_tokenizer
-        log_probs_completions = []
-        for example in _batch.ProgressBar(
-            examples, show_progress_bar=show_progress_bar, desc="conditional log-probs"
-        ):
-            for completion in example.completions:
-                logits, encodings = hf_no_cache._logits_completions_given_prompts(
-                    model,
-                    tokenizer,
-                    [example.prompt],
-                    [completion],
-                    example.end_of_prompt,
-                )
-                log_probs_completions.append(
-                    hf_no_cache._logits_to_log_probs_completions(logits, encodings)[0]
-                )
+    log_probs_completions = []
+    for example in _batch.ProgressBar(
+        examples, show_progress_bar=show_progress_bar, desc="conditional log-probs"
+    ):
+        for completion in example.completions:
+            logits, encodings = hf_no_cache._logits_completions_given_prompts(
+                *model_and_tokenizer,
+                [example.prompt],
+                [completion],
+                example.end_of_prompt,
+            )
+            log_probs_completions.append(
+                hf_no_cache._logits_to_log_probs_completions(logits, encodings)[0]
+            )
     num_completions_per_prompt = [len(example.completions) for example in examples]
     return list(
         _batch.variable(log_probs_completions, sizes=num_completions_per_prompt)

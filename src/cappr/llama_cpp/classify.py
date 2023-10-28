@@ -191,14 +191,16 @@ def cache(model: Llama, prefix: str, reset_model: bool = True):
     if reset_model:
         model.reset()
     n_tokens = model.n_tokens
-    if prefix:
-        # W/o the if condition, we'd eval on <bos> if there's no prefix and no cache
-        input_ids_prefix = model.tokenize(prefix.encode("utf-8"), add_bos=n_tokens == 0)
-        model.eval(input_ids_prefix)
-
-    yield model
-
-    model.n_tokens = n_tokens
+    try:
+        if prefix:
+            # W/o the if condition, we'd eval on <bos> if there's no prefix and no cache
+            input_ids_prefix = model.tokenize(
+                prefix.encode("utf-8"), add_bos=n_tokens == 0
+            )
+            model.eval(input_ids_prefix)
+        yield model
+    finally:
+        model.n_tokens = n_tokens
 
 
 def _log_probs_conditional_prompt(

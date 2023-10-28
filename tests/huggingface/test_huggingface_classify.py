@@ -54,9 +54,10 @@ def model_name(request: pytest.FixtureRequest) -> str:
 @pytest.fixture(scope="module")
 def model(model_name: str) -> ModelForCausalLM:
     model: ModelForCausalLM = AutoModelForCausalLM.from_pretrained(model_name)
-    contexts_model = [context(model) for context in hf._utils._DEFAULT_CONTEXTS_MODEL]
-    for context in contexts_model:
-        context.__enter__()
+    # Set attributes to values that would break CAPPr, if not for the context managers
+    model.train()  # LMs w/ dropout (GPT-2) will cause mismatched logits b/c random
+    model.config.return_dict = False  # out.logits fails (not for transformers>=4.31)
+    setattr(model.config, "use_cache", False)  # out.past_key_values fails
     return model
 
 
@@ -75,35 +76,17 @@ def _load_tokenizer(model_name: str) -> PreTrainedTokenizerBase:
 @pytest.fixture(scope="module")
 def tokenizer(model_name: str) -> PreTrainedTokenizerBase:
     tokenizer = _load_tokenizer(model_name)
-    contexts_tokenizer = [
-        context(tokenizer) for context in hf._utils._DEFAULT_CONTEXTS_TOKENIZER
-    ]
-    for context in contexts_tokenizer:
-        context.__enter__()
+    # Set attributes to values that would break CAPPr, if not for the context managers
+    tokenizer.padding_side = "left"  # mismatched logits content b/c of position IDs
+    if hasattr(tokenizer, "add_eos_token"):
+        setattr(tokenizer, "add_eos_token", True)  # mismatched logits shape
     return tokenizer
 
 
 @pytest.fixture(scope="module")
 def model_and_tokenizer(
-    model_name: str,
+    model, tokenizer
 ) -> tuple[ModelForCausalLM, PreTrainedTokenizerBase]:
-    # The model_and_tokenizer input is directly from a user, so we can't assume they're
-    # set up correctly. For testing, that means we shouldn't just return the fixtures:
-    # return model, tokenizer
-    # Instead, load them from scratch like a user would:
-    model: ModelForCausalLM = AutoModelForCausalLM.from_pretrained(model_name)
-    tokenizer = _load_tokenizer(model_name)
-
-    # Also, assume the worst case: set attributes of the model and tokenizer to values
-    # that would break CAPPr, if not for the context managers
-    model.train()  # LMs w/ dropout (GPT-2) will cause mismatched logits b/c random
-    model.config.return_dict = False  # out.logits fails (?)
-    setattr(model.config, "use_cache", False)  # out.past_key_values fails
-
-    tokenizer.padding_side = "left"  # mismatched logits content b/c of position IDs
-    if hasattr(tokenizer, "add_eos_token"):
-        setattr(tokenizer, "add_eos_token", True)  # mismatched logits shape
-
     return model, tokenizer
 
 
@@ -120,15 +103,13 @@ def atol() -> float:
 ########################################################################################
 
 
-def test_set_up_model_and_tokenizer(model_and_tokenizer):
+def test_set_up_model_and_tokenizer(
+    model: ModelForCausalLM, tokenizer: PreTrainedTokenizerBase
+):
     """
     Tests that the context manager doesn't change any attributes of the model or
     tokenizer after exiting the context.
     """
-    model, tokenizer = model_and_tokenizer
-    # Not sure why type inference isn't catching these
-    model: ModelForCausalLM
-    tokenizer: PreTrainedTokenizerBase
 
     # Grab old attribute values.
     model_attribute_to_old_value = {
@@ -154,10 +135,9 @@ def test_set_up_model_and_tokenizer(model_and_tokenizer):
 
     # Enter the context
     assert torch.is_grad_enabled()
-    with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
+    with hf._utils.set_up_model_and_tokenizer(model, tokenizer):
         # TODO: add manual checks for correct attribute values!
         assert not torch.is_grad_enabled()
-        model, tokenizer = model_and_tokenizer
     assert torch.is_grad_enabled()
 
     # Exit the context. No attributes should have changed.
@@ -182,7 +162,7 @@ def test_set_up_model_and_tokenizer(model_and_tokenizer):
 )
 @pytest.mark.parametrize("batch_size", (2, 1))
 def test_token_logprobs(
-    module, texts, model_and_tokenizer, batch_size, atol, end_of_prompt=" "
+    module, texts, model_and_tokenizer, batch_size, end_of_prompt=" "
 ):
     """
     Tests that the model's token log probabilities are correct by testing against an
@@ -202,11 +182,9 @@ def test_token_logprobs(
     log_probs_texts_from_unbatched = []
     input_ids_from_unbatched = []
     for text in texts:
-        with hf._utils.set_up_model_and_tokenizer(model_and_tokenizer):
-            model, tokenizer = model_and_tokenizer
-            _logits, _encoding = hf._utils.logits_texts(
-                [end_of_prompt + text], model, tokenizer
-            )
+        _logits, _encoding = hf._utils.logits_texts(
+            [end_of_prompt + text], model_and_tokenizer
+        )
         # grab first index b/c we only gave it 1 text
         log_probs_texts_from_unbatched.append(_logits[0].log_softmax(dim=1))
         input_ids_from_unbatched.append(_encoding["input_ids"][0])
@@ -273,13 +251,13 @@ def test_cache_logits(model_and_tokenizer, atol):
     with classify_no_batch.cache(model_and_tokenizer, "a") as cached_a:
         with classify_no_batch.cache(cached_a, delim + "b c") as cached_a_b_c:
             with classify_no_batch.cache(cached_a_b_c, delim + "d") as cached_a_b_c_d:
-                logits1 = logits([delim + "e f"], *cached_a_b_c_d)
-                logits2 = logits([delim + "x"], *cached_a_b_c_d)
-            logits3 = logits([delim + "1 2 3"], *cached_a_b_c)
-        logits4 = logits([delim + "b c d"], *cached_a)
+                logits1 = logits([delim + "e f"], cached_a_b_c_d)
+                logits2 = logits([delim + "x"], cached_a_b_c_d)
+            logits3 = logits([delim + "1 2 3"], cached_a_b_c)
+        logits4 = logits([delim + "b c d"], cached_a)
 
     logits_correct = lambda texts, **kwargs: logits(
-        texts, *model_and_tokenizer, drop_bos_token=False
+        texts, model_and_tokenizer, drop_bos_token=False
     )
 
     assert torch.allclose(logits1, logits_correct(["a b c d e f"]), atol=atol)
@@ -294,7 +272,7 @@ def test_cache_logits(model_and_tokenizer, atol):
     with hf.classify_no_batch.cache(
         model_and_tokenizer, "a", clear_cache_on_exit=False
     ) as cached_a:
-        logits(["whatever"], *cached_a)
+        logits(["whatever"], cached_a)
     assert hasattr(cached_a[0], "_cappr_past")
 
 
