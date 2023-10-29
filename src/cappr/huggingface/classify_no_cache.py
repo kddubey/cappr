@@ -26,45 +26,68 @@ from cappr.huggingface._utils import BatchEncoding, ModelForCausalLM
 
 
 def token_logprobs(
-    texts: Sequence[str],
+    texts: str | Sequence[str],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     end_of_prompt: Literal[" ", ""] = " ",
+    drop_bos_token_log_prob: bool = True,
     show_progress_bar: bool | None = None,
     batch_size: int = 16,
     **kwargs,
-) -> list[list[float]]:
+) -> list[float] | list[list[float]]:
     """
     For each text, compute each token's log-probability conditional on all previous
     tokens in the text.
 
     Parameters
     ----------
-    texts : Sequence[str]
-        input texts
+    texts : str | Sequence[str]
+        input text(s)
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
     end_of_prompt : Literal[' ', ''], optional
         This string gets added to the beginning of each text. It's important to set this
         if you're using the discount feature. Otherwise, set it to "". By default " "
+    drop_bos_token_log_prob : bool, optional
+        whether or not to include the tokenizer's beginning-of-sentence token
+        log-probability in the output if the tokenizer adds this token. It's important
+        to set this to `True` if you're using the discount feature By default, its
+        log-probability is not included in the output
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
     batch_size : int, optional
-        the maximum number of texts that the model will process in parallel, by default
-        16
+        the maximum number of `texts` that the model will process in parallel, by
+        default 16
 
     Returns
     -------
-    log_probs : list[list[float]]
+    log_probs : list[float] | list[list[float]]
+
+        If `texts` is a string, then a 1-D list is returned: `log_probs[token_idx]` is
+        the log-probability of the token at `token_idx` of `texts` conditional on all
+        previous tokens in `texts`.
+
+        If `texts` is a sequence of strings, then a 2-D list is returned:
         `log_probs[text_idx][token_idx]` is the log-probability of the token at
         `token_idx` of `texts[text_idx]` conditional on all previous tokens in
-        `texts[text_idx]`. If `texts[text_idx]` is a single token, then
-        `log_probs[text_idx]` is `[None]`.
+        `texts[text_idx]`.
+
+    Note
+    ----
+    For each text, the first token's log-probability is always ``None``.
+
+    Raises
+    ------
+    TypeError
+        if `texts` is not a sequence
+    ValueError
+        if `texts` is empty
     """
     return hf.classify.token_logprobs(
         texts,
         model_and_tokenizer,
         end_of_prompt=end_of_prompt,
+        drop_bos_token_log_prob=drop_bos_token_log_prob,
         show_progress_bar=show_progress_bar,
         batch_size=batch_size,
     )

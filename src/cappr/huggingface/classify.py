@@ -35,7 +35,7 @@ def token_logprobs(
     show_progress_bar: bool | None = None,
     batch_size: int = 16,
     **kwargs,
-) -> list[list[float]]:
+) -> list[float] | list[list[float]]:
     """
     For each text, compute each token's log-probability conditional on all previous
     tokens in the text.
