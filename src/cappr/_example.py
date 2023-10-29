@@ -2,7 +2,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, Sequence
 
-
 from cappr.utils import _check
 
 
@@ -72,5 +71,6 @@ class Example:
         # to a tuple. Re-setting an attribute in a frozen object requires this call:
         object.__setattr__(self, "completions", tuple(self.completions))
         _check.end_of_prompt(self.end_of_prompt)
-        _check.prior(self.prior, expected_length=len(self.completions))
+        prior = _check.prior(self.prior, expected_length=len(self.completions))
+        object.__setattr__(self, "prior", prior)
         _check.normalize(self.completions, self.normalize)

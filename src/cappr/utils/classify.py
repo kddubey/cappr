@@ -228,7 +228,7 @@ def posterior_prob(
         )
     normalize = np.array(normalize, dtype=bool)
     if check_prior:
-        _check.prior(prior, expected_length=likelihoods.shape[axis])
+        prior = _check.prior(prior, expected_length=likelihoods.shape[axis])
 
     # Apply Bayes' rule, w/ optional normalization per row
     if prior is None:
@@ -253,6 +253,25 @@ def _wrap_call_unwrap(
     return output[0] if is_single_input else output
 
 
+def _token_logprobs(token_log_probs):
+    """
+    Decorator which does input checking, and allows for `texts` to be a single string
+    for a `token_log_probs` function.
+    """
+
+    @wraps(token_log_probs)
+    def wrapper(
+        texts: str | Sequence[str], *args, **kwargs
+    ) -> list[float] | list[list[float]]:
+        _check.nonempty_and_ordered(texts, variable_name="texts")
+        if not isinstance(texts, str):
+            texts = list(texts)  # 0-index
+        _check.end_of_prompt(kwargs.get("end_of_prompt", " "))
+        return _wrap_call_unwrap(str, texts, token_log_probs, *args, **kwargs)
+
+    return wrapper
+
+
 def _log_probs_conditional(log_probs_conditional):
     """
     Decorator which does input checking, and allows for `prompts` to be a single string
@@ -266,7 +285,6 @@ def _log_probs_conditional(log_probs_conditional):
         if not isinstance(prompts, str):
             _check.nonempty_and_ordered(prompts, variable_name="prompts")
         _check.completions(completions)
-        _check.end_of_prompt(kwargs.get("end_of_prompt", " "))
         return _wrap_call_unwrap(
             str, prompts, log_probs_conditional, completions, *args, **kwargs
         )
@@ -355,7 +373,7 @@ def _predict_proba(log_probs_conditional):
         # Check inputs before making expensive model calls
         # Check the prior
         prior = kwargs.get("prior", None)
-        _check.prior(prior, expected_length=len(completions))
+        prior = _check.prior(prior, expected_length=len(completions))
 
         # Check normalization
         normalize = kwargs.get("normalize", True)
@@ -444,13 +462,16 @@ def _predict_proba_examples(log_probs_conditional_examples):
             prior = None
         else:
             # For coding simplicity, just supply a prior which is non-None *everywhere*
-            # It's the same shape as likelihoods
             num_completions_per_prompt = list(num_completions_per_prompt_set)[0]
             uniform_prior = [
                 1 / num_completions_per_prompt
             ] * num_completions_per_prompt
-            prior = np.array([example.prior or uniform_prior for example in examples])
-        # prior cannot be jagged b/c every example has the same # of completions
+            prior = np.array(
+                [
+                    uniform_prior if example.prior is None else example.prior
+                    for example in examples
+                ]
+            )  # same shape as likelihoods: (len(examples), num_completions_per_prompt)
         return posterior_prob(
             likelihoods,
             axis=1,

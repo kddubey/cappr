@@ -81,6 +81,10 @@ def test_token_logprobs(model):
     log_probs = classify.token_logprobs(texts, model)
     assert log_probs == [[-1, -2, -3], [-1, -2]]  # cuz the API is mocked w/ range
 
+    texts = "a b c"
+    log_probs = classify.token_logprobs(texts, model)
+    assert log_probs == [-1, -2, -3]
+
 
 def test__slice_completions(model):
     completions = ["A1", "c"]

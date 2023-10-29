@@ -81,7 +81,11 @@ def test_log_softmax(
 
 @pytest.mark.parametrize(
     "texts",
-    (["a b", "c d e"], ["a fistful", "of tokens", "for a few", "tokens more"]),
+    (
+        "lone string input",
+        ["a b", "c d e"],
+        ["a fistful", "of tokens", "for a few", "tokens more"],
+    ),
 )
 def test_token_logprobs(texts: Sequence[str], model: Llama):
     """
@@ -91,6 +95,8 @@ def test_token_logprobs(texts: Sequence[str], model: Llama):
     log_probs_texts_observed = classify.token_logprobs(texts, model, add_bos=True)
 
     # Gather un-batched un-sliced log probs for the expected result
+    is_str = isinstance(texts, str)
+    texts = [texts] if is_str else texts
     log_probs_texts_from_unbatched = []
     input_ids_from_unbatched = []
     for text in texts:
@@ -103,6 +109,9 @@ def test_token_logprobs(texts: Sequence[str], model: Llama):
         input_ids_from_unbatched.append(input_ids)
     model.reset()
 
+    log_probs_texts_observed = (
+        [log_probs_texts_observed] if is_str else log_probs_texts_observed
+    )
     _test_content.token_logprobs(
         log_probs_texts_observed,
         log_probs_texts_from_unbatched,

@@ -27,7 +27,7 @@ def _slice_completions(
         raise ValueError(
             "Different number of completions and log_probs: "
             f"{len(completions)}, {len(log_probs)}."
-        )
+        )  # pragma: no cover
     completion_lengths = []
     for completion in completions:
         input_ids = model.tokenize(completion.encode("utf-8"), add_bos=False)

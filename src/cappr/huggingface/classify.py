@@ -18,18 +18,20 @@ import torch
 from transformers import PreTrainedTokenizerBase
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
-from cappr.utils import _batch, _check, classify
+from cappr.utils import _batch, classify
 from cappr import Example
 from cappr import huggingface as hf
 from cappr.huggingface._utils import BatchEncoding, ModelForCausalLM
 
 
+@classify._token_logprobs
 @_batch.flatten
 @_batch.batchify(batchable_arg="texts", progress_bar_desc="log-probs")
 def token_logprobs(
-    texts: Sequence[str],
+    texts: str | Sequence[str],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     end_of_prompt: Literal[" ", ""] = " ",
+    drop_bos_token_log_prob: bool = True,
     show_progress_bar: bool | None = None,
     batch_size: int = 16,
     **kwargs,
@@ -40,13 +42,18 @@ def token_logprobs(
 
     Parameters
     ----------
-    texts : Sequence[str]
-        input texts
+    texts : str | Sequence[str]
+        input text(s)
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
         an instantiated model and its corresponding tokenizer
     end_of_prompt : Literal[' ', ''], optional
         This string gets added to the beginning of each text. It's important to set this
         if you're using the discount feature. Otherwise, set it to "". By default " "
+    drop_bos_token_log_prob : bool, optional
+        whether or not to include the tokenizer's beginning-of-sentence token
+        log-probability in the output if the tokenizer adds this token. It's important
+        to set this to `True` if you're using the discount feature By default, its
+        log-probability is not included in the output
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
@@ -56,27 +63,28 @@ def token_logprobs(
 
     Returns
     -------
-    log_probs : list[list[float]]
+    log_probs : list[float] | list[list[float]]
+
+        If `texts` is a string, then a 1-D list is returned: `log_probs[token_idx]` is
+        the log-probability of the token at `token_idx` of `texts` conditional on all
+        previous tokens in `texts`.
+
+        If `texts` is a sequence of strings, then a 2-D list is returned:
         `log_probs[text_idx][token_idx]` is the log-probability of the token at
         `token_idx` of `texts[text_idx]` conditional on all previous tokens in
-        `texts[text_idx]`. If `texts[text_idx]` is a single token, then
-        `log_probs[text_idx]` is `[None]`.
+        `texts[text_idx]`.
+
+    Note
+    ----
+    For each text, the first token's log-probability is always ``None``.
 
     Raises
     ------
-    TypeError
-        if `texts` is a string
     TypeError
         if `texts` is not a sequence
     ValueError
         if `texts` is empty
     """
-    # Input checks
-    if isinstance(texts, str):
-        raise TypeError("texts cannot be a string. It must be a sequence of strings.")
-    _check.nonempty_and_ordered(texts, variable_name="texts")
-    _check.end_of_prompt(end_of_prompt)
-
     with hf._utils.set_up_model_and_tokenizer(*model_and_tokenizer):
         # bleh
         if not hf._utils.does_tokenizer_prepend_space_to_first_token(
@@ -86,7 +94,9 @@ def token_logprobs(
         texts = [end_of_prompt + text for text in texts]
 
         # Batch inference
-        logits, encodings = hf._utils.logits_texts(texts, model_and_tokenizer)
+        logits, encodings = hf._utils.logits_texts(
+            texts, model_and_tokenizer, drop_bos_token=drop_bos_token_log_prob
+        )
         # y is this^ type hint not working
         encodings: BatchEncoding = encodings
 
@@ -110,7 +120,7 @@ def token_logprobs(
             # we slice off the right side b/c the tokenizer was set up to do padding on
             # the right
             log_probs.append(first_token_log_prob + log_probs_text[: (n - 1)].tolist())
-        return log_probs
+    return log_probs
 
 
 def _keys_values_prompts(
@@ -143,14 +153,16 @@ def _keys_values_prompts(
     3. Apply `model`.
     """
     if isinstance(prompts, str):
-        raise TypeError("prompts must be a sequence of strings, not a string itself.")
+        raise TypeError(
+            "prompts must be a sequence of strings, not a string itself."
+        )  # pragma: no cover
     if not isinstance(num_repeats_per_prompt, int):
         if not len(prompts) == len(num_repeats_per_prompt):
             raise ValueError(
                 "If num_repeats_per_prompt is a Sequence, then it must be the same "
                 f"length as prompts. Got lengths {len(num_repeats_per_prompt)}, "
                 f"{len(prompts)}."
-            )
+            )  # pragma: no cover
 
     # Need to determine whether we actually need to repeat the prompt's keys and values.
     # Running that repeat operation (despite not needing it) may be expensive b/c its

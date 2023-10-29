@@ -6,9 +6,10 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 addopts = [
+    # ordered by dependencies and then by time taken
     "tests/test_Example.py",
     "tests/utils",
+    "tests/openai",
     "tests/llama_cpp",
     "tests/huggingface",
-    "tests/openai",
 ]

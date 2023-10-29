@@ -258,9 +258,21 @@ def predict_examples(
             assert pred in example.completions
 
     # Test bad inputs
-    if not isinstance(examples, Example):
-        with pytest.raises(TypeError, match="examples must be an ordered collection."):
-            classify.log_probs_conditional_examples(set(examples), *args, **kwargs)
-
     with pytest.raises(ValueError, match="examples must be non-empty."):
         classify.log_probs_conditional_examples([], *args, **kwargs)
+
+    is_many_examples = not isinstance(examples, Example)
+
+    def is_hashable(objects):
+        try:
+            set(objects)
+        except:
+            return False
+        else:
+            return True
+
+    if is_many_examples and is_hashable(examples):
+        # if example.completions is a list, or a prior is an array, then the example
+        # isn't hashable => set(examples) isn't possible in the first place
+        with pytest.raises(TypeError, match="examples must be an ordered collection."):
+            classify.log_probs_conditional_examples(set(examples), *args, **kwargs)

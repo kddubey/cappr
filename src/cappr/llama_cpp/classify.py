@@ -30,7 +30,7 @@ from llama_cpp import Llama
 import numpy as np
 import numpy.typing as npt
 
-from cappr.utils import _check, classify
+from cappr.utils import classify
 from cappr.utils._batch import ProgressBar
 from cappr import Example
 from cappr.llama_cpp._utils import log_softmax, logits_to_log_probs
@@ -62,21 +62,22 @@ def _check_logits(logits) -> np.ndarray:
     return logits
 
 
+@classify._token_logprobs
 def token_logprobs(
-    texts: Sequence[str],
+    texts: str | Sequence[str],
     model: Llama,
     show_progress_bar: bool | None = None,
     add_bos: bool = False,
     **kwargs,
-) -> list[list[float]]:
+) -> list[float] | list[list[float]]:
     """
     For each text, compute each token's log-probability conditional on all previous
     tokens in the text.
 
     Parameters
     ----------
-    texts : Sequence[str]
-        input texts
+    texts : str | Sequence[str]
+        input text(s)
     model : Llama
         a model instantiated with ``logits_all=True``
     show_progress_bar : bool | None, optional
@@ -88,27 +89,29 @@ def token_logprobs(
 
     Returns
     -------
-    log_probs : list[list[float]]
+    log_probs : list[float] | list[list[float]]
+
+        If `texts` is a string, then a 1-D list is returned: `log_probs[token_idx]` is
+        the log-probability of the token at `token_idx` of `texts` conditional on all
+        previous tokens in `texts`.
+
+        If `texts` is a sequence of strings, then a 2-D list is returned:
         `log_probs[text_idx][token_idx]` is the log-probability of the token at
         `token_idx` of `texts[text_idx]` conditional on all previous tokens in
-        `texts[text_idx]`. If `texts[text_idx]` is a single token, then
-        `log_probs[text_idx]` is `[None]`.
+        `texts[text_idx]`.
+
+    Note
+    ----
+    For each text, the first token's log-probability is always ``None``.
 
     Raises
     ------
-    TypeError
-        if `texts` is a string
     TypeError
         if `texts` is not a sequence
     ValueError
         if `texts` is empty
     """
-    # Input checks
-    if isinstance(texts, str):
-        raise TypeError("texts cannot be a string. It must be a sequence of strings.")
-    _check.nonempty_and_ordered(texts, variable_name="texts")
     _check_model(model)
-
     first_token_log_prob = [None]  # no CausalLM estimates Pr(token), so call it None
     # Loop through completions, b/c llama cpp currently doesn't support batch inference
     # Note: we could instead run logits_to_log_probs over a batch to save a bit of time,

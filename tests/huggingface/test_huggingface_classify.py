@@ -62,7 +62,8 @@ def model(model_name: str) -> ModelForCausalLM:
     return model
 
 
-def _load_tokenizer(model_name: str) -> PreTrainedTokenizerBase:
+@pytest.fixture(scope="module")
+def tokenizer(model_name: str) -> PreTrainedTokenizerBase:
     # hf-internal-testing/tiny-random-MistralForCausalLM's tokenizer_config.json has a
     # field, tokenizer_file, which is hard-coded to some specific machine
     try:
@@ -71,12 +72,6 @@ def _load_tokenizer(model_name: str) -> PreTrainedTokenizerBase:
         # tokenizer_file not found. Find it locally
         local_path = hf_hub.try_to_load_from_cache(model_name, "tokenizer.json")
         tokenizer = AutoTokenizer.from_pretrained(model_name, tokenizer_file=local_path)
-    return tokenizer
-
-
-@pytest.fixture(scope="module")
-def tokenizer(model_name: str) -> PreTrainedTokenizerBase:
-    tokenizer = _load_tokenizer(model_name)
     # Set attributes to values that would break CAPPr, if not for the context managers
     tokenizer.padding_side = "left"  # mismatched logits content b/c of position IDs
     if hasattr(tokenizer, "add_eos_token"):
@@ -159,9 +154,13 @@ def test_set_up_model_and_tokenizer(
 )
 @pytest.mark.parametrize(
     "texts",
-    (["a b", "c d e"], ["a fistful", "of tokens", "for a few", "tokens more"]),
+    (
+        "lone string input",
+        ["a b", "c d e"],
+        ["a fistful", "of tokens", "for a few", "tokens more"],
+    ),
 )
-@pytest.mark.parametrize("batch_size", (2, 1))
+@pytest.mark.parametrize("batch_size", (1, 2))
 def test_token_logprobs(
     module: classify_module, texts, model_and_tokenizer, batch_size, end_of_prompt=" "
 ):
@@ -170,10 +169,11 @@ def test_token_logprobs(
     unbatched and carefully, manually indexed result.
     """
     log_probs_texts_observed = module.token_logprobs(
-        texts, model_and_tokenizer, batch_size=batch_size
+        texts, model_and_tokenizer, end_of_prompt=end_of_prompt, batch_size=batch_size
     )
-
     # Gather un-batched un-sliced log probs for the expected result
+    is_str = isinstance(texts, str)
+    texts = [texts] if is_str else texts
     # bleh
     if not hf._utils.does_tokenizer_prepend_space_to_first_token(
         model_and_tokenizer[1]
@@ -189,6 +189,9 @@ def test_token_logprobs(
         log_probs_texts_from_unbatched.append(_logits[0].log_softmax(dim=1))
         input_ids_from_unbatched.append(_encoding["input_ids"][0])
 
+    log_probs_texts_observed = (
+        [log_probs_texts_observed] if is_str else log_probs_texts_observed
+    )
     _test_content.token_logprobs(
         log_probs_texts_observed,
         log_probs_texts_from_unbatched,
@@ -443,7 +446,7 @@ class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
         _test_encodings(*slow_out, *fast_out)
         _test_logits(*slow_out, *fast_out, atol)
 
-    @pytest.mark.parametrize("batch_size", (2, 1))
+    @pytest.mark.parametrize("batch_size", (1, 2))
     def test_log_probs_conditional(
         self, prompts, completions, model_and_tokenizer, batch_size
     ):
@@ -489,7 +492,7 @@ class TestExamples(Modules, BaseTestExamples):
         _test_encodings(*slow_out, *fast_out)
         _test_logits(*slow_out, *fast_out, atol)
 
-    @pytest.mark.parametrize("batch_size", (2, 1))
+    @pytest.mark.parametrize("batch_size", (1, 2))
     def test_log_probs_conditional_examples(
         self, examples: Example | Sequence[Example], model_and_tokenizer, batch_size
     ):

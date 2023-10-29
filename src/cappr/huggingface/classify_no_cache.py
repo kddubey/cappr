@@ -82,14 +82,16 @@ def _keys_values_prompts(
     Only for testing purposes.
     """
     if isinstance(prompts, str):
-        raise TypeError("prompts must be a sequence of strings, not a string itself.")
+        raise TypeError(
+            "prompts must be a sequence of strings, not a string itself."
+        )  # pragma: no cover
     if not isinstance(num_completions_per_prompt, int):
         if not len(prompts) == len(num_completions_per_prompt):
             raise ValueError(
                 "If num_completions_per_prompt is a Sequence, then it must be the same "
                 f"length as prompts. Got lengths {len(num_completions_per_prompt)}, "
                 f"{len(prompts)}."
-            )
+            )  # pragma: no cover
     if isinstance(num_completions_per_prompt, int):
         # For code simplicity, just repeat it
         num_completions_per_prompt = [num_completions_per_prompt] * len(prompts)
@@ -148,7 +150,9 @@ def _logits_completions_given_prompts(
     end_of_prompt: Literal[" ", ""] = " ",
 ):
     if isinstance(prompts, str):
-        raise TypeError("prompts must be a sequence of strings, not a string itself.")
+        raise TypeError(
+            "prompts must be a sequence of strings, not a string itself."
+        )  # pragma: no cover
     _check.completions(completions)
     texts = [
         prompt + end_of_prompt + completion

@@ -20,9 +20,13 @@ def constant(lst: list[_T], size: int):
     """
     if size <= 0:
         raise ValueError("size must be positive.")
-    lst = list(lst)  # 0-index whatever was passed, or fully evaluate generator
-    for idx in range(0, len(lst), size):
-        yield lst[idx : (idx + size)]
+    if isinstance(lst, str):
+        indexable = lst
+    else:
+        # convert to list to 0-index whatever was passed, or fully evaluate generator
+        indexable = list(lst)
+    for idx in range(0, len(indexable), size):
+        yield indexable[idx : (idx + size)]
 
 
 def variable(lst: list[_T], sizes: Sequence[int]):

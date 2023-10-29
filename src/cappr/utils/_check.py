@@ -105,16 +105,15 @@ def end_of_prompt(end_of_prompt: Literal[" ", ""]):
 
 def prior(prior: Sequence[float] | None, expected_length: int):
     """
-    Raises an error if `prior is not None` and isn't a probability distribution over
-    `expected_length` categories.
+    Return back `prior` if it's None, or return it as a numpy array if it's not None and
+    valid. Raises an error if `prior is not None` and isn't a probability distribution
+    over `expected_length` categories.
     """
     if prior is None:  # it's a uniform prior, no need to check anything
-        return
-    # Going to be stricter on the type here. We do the prior * likelihood computation
-    # after making expensive model calls. Don't want that multiplication to fail b/c
-    # that'd be a complete waste of model compute.
-    if not isinstance(prior, (Sequence, np.ndarray)):
-        raise TypeError("prior must be None, a Sequence, or a numpy array.")
+        return None
+    # We do the prior * likelihood computation after making expensive model calls. Don't
+    # want that multiplication to fail b/c that'd be a complete waste of model compute.
+    nonempty_and_ordered(prior, variable_name="prior")
     if len(np.shape(prior)) != 1:
         raise ValueError("prior must be 1-D.")
     prior_arr = np.array(prior, dtype=float)  # try casting to float
@@ -124,11 +123,12 @@ def prior(prior: Sequence[float] | None, expected_length: int):
         raise ValueError("prior must contain probabilities between 0 and 1.")
     if not np.isclose(prior_arr.sum(), 1):
         raise ValueError("prior must sum to 1.")
-    if prior is not None and len(prior) != expected_length:
+    if len(prior) != expected_length:
         raise ValueError(
             f"Expected prior to have length {expected_length} (the number of "
             f"completions), got {len(prior)}."
         )
+    return prior_arr
 
 
 def normalize(completions: Sequence[str], normalize: bool):

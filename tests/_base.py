@@ -147,7 +147,9 @@ class BaseTestPromptsCompletions(_BaseTest):
         ],
         ############## Test constant # completions, non-constant # tokens ##############
         [
-            Example("jelly", ["fin", "is"], prior=(1 / 3, 2 / 3)),
+            Example(
+                "jelly", ["fin", "is"], prior=pd.Series([0.33, 0.67], index=[1, 1])
+            ),
             Example("a great", ["thing.", "shout"]),
             Example("out to", ["open", "source, yo."]),
         ],

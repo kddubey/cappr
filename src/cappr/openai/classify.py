@@ -11,28 +11,29 @@ import numpy as np
 import numpy.typing as npt
 import tiktoken
 
-from cappr.utils import _batch, _check, classify
+from cappr.utils import _batch, classify
 from cappr import Example
 from cappr import openai
 
 
+@classify._token_logprobs
 def token_logprobs(
-    texts: Sequence[str],
+    texts: str | Sequence[str],
     model: openai.api.Model,
     end_of_prompt: Literal[" ", ""] = " ",
     ask_if_ok: bool = False,
     api_key: str | None = None,
     show_progress_bar: bool | None = None,
     **kwargs,
-) -> list[list[float]]:
+) -> list[float] | list[list[float]]:
     """
     For each text, compute each token's log-probability conditional on all previous
     tokens in the text.
 
     Parameters
     ----------
-    texts : Sequence[str]
-        input texts
+    texts : str | Sequence[str]
+        input text(s)
     model : cappr.openai.api.Model
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
@@ -53,27 +54,28 @@ def token_logprobs(
 
     Returns
     -------
-    log_probs : list[list[float]]
+    log_probs : list[float] | list[list[float]]
+
+        If `texts` is a string, then a 1-D list is returned: `log_probs[token_idx]` is
+        the log-probability of the token at `token_idx` of `texts` conditional on all
+        previous tokens in `texts`.
+
+        If `texts` is a sequence of strings, then a 2-D list is returned:
         `log_probs[text_idx][token_idx]` is the log-probability of the token at
         `token_idx` of `texts[text_idx]` conditional on all previous tokens in
-        `texts[text_idx]`. If `texts[text_idx]` is a single token, then
-        `log_probs[text_idx]` is `[None]`.
+        `texts[text_idx]`.
+
+    Note
+    ----
+    For each text, the first token's log-probability is always ``None``.
 
     Raises
     ------
-    TypeError
-        if `texts` is a string
     TypeError
         if `texts` is not a sequence
     ValueError
         if `texts` is empty
     """
-    # Input checks
-    if isinstance(texts, str):
-        raise TypeError("texts cannot be a string. It must be a sequence of strings.")
-    _check.nonempty_and_ordered(texts, variable_name="texts")
-
-    texts = list(texts)  # 0-index
     # Need to handle texts which are single tokens. Set their logprobs to [None]
     tokenizer = tiktoken.encoding_for_model(model)
     num_tokens = [len(tokens) for tokens in tokenizer.encode_batch(texts)]
@@ -114,7 +116,7 @@ def _slice_completions(
         raise ValueError(
             "Different number of completions and log_probs: "
             f"{len(completions)}, {len(log_probs)}."
-        )
+        )  # pragma: no cover
     tokenizer = tiktoken.encoding_for_model(model)
     completions = [end_of_prompt + completion for completion in completions]
     completion_lengths = [len(tokens) for tokens in tokenizer.encode_batch(completions)]

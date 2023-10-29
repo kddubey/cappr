@@ -19,7 +19,9 @@ def modify_kwargs(kwargs: dict[str, Any], **kwargs_new) -> dict[str, Any]:
 @pytest.mark.parametrize("prompt", ("hi",))
 @pytest.mark.parametrize("completions", (["completion won", "completion tew"],))
 @pytest.mark.parametrize("end_of_prompt", (" ",))
-@pytest.mark.parametrize("prior", (None, [1 / 3, 2 / 3], np.array([0.5, 0.5])))
+@pytest.mark.parametrize(
+    "prior", (None, [1 / 3, 2 / 3], pd.Series([0.5, 0.5], index=[3, 3]))
+)
 @pytest.mark.parametrize("normalize", (True, False))
 def test___post_init__(
     prompt: str,
