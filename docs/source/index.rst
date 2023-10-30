@@ -50,6 +50,15 @@ Package
    cappr
 
 
+Development
+===========
+
+.. toctree::
+   :maxdepth: 2
+
+   local
+
+
 Indices and tables
 ==================
 

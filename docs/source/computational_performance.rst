@@ -58,3 +58,7 @@ In the future, 2 things will be explored:
 
 The first thing is tracked by `this ticket
 <https://github.com/users/kddubey/projects/1/views/1?pane=issue&itemId=42888520>`_.
+
+From an engineering standpoint, another weakness of CAPPr is that computational
+optimizations require the ability to control the cache and ability to batch inputs. With
+sampling, caching is much simpler, and batching isn't required.

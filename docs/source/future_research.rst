@@ -30,6 +30,10 @@ hypothesis is two-fold:
   one in the given list of choices. CAPPr instead has the model to make its "best" guess
   among the given choices. This is demonstrated in the `Banking 77 demo`_.
 
+
+Calibration
+-----------
+
 The `calibration
 <https://en.wikipedia.org/wiki/Probabilistic_classification#Probability_calibration>`_
 of CAPPr estimates has barely been studied. These estimates are slightly different than
@@ -40,6 +44,10 @@ usual next-token probability estimates because:
 #. CAPPr can incorporate a prior specific to your classification data.
 
 The `Banking 77 demo`_ contains two low-resolution but interesting calibration curves.
+Here's the nice-looking curve:
+
+.. figure:: _static/calibration/banking_77_classes.png
+   :align: center
 
 .. _COPA demo: https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb
 
