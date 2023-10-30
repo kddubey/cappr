@@ -7,9 +7,10 @@
 [![PyPI - Package Version](https://img.shields.io/pypi/v/cappr?logo=pypi&style=flat&color=orange)](https://pypi.org/project/cappr/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-purple.svg)](https://opensource.org/licenses/Apache-2.0)
 
-CAPPr performs text classification. No training. No post-processing. **Just have your
-LLM pick from a list of choices.** Or compute the probability of a completion given a
-prompt. Squeeze more out of open source LLMs.
+CAPPr performs text classification. No training. No post-processing.
+
+**Just have your LLM pick from a list of choices.** Or compute the probability of a
+completion given a prompt. Squeeze more out of open source LLMs.
 
 
 ## Usage
