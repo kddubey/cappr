@@ -1,11 +1,13 @@
 # CAPPr: Completion After Prompt Probability
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/)
-[![Documentation Status](https://readthedocs.org/projects/cappr/badge/?version=latest)](https://cappr.readthedocs.io/en/latest/?badge=latest)
-[![tests](https://github.com/kddubey/cappr/actions/workflows/test.yml/badge.svg)](https://github.com/kddubey/cappr/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/kddubey/cappr/branch/main/graph/badge.svg?token=NYIL076PSM)](https://codecov.io/gh/kddubey/cappr)
-[![PyPI - Package Version](https://img.shields.io/pypi/v/cappr?logo=pypi&style=flat&color=orange)](https://pypi.org/project/cappr/)
-[![License](https://img.shields.io/badge/License-Apache_2.0-purple.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg?logo=python&style=for-the-badge)](https://www.python.org/downloads/release/python-380/)
+[![tests](https://img.shields.io/github/actions/workflow/status/kddubey/cappr/test.yml?style=for-the-badge&logo=github&label=tests)](https://github.com/kddubey/cappr/actions/workflows/test.yml)
+[![codecov](https://img.shields.io/codecov/c/github/kddubey/cappr?token=NYIL076PSM&style=for-the-badge&logo=codecov&color=%2309BC00)](https://codecov.io/gh/kddubey/cappr)
+[![PyPI - Package Version](https://img.shields.io/pypi/v/cappr?logo=pypi&style=for-the-badge&color=orange)](https://pypi.org/project/cappr/)
+[![License](https://img.shields.io/badge/License-Apache_2.0-purple.svg?logo=apache&style=for-the-badge)](https://opensource.org/licenses/Apache-2.0)
+
+<!-- [![Documentation Status](https://readthedocs.org/projects/cappr/badge/?version=latest&style=for-the-badge)](https://cappr.readthedocs.io/en/latest/?badge=latest) -->
+
 
 CAPPr performs text classification. No training. No post-processing.
 
