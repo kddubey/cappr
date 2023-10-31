@@ -9,10 +9,10 @@
 <!-- [![Documentation Status](https://readthedocs.org/projects/cappr/badge/?version=latest&style=for-the-badge)](https://cappr.readthedocs.io/en/latest/?badge=latest) -->
 
 
-CAPPr performs text classification. No training. No post-processing.
-
-**Just have your LLM pick from a list of choices.** Or compute the probability of a
-completion given a prompt. Squeeze more out of open source LLMs.
+CAPPr performs text classification. No training. No post-processing. <br>
+Just have your LLM pick from a list of choices. <br>
+Or compute the probability of a completion given a prompt. <br>
+Squeeze more out of open source LLMs.
 
 
 ## Usage
