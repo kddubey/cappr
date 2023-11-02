@@ -1,14 +1,11 @@
 Computational performance
 =========================
 
-One concern was that CAPPr requires as many model calls as there are classes. But in the
-CAPPr scheme, we can cache each attention block's keys and values for the prompts. This
-feature is already supported by ``AutoModelForCausalLM``\ s. See `this module`_ for the
-implementation. Note that this caching is not implemented for OpenAI models. So if
-you're running :mod:`cappr.openai.classify` functions, you'll be on the *cappr (no
-cache)* line :-(
-
-.. _this module: https://github.com/kddubey/cappr/blob/main/src/cappr/huggingface/classify.py
+One concern is that CAPPr requires as many model calls as there are choices/classes. But
+in the CAPPr scheme, we can cache each attention block's keys and values for the
+prompts. This feature is already supported by ``AutoModelForCausalLM``\ s. See `this
+module <https://github.com/kddubey/cappr/blob/main/src/cappr/huggingface/classify.py>`_
+for the implementation.
 
 .. figure:: _static/scaling_classes/batch_size_32.png
    :align: center
@@ -39,26 +36,17 @@ Weaknesses
 ----------
 
 CAPPr does not computationally perform well when there are 10s of classes and the prompt
-is so long that only one prompt fits in memory during processing. In these cases,
-CAPPr's memory requirements are higher because :mod:`cappr.huggingface.classify`
-currently processes completions in parallel. :mod:`cappr.huggingface.classify_no_batch`
-minimizes memory but costs a lot of time because it processes each completion one at a
-time.
+is so long that only one or two fit in memory during processing. For a demonstration of
+this weakness, see the `Banking 77 demo
+<https://github.com/kddubey/cappr/blob/main/demos/huggingface/banking_77_classes.ipynb>`_.
 
-In the future, 2 things will be explored:
-
-1. Revamp :mod:`cappr.huggingface.classify` by batching completions and supporting
-   sub-prompt caching like :func:`cappr.huggingface.classify_no_batch.cache`. Batching
-   completions trades off runtime for reduced memory requirements. Sub-prompt caching
-   significantly decreases runtime.
-2. Are there classification tasks where classes don't need to be provided in context
-   (and instead as a completion) for CAPPr to statistically perform well? If so, CAPPr's
-   computational issues can be worked around through better prompt engineering. And the
-   model's context window can be reduced.
-
-The first thing is tracked by `this ticket
-<https://github.com/users/kddubey/projects/1/views/1?pane=issue&itemId=42888520>`_.
+This weakness isn't apparent in the COPA demo above because CAPPr's prompt can be short
+without sacrificing accuracy. Are there more classification tasks where classes don't
+need to be provided in context (and instead provided as a completion) for CAPPr to
+statistically perform well? If so, CAPPr's computational issues can be worked around
+through better prompt engineering. And the model's context window can be reduced.
 
 From an engineering standpoint, another weakness of CAPPr is that computational
-optimizations require the ability to control the cache and ability to batch inputs. With
-sampling, caching is much simpler, and batching isn't required.
+optimizations require the ability to control the cache and batch inputs. The model must
+implement the HuggingFace transformers interface—including accepting and returning
+``past_key_values``. With sampling, caching is simpler, and batching isn't required.

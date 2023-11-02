@@ -20,11 +20,7 @@ def constant(lst: list[_T], size: int):
     """
     if size <= 0:
         raise ValueError("size must be positive.")
-    if isinstance(lst, str):
-        indexable = lst
-    else:
-        # convert to list to 0-index whatever was passed, or fully evaluate generator
-        indexable = list(lst)
+    indexable = lst if isinstance(lst, str) else list(lst)
     for idx in range(0, len(indexable), size):
         yield indexable[idx : (idx + size)]
 

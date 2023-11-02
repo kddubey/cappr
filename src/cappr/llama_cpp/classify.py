@@ -58,7 +58,7 @@ def _check_logits(logits) -> np.ndarray:
             "There are nan logits. This can happen if the model is re-loaded too many "
             "times in the same session. Please raise this as an issue so that I can "
             "investigate: https://github.com/kddubey/cappr/issues"
-        )
+        )  # pragma: no cover
     return logits
 
 

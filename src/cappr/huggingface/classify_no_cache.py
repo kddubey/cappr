@@ -93,54 +93,6 @@ def token_logprobs(
     )
 
 
-def _keys_values_prompts(
-    model: ModelForCausalLM,
-    tokenizer: PreTrainedTokenizerBase,
-    prompts: Sequence[str],
-    num_completions_per_prompt: int | Sequence[int],
-) -> tuple[
-    tuple[tuple[torch.Tensor, torch.Tensor]], BatchEncoding, torch.Tensor, torch.Tensor
-]:
-    """
-    Only for testing purposes.
-    """
-    if isinstance(prompts, str):
-        raise TypeError(
-            "prompts must be a sequence of strings, not a string itself."
-        )  # pragma: no cover
-    if not isinstance(num_completions_per_prompt, int):
-        if not len(prompts) == len(num_completions_per_prompt):
-            raise ValueError(
-                "If num_completions_per_prompt is a Sequence, then it must be the same "
-                f"length as prompts. Got lengths {len(num_completions_per_prompt)}, "
-                f"{len(prompts)}."
-            )  # pragma: no cover
-    if isinstance(num_completions_per_prompt, int):
-        # For code simplicity, just repeat it
-        num_completions_per_prompt = [num_completions_per_prompt] * len(prompts)
-    prompts_repeated = [
-        prompt
-        for prompt, num_repeats in zip(prompts, num_completions_per_prompt)
-        for _ in range(num_repeats)
-    ]
-    with hf._utils.set_up_model_and_tokenizer(model, tokenizer):
-        encodings = tokenizer(prompts_repeated, return_tensors="pt", padding=True).to(
-            model.device
-        )
-        out: CausalLMOutputWithPast = model(**encodings)
-
-    offsets: torch.Tensor = encodings["attention_mask"].sum(dim=1)
-
-    # Need (next-token) logits from prompts, i.e., last non-pad prompt token, since
-    # that contains the first completion token's log-probability
-    _last_nonpad_token_idxs = (offsets - 1)[:, None, None]
-    last_nonpad_token_logits: torch.Tensor = out.logits.take_along_dim(
-        _last_nonpad_token_idxs, dim=1
-    )
-
-    return out.past_key_values, encodings, offsets, last_nonpad_token_logits
-
-
 def _prompts_offsets(
     tokenizer: PreTrainedTokenizerBase,
     prompts: Sequence[str],

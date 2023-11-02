@@ -63,8 +63,9 @@ def does_tokenizer_prepend_space_to_first_token(
         # For GPT-2, they're different.
     """
     # TODO: should somehow check if it's not a SentencePiece tokenizer / if it's a BPE
-    # tokenizer? We should be able to try running the tokenizer on something and seeing
-    # what happens. That'd also let us get rid of the crude isinstance check
+    # tokenizer. We should be able to try running the tokenizer on something and seeing
+    # what happens. That'd also let us get rid of the crude isinstance check. Can @cache
+    # this function after that.
     return not isinstance(tokenizer, (LlamaTokenizer, LlamaTokenizerFast))
 
 
@@ -272,9 +273,9 @@ def _batched_model_call(
     attention_mask: torch.Tensor,
 ) -> CausalLMOutput:
     input_ids = torch.split(input_ids, batch_size)
-    num_batches = len(input_ids)
     attention_mask = torch.split(attention_mask, batch_size)
     outs: list[CausalLMOutput] = []
+    num_batches = len(input_ids)
     with set_up_model(model):
         for batch_idx in range(num_batches):
             out: CausalLMOutput = model(
@@ -297,9 +298,9 @@ def drop_first_token(
 def logits_texts(
     texts: Sequence[str],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
-    padding: bool | None = None,
     drop_bos_token: bool = True,
     do_not_add_eos_token: bool = True,
+    padding: bool | None = None,
     batch_size: int | None = None,
 ) -> tuple[torch.Tensor, BatchEncoding]:
     """

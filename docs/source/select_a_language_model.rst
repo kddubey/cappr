@@ -61,37 +61,30 @@ Inference Endpoints are not yet supported by this package.
 Which CAPPr HuggingFace module should I use?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are four CAPPr HuggingFace modules.
+There are two CAPPr HuggingFace modules. In general, stick to
+:mod:`cappr.huggingface.classify`. If you're running an `AutoAWQ`_ model, then
+(currently) you must use :mod:`cappr.huggingface.classify_no_cache`.
 
 :mod:`cappr.huggingface.classify` has the greatest `throughput
-<https://cappr.readthedocs.io/en/latest/computational_performance.html>`_, but costs a
-bit more memory. (In this module, setting ``batch_size=1`` will have the model process
-one prompt at a time. Completions are always process in parallel.) Furthermore, this
-module and :mod:`cappr.huggingface.classify_no_batch` are currently incompatible with
-`AutoAWQ`_ models.
+<https://cappr.readthedocs.io/en/latest/computational_performance.html>`_. By default,
+prompts are processed two-at-a-time and completions are processed in parallel. These
+settings are controlled by the ``batch_size`` and ``batch_size_completions`` keyword
+arguments, respectively. Decreasing them decreases memory usage but costs more time.
 
-:mod:`cappr.huggingface.classify_no_batch` has the model process one prompt-completion
-pair at a time, minimizing memory usage. Furthermore, it can cache shared prefixes for
-prompts: see :func:`cappr.huggingface.classify_no_batch.cache`. As a result, this module
-is the most well-suited for online applications if there aren't many completions.
+:mod:`cappr.huggingface.classify` can also cache shared prefixes for prompts: see
+:func:`cappr.huggingface.classify.cache`.
 
-:mod:`cappr.huggingface.classify_no_cache` and
-:mod:`cappr.huggingface.classify_no_cache_no_batch` are compatible with `AutoAWQ`_
-models. In general, they may be compatible with a slightly broader class of
-architectures and model interfaces. Here, the model is only assumed to input token/input
-IDs and an attention mask, and then output logits for each input ID.
+:mod:`cappr.huggingface.classify_no_cache` is compatible with `AutoAWQ`_ models. In
+general, it may be compatible with a slightly broader class of architectures and model
+interfaces. Here, the model is only assumed to input token/input IDs and an attention
+mask, and then output logits for each input ID.
 
 .. warning:: When instantiating your `AutoAWQ`_ model, you must set an extra attribute
              indicating the device(s) which the model is on, e.g.,
              ``model.device = "cuda"``.
 
 .. note:: If you're using an `AutoAWQ`_ model, pass ``batch_size=len(completions)`` to
-          the model's initialization. If you're processing :class:`cappr.Example`
-          objects with a non-constant number of :attr:`cappr.Example.completions`, then
-          leave out the ``batch_size`` argument from the model's initialization (or,
-          equivalently, set it to 1) and use
-          :mod:`cappr.huggingface.classify_no_cache_no_batch` instead of
-          :mod:`cappr.huggingface.classify_no_cache`.
+          the model's initialization.
 
 
 Examples
@@ -100,8 +93,9 @@ Examples
 For an example of running Llama 2, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/superglue/copa.ipynb>`_.
 
-For a minimal example of running an `AutoGPTQ`_ StableLM model, see `this notebook
-<https://github.com/kddubey/cappr/blob/main/demos/huggingface/auto_gptq.ipynb>`_.
+For a minimal example of running an `AutoGPTQ`_ Mistral model, where we cache a shared
+prompt prefix and batch completions to save memory, see `this notebook
+<https://github.com/kddubey/cappr/blob/main/demos/huggingface/banking_77_classes.ipynb>`_.
 
 For a minimal example of running an `AutoAWQ`_ Mistral model, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/autoawq.ipynb>`_.

@@ -10,15 +10,16 @@ In the implementation, attention block keys and values for prompts are cached an
 across completions.
 """
 from __future__ import annotations
-from typing import Literal, Mapping, Sequence
+from contextlib import contextmanager, nullcontext
+from typing import Literal, Mapping, Sequence, Tuple, TypeVar
 
 import numpy as np
 import numpy.typing as npt
 import torch
 from transformers import PreTrainedTokenizerBase
-from transformers.modeling_outputs import CausalLMOutputWithPast
+from transformers.modeling_outputs import CausalLMOutput, CausalLMOutputWithPast
 
-from cappr.utils import _batch, classify
+from cappr.utils import _batch, _check, classify
 from cappr import Example
 from cappr import huggingface as hf
 from cappr.huggingface._utils import BatchEncoding, ModelForCausalLM
@@ -123,110 +124,360 @@ def token_logprobs(
     return log_probs
 
 
-def _keys_values_prompts(
-    model: ModelForCausalLM,
-    tokenizer: PreTrainedTokenizerBase,
-    prompts: Sequence[str],
-    num_repeats_per_prompt: int | Sequence[int],
-) -> tuple[
-    tuple[tuple[torch.Tensor, torch.Tensor]], BatchEncoding, torch.Tensor, torch.Tensor
-]:
-    """
-    Efficiently performs this procedure:
+########################################################################################
+########################## Attention past_key_values utilities #########################
+########################################################################################
 
-    1. Repeat-interleave `prompts[i]` `num_repeats_per_prompt[i]` times.
 
-       Or, if `num_repeats_per_prompt` is an integer, repeat-interleave `prompts[i]`
-       `num_repeats_per_prompt` times.
+PastKeyValues = TypeVar("PastKeyValues", bound=Tuple[Tuple[torch.Tensor, torch.Tensor]])
+"""
+The `past_key_values` input to a HuggingFace `transformers` model's forward pass. It's a
+2-D tuple of 4-D tensors.
 
-       For example, if there are 2 prompts and `num_repeats_per_prompt=(2,3)`, the
-       repeated prompts look like::
+Index items:
 
-           [prompts[0],
-            prompts[0],
-            prompts[1],
-            prompts[1],
-            prompts[1]]
+(
+    # attention blocks = 12 for gpt2,
 
-    2. Apply `tokenizer` to the repeated prompts.
+    2 (attention keys, attention values),
 
-    3. Apply `model`.
-    """
-    if isinstance(prompts, str):
+    batch size = # input texts,
+
+    # heads = 12 for gpt2,
+
+    max # tokens in batch,
+
+    key/value hidden dimension = 64 for gpt2
+)
+"""
+
+
+def _past_key_values_tuple_to_tensor(past_key_values: PastKeyValues) -> torch.Tensor:
+    if past_key_values is None:
         raise TypeError(
-            "prompts must be a sequence of strings, not a string itself."
+            "past_key_values is None. Can your model be configured to output it? If "
+            "not, please use cappr.huggingface.classify_no_cache"
         )  # pragma: no cover
-    if not isinstance(num_repeats_per_prompt, int):
-        if not len(prompts) == len(num_repeats_per_prompt):
-            raise ValueError(
-                "If num_repeats_per_prompt is a Sequence, then it must be the same "
-                f"length as prompts. Got lengths {len(num_repeats_per_prompt)}, "
-                f"{len(prompts)}."
-            )  # pragma: no cover
+    return torch.stack([torch.stack(block) for block in past_key_values], dim=0)
 
-    # Need to determine whether we actually need to repeat the prompt's keys and values.
-    # Running that repeat operation (despite not needing it) may be expensive b/c its
-    # intermediate steps require allocating memory to hold big tensors. It'd be nice if
-    # past_key_values were a tensor instead of a nested tuple. That way, we could just
-    # use repeat_interleave and not worry.
-    if isinstance(num_repeats_per_prompt, int):
-        must_repeat: bool = num_repeats_per_prompt > 1
+
+def _past_key_values_tensor_to_tuple(past_key_values: torch.Tensor) -> PastKeyValues:
+    return tuple([(block[0], block[1]) for block in past_key_values])
+
+
+def _past_key_values_get(
+    past_key_values: PastKeyValues,
+    batch_idxs: Sequence[int],
+) -> PastKeyValues:
+    return _past_key_values_tensor_to_tuple(
+        _past_key_values_tuple_to_tensor(past_key_values)[:, :, batch_idxs, ...]
+    )
+
+
+########################################################################################
+############################ KV caching as a context manager ###########################
+########################################################################################
+
+
+class _ModelWithCache:
+    def __init__(
+        self,
+        model: ModelForCausalLM,
+        encodings_to_cache: BatchEncoding,
+        past: tuple[BatchEncoding, CausalLMOutputWithPast] | None = None,
+        logits_all: bool = True,
+    ):
+        # "Private" attributes b/c the interface should mimic that of a ModelForCausalLM
+        self._model = model
+        self._cappr_past = past
+        self._logits_all = logits_all
+        self._batch_idxs: None | torch.Tensor = None
+        self._update_cache = True
+        _ = self.forward(**encodings_to_cache)  # capture output here instead of stdout
+        del _
+        self._update_cache = False
+
+    def forward(
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
+    ) -> CausalLMOutputWithPast:
+        if not hasattr(self, "_cappr_past"):
+            raise AttributeError(
+                "This model is no longer usable. It was used in a temporary context "
+                "where clear_cache_on_exit=True to save memory. If you meant to retain "
+                "the cache for future use, then do: "
+                "with cache(..., clear_cache_on_exit=False)"
+            )
+
+        encodings = {"input_ids": input_ids, "attention_mask": attention_mask}
+
+        if self._cappr_past is None:
+            # There's no past to pass to the model. Just run it.
+            with hf._utils.set_up_model(self._model):
+                out: CausalLMOutputWithPast = self._model(**encodings)
+            self._cappr_past = encodings, out
+            return out
+
+        encodings_past, out_past = self._cappr_past
+
+        if self._batch_idxs is None:
+            # Attempt to broadcast the past with the present
+            if encodings_past["input_ids"].shape[0] == 1 and input_ids.shape[0] > 1:
+                # Assume the past of present input[i] is past[0] (the only past)
+                batch_idxs = torch.zeros(
+                    input_ids.shape[0], device=self._model.device, dtype=torch.int
+                )
+            elif encodings_past["input_ids"].shape[0] == input_ids.shape[0]:
+                # Assume the past of present input[i] is past[i]
+                batch_idxs = torch.arange(input_ids.shape[0], device=self._model.device)
+            else:
+                raise ValueError(
+                    f'Could not broadcast {encodings_past["input_ids"].shape[0]} '
+                    f"cached inputs with {input_ids.shape[0]} new inputs."
+                )
+        else:
+            # Externally set to a tensor. Bad design but whatever
+            batch_idxs: torch.Tensor = self._batch_idxs
+
+        if not torch.equal(
+            batch_idxs,
+            torch.arange(
+                encodings_past["input_ids"].shape[0], device=self._model.device
+            ),
+        ):
+            # Must extract past manually by converting it to a tensor, which is costly
+            # TODO: only do the tensor transfer once since it might be costly
+            past_key_values = _past_key_values_get(out_past.past_key_values, batch_idxs)
+        else:
+            past_key_values = out_past.past_key_values
+
+        attention_mask_past = encodings_past["attention_mask"][batch_idxs]
+        attention_mask_past_cat_present = torch.cat(
+            [attention_mask_past, encodings["attention_mask"]], dim=1
+        )
+        # Set position_ids to what they'd be had we fed prompt + completion together
+        # Some model implementations don't do this, so gotta do it manually
+        offsets = attention_mask_past.sum(dim=1)  # numbers of nonpad tokens in past
+        position_ids_present = (
+            torch.arange(input_ids.shape[1], device=self._model.device)
+            + offsets[:, None]
+        )
+
+        # Everything should now be aligned 🤞 🙏
+        with hf._utils.set_up_model(self._model):
+            out = self._model(
+                input_ids=input_ids,
+                attention_mask=attention_mask_past_cat_present,
+                position_ids=position_ids_present,
+                past_key_values=past_key_values,
+            )
+        # 😎
+
+        # past_key_values is already concatenated in out.past_key_values
+        if self._logits_all:
+            out.logits = torch.cat([out_past.logits[batch_idxs], out.logits], dim=1)
+        if self._update_cache:
+            # Concatenate encodings for future model calls
+            input_ids_past = encodings_past["input_ids"][batch_idxs]
+            encodings = {
+                "input_ids": torch.cat([input_ids_past, input_ids], dim=1),
+                "attention_mask": attention_mask_past_cat_present,
+            }
+            self._cappr_past = encodings, out
+        return out
+
+    def __call__(
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
+    ) -> CausalLMOutputWithPast:
+        return self.forward(input_ids, attention_mask)
+
+    def __getattr__(self, __name: str):
+        return getattr(self._model, __name)
+
+
+@contextmanager
+def cache(
+    model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
+    prefixes: str | Sequence[str],
+    clear_cache_on_exit: bool = True,
+    logits_all: bool = True,
+):
+    """
+    In this context, every prompt processed by `model_and_tokenizer` starts with a fixed
+    prefix. As a result, computations in this context are faster.
+
+    Parameters
+    ----------
+    model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
+        an instantiated model and its corresponding tokenizer
+    prefixes : str | Sequence[str]
+        prefix(es) for all strings that will be processed in this context, e.g., a
+        string containing shared prompt instructions, or a string containing
+        instructions and exemplars for few-shot prompting
+    clear_cache_on_exit : bool, optional
+        whether or not to clear the cache and render the returned model and tokenizer
+        unusable when we exit the context. This is important because it saves memory,
+        and makes code more explicit about the model's state. By default, True
+    logits_all : bool, optional
+        whether or not to have the cached model include logits for all tokens (including
+        the past). By default, past token logits are not included
+
+    Note
+    ----
+    In this context, you must ensure that any strings that are processed by the
+    tokenizer start correctly. Prefixes and future strings are assumed to be separated
+    by a whitespace if you're calling a function in this module, e.g., :func:`predict`.
+
+    Warning
+    -------
+    Do **not**::
+
+        with cache(model_and_tokenizer, "string") as model_and_tokenizer:
+            # use model_and_tokenizer
+
+        # The original, uncached model_and_tokenizer object has been
+        # overwritten!
+        # This is almost always not what you want. Name the returned model
+        # and tokenizer something else:
+        with cache(
+            model_and_tokenizer, "string"
+        ) as cached_model_and_tokenizer:
+            # use cached_model_and_tokenizer
+
+        # Now you can use model_and_tokenizer for computations outside of
+        # the context. Its state is completely unchanged.
+
+    Example
+    -------
+    Usage with :func:`predict_proba`::
+
+        import numpy as np
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from cappr.huggingface.classify import cache, predict_proba
+
+        # Load model and tokenizer
+        model = AutoModelForCausalLM.from_pretrained("gpt2")
+        tokenizer = AutoTokenizer.from_pretrained("gpt2")
+        model_and_tokenizer = (model, tokenizer)
+
+        # Create data
+        prompt_prefix = '''Instructions: complete the sequence.
+        Here are examples:
+        A, B, C => D
+        1, 2, 3 => 4
+
+        Complete this sequence:'''
+
+        prompts = ["a, b, c =>", "X, Y =>"]
+        completions = ["d", "Z", "Hi"]
+
+        # Compute
+        with cache(
+            model_and_tokenizer, prompt_prefix
+        ) as cached_model_and_tokenizer:
+            # prompt_prefix and each prompt are separated by a whitespace
+            pred_probs = predict_proba(
+                prompts, completions, cached_model_and_tokenizer
+            )
+
+        # The above computation is equivalent to this one:
+        prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
+        pred_probs_wo_cache = predict_proba(
+            prompts_full, completions, model_and_tokenizer
+        )
+        assert np.allclose(pred_probs, pred_probs_wo_cache, atol=1e-5)
+
+        print(pred_probs.round(1))
+        # [[1. 0. 0.]
+        #  [0. 1. 0.]]
+
+    Here's a more complicated example, which might help in explaining usage::
+
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from cappr.huggingface.classify import cache
+        from cappr.huggingface._utils import (
+            does_tokenizer_prepend_space_to_first_token,
+            logits_texts,
+        )
+
+        # Load model and tokenizer
+        model = AutoModelForCausalLM.from_pretrained("gpt2")
+        tokenizer = AutoTokenizer.from_pretrained("gpt2")
+        model_and_tokenizer = (model, tokenizer)
+
+        # Assume that all strings will be separated by a whitespace
+        delim = " "
+        if not does_tokenizer_prepend_space_to_first_token(tokenizer):
+            # for SentencePiece tokenizers like Llama's
+            delim = ""
+
+        logits = lambda *args, **kwargs: logits_texts(*args, **kwargs)[0]
+        '''
+        Returns next-token logits for each token in an inputted text.
+        '''
+
+        with cache(model_and_tokenizer, "a") as cached_a:
+            with cache(cached_a, delim + "b c") as cached_a_b_c:
+                with cache(cached_a_b_c, delim + "d") as cached_a_b_c_d:
+                    logits1 = logits([delim + "e f"], cached_a_b_c_d)
+                    logits2 = logits([delim + "x"], cached_a_b_c_d)
+                logits3 = logits([delim + "1 2 3"], cached_a_b_c)
+            logits4 = logits([delim + "b c d"], cached_a)
+
+        logits_correct = lambda texts, **kwargs: logits(
+            texts, model_and_tokenizer, drop_bos_token=False
+        )
+
+        atol = 1e-4
+        assert torch.allclose(logits1, logits_correct(["a b c d e f"]), atol=atol)
+        assert torch.allclose(logits2, logits_correct(["a b c d x"]), atol=atol)
+        assert torch.allclose(logits3, logits_correct(["a b c 1 2 3"]), atol=atol)
+        assert torch.allclose(logits4, logits_correct(["a b c d"]), atol=atol)
+    """
+    _check.nonempty_and_ordered(prefixes, variable_name="prefixes")
+    model, tokenizer = model_and_tokenizer
+    prefixes = [prefixes] if isinstance(prefixes, str) else list(prefixes)
+    past = getattr(model, "_cappr_past", None)
+
+    with hf._utils.set_up_tokenizer(tokenizer):
+        with nullcontext() if past is None else hf._utils.dont_add_bos_token(tokenizer):
+            encodings_prefixes: BatchEncoding = tokenizer(
+                prefixes, return_tensors="pt", padding=True
+            ).to(model.device)
+
+        model_for_causal_lm = (
+            model._model if isinstance(model, _ModelWithCache) else model
+        )
+        model_with_cache = _ModelWithCache(
+            model_for_causal_lm,
+            encodings_to_cache=encodings_prefixes,
+            past=past,
+            logits_all=logits_all,
+        )
+
+        # Now that model_with_cache has a past, we should never add a BOS token
+        with hf._utils.dont_add_bos_token(tokenizer):
+            yield model_with_cache, tokenizer
+
+    if clear_cache_on_exit:
+        # model_with_cache._cappr_past contains a lot of data—logits, past_key_values,
+        # hidden_states (usually taking up GPU RAM)—that should be cleared when we exit
+        # the context
+        delattr(model_with_cache, "_cappr_past")
     else:
-        num_repeats_per_prompt: torch.Tensor = torch.tensor(
-            num_repeats_per_prompt, device=model.device
-        )
-        must_repeat: bool = (num_repeats_per_prompt > 1).any()
+        model_with_cache._cappr_past = past
 
-    # Batch inference prompts
-    prompts = list(prompts)  # tokenizer requires list
-    with hf._utils.set_up_model_and_tokenizer(model, tokenizer):
-        encodings: BatchEncoding = tokenizer(
-            prompts, return_tensors="pt", padding=True
-        ).to(model.device)
-        out: CausalLMOutputWithPast = model(**encodings)
 
-    past_key_values: tuple[tuple[torch.Tensor, torch.Tensor]] = out.past_key_values
-    if must_repeat:
-        # We need to repeat each prompt's keys and values num_repeats_per_prompt times
-        # For layer i, prompts_out.past_key_values[i] is a tuple (key, value),
-        # Each w/ shape: (batch size=len(prompts),
-        #                 number of attention heads=12 for gpt2,
-        #                 max # tokens in batch=encodings["input_ids"].shape[-1],
-        #                 key/value hidden dimension=64 for gpt2)
-        past_key_values = (
-            torch.stack([torch.stack(block) for block in past_key_values], dim=0)
-            # The tuple is now a tensor w/ shape:
-            # (# layers=12 for gpt2,
-            #  2 for key and value,
-            #  and then the rest as before)
-            # Repeat along batch size dim so that it aligns downstream w/ completions
-            .repeat_interleave(num_repeats_per_prompt, dim=2)
-        )
-        # Re-format this tensor to the nested tuple format we'd get if we passed
-        # multiple copies of the prompt at the same time to the model
-        past_key_values = tuple(
-            [(layer[0], layer[1]) for layer in past_key_values]  # keys, values
-        )
+########################################################################################
+############################## Logits (from cached model) ##############################
+########################################################################################
 
-    # Repeat prompt encodings data
-    encodings["attention_mask"] = encodings["attention_mask"].repeat_interleave(
-        num_repeats_per_prompt, dim=0
+
+def _last_nonpad_token_logits(logits: torch.Tensor, attention_mask: torch.Tensor):
+    last_nonpad_token_idxs = (
+        logits.shape[1] - (attention_mask.flip(dims=[1]) == 1).max(dim=1).indices - 1
     )
-    encodings["input_ids"] = encodings["input_ids"].repeat_interleave(
-        num_repeats_per_prompt, dim=0
-    )
-
-    # Need offsets so that position_ids for future tokens are set correctly
-    offsets = encodings["attention_mask"].sum(dim=1)
-
-    # Need (next-token) logits from prompts, i.e., last non-pad prompt token, since
-    # that contains the first completion token's log-probability
-    _last_nonpad_token_idxs = (offsets - 1)[:, None, None]
-    last_nonpad_token_logits = out.logits.repeat_interleave(
-        num_repeats_per_prompt, dim=0
-    ).take_along_dim(_last_nonpad_token_idxs, dim=1)
-
-    return past_key_values, encodings, offsets, last_nonpad_token_logits
+    return logits.take_along_dim(last_nonpad_token_idxs[:, None, None], dim=1)
 
 
 def _blessed_helper(
@@ -237,101 +488,107 @@ def _blessed_helper(
     num_completions_per_prompt: int | Sequence[int],
     completions_repeats: int,
     batch_size_completions: int | None = None,
-) -> tuple[torch.Tensor, BatchEncoding]:
-    """
-    TODO: docstring
-    """
-    # Prepare completion data
-    completions = list(completions)  # tokenizer requires list
+):
+    if not isinstance(num_completions_per_prompt, int):
+        num_completions_per_prompt: torch.Tensor = torch.tensor(
+            num_completions_per_prompt, device=model.device
+        )
+    batch_size_completions = batch_size_completions or len(completions)
+    prompts_idxs: tuple[torch.Tensor] = (
+        torch.arange(len(prompts), device=model.device)
+        .repeat_interleave(num_completions_per_prompt)
+        .split(batch_size_completions)
+    )
+    # Prepare completions data
     # For Llama (and probably others) we don't want the completions to start w/ a bos
     # token <s> b/c we need to mimic sending the prompt + completion together.
     # For example, if 'a b' is the prompt and 'c' is the completion, the encoding
     # should correspond to '<s> a b c' not '<s> a b <s> c'.
     with hf._utils.set_up_tokenizer(tokenizer), hf._utils.dont_add_bos_token(tokenizer):
+        # This computation is repeated for constant completions, but it doesn't matter
         completions_encoding: BatchEncoding = tokenizer(
             completions, return_tensors="pt", padding=True
         ).to(model.device)
-
-    # Single-token optimization: if every completion is a single token, we don't need to
-    # repeat stuff or run the model on any of the completions data. Currently, this
-    # optimization is only done for constant completions, i.e., not _examples.
-    # fmt: off
-    _are_completions_constant = (
-        isinstance(num_completions_per_prompt, int) and
-        completions_repeats == len(prompts)
+    # Repeat then batch completions. The other way around corrupts the order
+    completions_input_ids = torch.split(
+        completions_encoding["input_ids"].repeat(completions_repeats, 1),
+        batch_size_completions,
     )
-    # fmt: on
-    if _are_completions_constant and completions_encoding["input_ids"].shape[1] == 1:
-        # Note that completions_encoding["input_ids"].shape[1] == logits.shape[1]
-        prompts_last_nonpad_token_logits = _keys_values_prompts(
-            model, tokenizer, prompts, num_repeats_per_prompt=1
-        )[-1]
-        return prompts_last_nonpad_token_logits, completions_encoding
-
-    # We need to repeat stuff
-    completions_input_ids: torch.Tensor = completions_encoding["input_ids"].repeat(
-        completions_repeats, 1
+    completions_attention_mask = torch.split(
+        completions_encoding["attention_mask"].repeat(completions_repeats, 1),
+        batch_size_completions,
     )
-    completions_attention_mask: torch.Tensor = completions_encoding[
-        "attention_mask"
-    ].repeat(completions_repeats, 1)
+    num_batches = len(completions_input_ids)
 
-    # Prepare prompt data
-    (
-        past_key_values,
-        prompts_encodings,
-        offsets,
-        prompts_last_nonpad_token_logits,
-    ) = _keys_values_prompts(
-        model, tokenizer, prompts, num_repeats_per_prompt=num_completions_per_prompt
-    )
+    # TODO: put this in the context manager? Little weird.
+    if not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer):
+        start_of_prompt = ""
+    else:
+        in_cache_context = isinstance(model, _ModelWithCache)
+        start_of_prompt = " " if in_cache_context else ""
+    prompts = [start_of_prompt + prompt for prompt in prompts]
 
-    # Set position_ids to what they were had we fed the prompt + completion together w/
-    # right padding
-    _num_completion_tokens = completions_encoding["input_ids"].shape[1]
-    completions_position_ids = (
-        torch.arange(_num_completion_tokens, device=model.device)
-        + offsets[:, None]  # broadcast
-    )
-    # Need attention_mask to include the prompt since it prolly has padding
-    attention_mask = torch.cat(
-        (prompts_encodings["attention_mask"], completions_attention_mask), dim=1
-    )
-
-    # Everything should now be aligned 🤞 🙏
-    with hf._utils.set_up_model(model):
-        completions_out: CausalLMOutputWithPast = model(
-            input_ids=completions_input_ids,
-            attention_mask=attention_mask,
-            past_key_values=past_key_values,
-            position_ids=completions_position_ids,
+    # Run model, caching prompts
+    with cache((model, tokenizer), prompts, logits_all=False) as cached_prompts:
+        cached_prompts_model, _ = cached_prompts
+        prompts_last_nonpad_token_logits = _last_nonpad_token_logits(
+            cached_prompts_model._cappr_past[1].logits,
+            cached_prompts_model._cappr_past[0]["attention_mask"],
         )
-    # 😎
-    completions_out.past_key_values = None  # don't need this
+        # fmt: off
+        _are_completions_constant = (
+            isinstance(num_completions_per_prompt, int) and
+            completions_repeats == len(prompts)
+        )
+        # fmt: on
+        if (
+            completions_encoding["input_ids"].shape[1] == 1
+            and _are_completions_constant
+        ):
+            # Single-token optimization: if every completion is a single token, we don't
+            # need to repeat stuff or run the model on any of the completions data.
+            # Currently, this optimization is only done for constant completions, i.e.,
+            # not _examples.
+            # Note that completions_encoding["input_ids"].shape[1] == logits.shape[1]
+            return prompts_last_nonpad_token_logits, completions_encoding
 
-    # Let's drop the next-token logits for the last completion token b/c they're not
-    # useful for our purposes. Moreover, dropping ensures
-    # logits.shape[:2] == encodings['input_ids'].shape, as one expects.
-    # Just keep in mind that `logits` are shifted behind.
-    logits = torch.cat(
-        [prompts_last_nonpad_token_logits, completions_out.logits[:, :-1, :]], dim=1
+        offsets = cached_prompts_model._cappr_past[0]["attention_mask"].sum(dim=1)
+        completions_logits = []
+        _batch_idxs = cached_prompts_model._batch_idxs
+        for batch_idx in range(num_batches):
+            cached_prompts_model._batch_idxs = prompts_idxs[batch_idx]
+            out: CausalLMOutput = cached_prompts_model(
+                input_ids=completions_input_ids[batch_idx],
+                attention_mask=completions_attention_mask[batch_idx],
+            )
+            # B/c logits_all=False, out.logits only has completion token logits
+            completions_logits.append(out.logits)
+        cached_prompts_model._batch_idxs = _batch_idxs
+
+    # Drop the next-token logits for the last completion token. They're not useful for
+    # CAPPr. Moreover, dropping ensures completions_logits.shape[:2] ==
+    # completions_encoding["input_ids"].shape, as one expects. Just keep in mind that
+    # `logits` are shifted behind
+    completions_logits = torch.cat(completions_logits, dim=0)[:, :-1, :]
+    prompts_last_nonpad_token_logits = (
+        prompts_last_nonpad_token_logits.repeat_interleave(
+            num_completions_per_prompt, dim=0
+        )
     )
-
-    # You need to be able to ignore pad tokens, so you need the tokenization and offset
-    # data as well
-    encodings: BatchEncoding = {
-        "input_ids": completions_input_ids,
-        "attention_mask": completions_attention_mask,
-        "offsets": offsets,
+    completions_logits = torch.cat(
+        [prompts_last_nonpad_token_logits, completions_logits], dim=1
+    )
+    # You may need the offsets to be able to ignore pad tokens
+    completions_encoding: BatchEncoding = {
+        "input_ids": torch.cat(completions_input_ids),
+        "attention_mask": torch.cat(completions_attention_mask),
+        "offsets": offsets.repeat_interleave(num_completions_per_prompt, dim=0),
     }
-
     if getattr(tokenizer, "add_bos_token", False):
         # Drop the first <s> token after we're done encoding so that the shape is
-        # consistent w/ other tokenizers.
-        # Note: to modify a BatchEncoding value, you must use setitem, not setattr
-        encodings["offsets"] = encodings["offsets"] - 1
-
-    return logits, encodings
+        # consistent w/ other tokenizers
+        completions_encoding["offsets"] = completions_encoding["offsets"] - 1
+    return completions_logits, completions_encoding
 
 
 def _logits_completions_given_prompts(
@@ -385,6 +642,11 @@ def _logits_completions_given_prompts_examples(
     )
 
 
+########################################################################################
+################################## Logits to log-probs #################################
+########################################################################################
+
+
 def _logits_to_log_probs_completions(
     logits: torch.Tensor, encodings: Mapping[str, torch.Tensor], from_examples: bool
 ) -> list[list[float]]:
@@ -412,6 +674,11 @@ def _logits_to_log_probs_completions(
             log_probs, last_idx_non_pad
         )
     ]
+
+
+########################################################################################
+##################################### Implementation ###################################
+########################################################################################
 
 
 @classify._log_probs_conditional
