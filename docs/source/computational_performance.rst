@@ -7,12 +7,12 @@ prompts. This feature is already supported by ``AutoModelForCausalLM``\ s. See `
 module <https://github.com/kddubey/cappr/blob/main/src/cappr/huggingface/classify.py>`_
 for the implementation.
 
-.. figure:: _static/scaling_classes/batch_size_32.png
+.. figure:: _static/scaling_classes/batch_size_16.png
    :align: center
 
    `COPA`_ dataset, repeating the choices to simulate multi-class classification tasks.
-   `GPT-2 (small)`_ was run on a T4 GPU. 96 classification inputs were processed in
-   batches of size 32. For a controlled runtime comparison, GPU RAM was held (roughly)
+   `GPT-2 (small)`_ was run on a T4 GPU. 48 classification inputs were processed in
+   batches of size 16. For a controlled runtime comparison, GPU RAM was held (roughly)
    constant for each method and each number of classes. Each point in the graph is a
    median of 5 runs. For text generation, exactly 4 tokens were generated for each
    prompt, which is the number of tokens in ``'\n\nAnswer A'``. 1-token times are also
