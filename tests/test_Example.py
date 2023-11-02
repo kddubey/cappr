@@ -85,6 +85,13 @@ def test___post_init__(
         with pytest.raises(ValueError, match=re.escape("completions [0] are empty.")):
             Example(**modify_kwargs(kwargs_valid, completions=_completions_with_empty))
 
+    # prior - not 1-D
+    with pytest.raises(ValueError, match="prior must be 1-D."):
+        Example(
+            **modify_kwargs(
+                kwargs_valid, prior=[[1 / len(completions)]] * len(completions)
+            )
+        )
     # prior - probabilities < 0
     with pytest.raises(
         ValueError, match="prior must contain probabilities between 0 and 1."

@@ -11,20 +11,18 @@ this module **does not** batch any inputs—every prompt-completion pair is proc
 at a time. As a result, memory usage is minimized.
 """
 from __future__ import annotations
-from contextlib import contextmanager, nullcontext
 from typing import Literal, Sequence
 
 import numpy as np
 import numpy.typing as npt
 import torch
 from transformers import PreTrainedTokenizerBase
-from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from cappr.utils import _batch, classify
 from cappr import Example
 from cappr import huggingface as hf
 from cappr.huggingface import classify_no_cache as hf_no_cache
-from cappr.huggingface._utils import BatchEncoding, ModelForCausalLM
+from cappr.huggingface._utils import ModelForCausalLM
 
 
 def token_logprobs(
@@ -91,251 +89,6 @@ def token_logprobs(
     )
 
 
-########################################################################################
-#### KV caching as a context manager. One day this will be made simpler or obsolete. ###
-########################################################################################
-
-
-class _ModelWithCache:
-    def __init__(
-        self,
-        model: ModelForCausalLM,
-        encoding_to_cache: BatchEncoding,
-        past: tuple[BatchEncoding, CausalLMOutputWithPast] | None = None,
-    ):
-        self._model = model
-        self._cappr_past = past
-        self._update_cache = True
-        _ = self.forward(**encoding_to_cache)
-        self._update_cache = False
-
-    def forward(
-        self, input_ids: torch.Tensor, attention_mask: torch.Tensor, *args, **kwargs
-    ) -> CausalLMOutputWithPast:
-        if not hasattr(self, "_cappr_past"):
-            raise AttributeError(
-                "This model is no longer usable. It was used in a temporary context "
-                "where clear_cache_on_exit=True to save memory. If you meant to retain "
-                "the cache for future use, then do: "
-                "`with cache(..., clear_cache_on_exit=False)`"
-            )
-
-        encoding = {"input_ids": input_ids, "attention_mask": attention_mask}
-        if self._cappr_past is None:
-            with hf._utils.set_up_model(self._model):
-                out: CausalLMOutputWithPast = self._model(**encoding)
-            self._cappr_past = encoding, out
-            return out
-
-        encoding_past, out_past = self._cappr_past
-
-        # Set position_ids to what they'd be had we fed prompt + completion together
-        _num_completion_tokens = encoding["input_ids"].shape[1]
-        position_ids = (
-            torch.arange(_num_completion_tokens, device=self._model.device)
-            + encoding_past["attention_mask"].sum(dim=1)[:, None]
-        )
-        attention_mask = torch.cat(
-            (encoding_past["attention_mask"], encoding["attention_mask"]), dim=1
-        )
-        # Everything should now be aligned 🤞 🙏
-        with hf._utils.set_up_model(self._model):
-            out = self._model(
-                input_ids=encoding["input_ids"],
-                attention_mask=attention_mask,
-                past_key_values=out_past.past_key_values,
-                position_ids=position_ids,
-            )
-
-        # Concatenate encodings for future model calls
-        encoding = {
-            key: torch.cat((encoding_past[key], encoding[key]), dim=1)
-            for key in encoding
-        }
-        # Concatenate logits to fulfill the spec
-        out.logits = torch.cat((out_past.logits, out.logits), dim=1)
-        if self._update_cache:
-            self._cappr_past = encoding, out
-        return out
-
-    def __call__(self, *args, **kwargs) -> CausalLMOutputWithPast:
-        return self.forward(*args, **kwargs)
-
-    def __getattr__(self, __name: str):
-        return getattr(self._model, __name)
-
-
-@contextmanager
-def cache(
-    model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
-    prefix: str,
-    clear_cache_on_exit: bool = True,
-):
-    """
-    In this context, every prompt processed by `model_and_tokenizer` starts with
-    `prefix`. As a result, computations in this context are faster.
-
-    Parameters
-    ----------
-    model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
-        an instantiated model and its corresponding tokenizer
-    prefix : str
-        prefix for all strings/prompts that will be processed in this context, e.g., a
-        set of shared instructions, or exemplars for few-shot prompting
-    clear_cache_on_exit : bool, optional
-        whether or not to clear the cache and render the returned model and tokenizer
-        unusable when we exit the context. This is important because it saves memory,
-        and makes code more explicit about the model's state. By default, True
-
-    Note
-    ----
-    Do **not**::
-
-        with cache(model_and_tokenizer, "string") as model_and_tokenizer:
-            # use model_and_tokenizer
-
-        # The original, uncached model_and_tokenizer object has been
-        # overwritten!
-        # This is almost always not what you want. Name the returned model
-        # and tokenizer something else:
-        with cache(
-            model_and_tokenizer, "string"
-        ) as cached_model_and_tokenizer:
-            # use cached_model_and_tokenizer
-
-        # Now you can use model_and_tokenizer for computations outside of
-        # the context. Its state is completely unchanged.
-
-    Warning
-    -------
-    In this context, you must ensure that any strings that are processed by the
-    tokenizer start correctly. Strings are assumed to be separated by `end_of_prompt` if
-    you're calling a function in this module.
-
-    Warning
-    -------
-    In this context, only un-batched computations are allowed.
-
-    Example
-    -------
-    Usage with :func:`predict_proba`::
-
-        import numpy as np
-        from transformers import AutoModelForCausalLM, AutoTokenizer
-        from cappr.huggingface.classify_no_batch import (
-            cache, predict_proba
-        )
-
-        # Load model and tokenizer
-        model = AutoModelForCausalLM.from_pretrained("gpt2")
-        tokenizer = AutoTokenizer.from_pretrained("gpt2")
-        model_and_tokenizer = (model, tokenizer)
-
-        # Create data
-        prompt_prefix = '''Instructions: complete the sequence.
-        Here are examples:
-        A, B, C => D
-        1, 2, 3 => 4
-
-        Complete this sequence:'''
-
-        prompts = ["a, b, c =>", "X, Y =>"]
-        completions = ["d", "Z", "Hi"]
-
-        # Compute
-        with cache(
-            model_and_tokenizer, prompt_prefix
-        ) as cached_model_and_tokenizer:
-            pred_probs = predict_proba(
-                prompts, completions, cached_model_and_tokenizer
-            )
-
-        # The above computation is equivalent to this one:
-        prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
-        pred_probs_wo_cache = predict_proba(
-            prompts_full, completions, model_and_tokenizer
-        )
-        assert np.allclose(pred_probs, pred_probs_wo_cache)
-
-        print(pred_probs.round(1))
-        # [[1. 0. 0.]
-        #  [0. 1. 0.]]
-
-    Here's a more complicated example, which might help in explaining usage::
-
-        import torch
-        from transformers import AutoModelForCausalLM, AutoTokenizer
-        from cappr.huggingface.classify_no_batch import cache
-        from cappr.huggingface._utils import (
-            does_tokenizer_prepend_space_to_first_token,
-            logits_texts,
-        )
-
-        # Load model and tokenizer
-        model = AutoModelForCausalLM.from_pretrained("gpt2")
-        tokenizer = AutoTokenizer.from_pretrained("gpt2")
-        model_and_tokenizer = (model, tokenizer)
-
-        # Assume that all strings will be separated by a whitespace
-        delim = " "
-        if not does_tokenizer_prepend_space_to_first_token(tokenizer):
-            # for SentencePiece tokenizers like Llama's
-            delim = ""
-
-        logits = lambda *args, **kwargs: logits_texts(*args, **kwargs)[0]
-        '''
-        Returns next-token logits for each token in an inputted text.
-        '''
-
-        with cache(model_and_tokenizer, "a") as cached_a:
-            with cache(cached_a, delim + "b c") as cached_a_b_c:
-                with cache(cached_a_b_c, delim + "d") as cached_a_b_c_d:
-                    logits1 = logits([delim + "e f"], cached_a_b_c_d)
-                    logits2 = logits([delim + "x"], cached_a_b_c_d)
-                logits3 = logits([delim + "1 2 3"], cached_a_b_c)
-            logits4 = logits([delim + "b c d"], cached_a)
-
-        logits_correct = lambda texts, **kwargs: logits(
-            texts, model_and_tokenizer, drop_bos_token=False
-        )
-
-        atol = 1e-4
-        assert torch.allclose(logits1, logits_correct(["a b c d e f"]), atol=atol)
-        assert torch.allclose(logits2, logits_correct(["a b c d x"]), atol=atol)
-        assert torch.allclose(logits3, logits_correct(["a b c 1 2 3"]), atol=atol)
-        assert torch.allclose(logits4, logits_correct(["a b c d"]), atol=atol)
-
-    """
-    model, tokenizer = model_and_tokenizer
-
-    past = getattr(model, "_cappr_past", None)
-
-    # Because we're implicitly concatenating strings, we should never add an EOS token
-    with hf._utils.dont_add_eos_token(tokenizer):
-        is_first = past is None
-        with hf._utils.dont_add_bos_token(tokenizer) if not is_first else nullcontext():
-            encoding: BatchEncoding = tokenizer([prefix], return_tensors="pt").to(
-                model.device
-            )
-
-        model_for_causal_lm = (
-            model._model if isinstance(model, _ModelWithCache) else model
-        )
-        model_with_cache = _ModelWithCache(model_for_causal_lm, encoding, past)
-
-        # Now that we've started the cache, we should never add a BOS token
-        with hf._utils.dont_add_bos_token(tokenizer):
-            yield model_with_cache, tokenizer
-
-    if clear_cache_on_exit:
-        # model_with_cache._cappr_past contains a ton of data—logits, past_key_values,
-        # hidden_states (usually taking up GPU RAM)—that should be cleared when we exit
-        # the context
-        delattr(model_with_cache, "_cappr_past")
-    else:
-        model_with_cache._cappr_past = past
-
-
 def _log_probs_conditional_prompt(
     prompt: str,
     completions: Sequence[str],
@@ -343,11 +96,11 @@ def _log_probs_conditional_prompt(
     end_of_prompt: Literal[" ", ""],
 ):
     model, tokenizer = model_and_tokenizer
-    in_caching_context = isinstance(model, _ModelWithCache)
+    in_caching_context = isinstance(model, hf.classify_._ModelWithCache)
     start_of_prompt = end_of_prompt if in_caching_context else ""
     does_tokenizer_add_bos_token = getattr(tokenizer, "add_bos_token", False)
     log_probs_completions = []
-    with cache(model_and_tokenizer, start_of_prompt + prompt) as cached:
+    with hf.classify_.cache(model_and_tokenizer, start_of_prompt + prompt) as cached:
         encoding_prompt = cached[0]._cappr_past[0]
         offset = torch.tensor(
             [encoding_prompt["input_ids"].shape[1]], device=model.device

@@ -8,6 +8,7 @@ See this section of the documentation: https://cappr.readthedocs.io/en/latest/se
 from . import (
     _utils,
     classify,
+    classify_,
     classify_no_batch,
     classify_no_cache,
     classify_no_cache_no_batch,

@@ -263,6 +263,29 @@ def dont_add_bos_token(tokenizer: PreTrainedTokenizerBase):
 ########################################################################################
 ##################################### Logits stuff #####################################
 ########################################################################################
+
+
+def _batched_model_call(
+    batch_size: int,
+    model: ModelForCausalLM,
+    input_ids: torch.Tensor,
+    attention_mask: torch.Tensor,
+) -> CausalLMOutput:
+    input_ids = torch.split(input_ids, batch_size)
+    num_batches = len(input_ids)
+    attention_mask = torch.split(attention_mask, batch_size)
+    outs: list[CausalLMOutput] = []
+    with set_up_model(model):
+        for batch_idx in range(num_batches):
+            out: CausalLMOutput = model(
+                input_ids=input_ids[batch_idx],
+                attention_mask=attention_mask[batch_idx],
+            )
+            outs.append(out)
+    logits = torch.cat([out.logits for out in outs], dim=0)
+    return CausalLMOutput(logits=logits)
+
+
 def drop_first_token(
     logits: torch.Tensor, encodings: BatchEncoding
 ) -> tuple[torch.Tensor, BatchEncoding]:
@@ -277,6 +300,7 @@ def logits_texts(
     padding: bool | None = None,
     drop_bos_token: bool = True,
     do_not_add_eos_token: bool = True,
+    batch_size: int | None = None,
 ) -> tuple[torch.Tensor, BatchEncoding]:
     """
     Basically::
@@ -286,15 +310,17 @@ def logits_texts(
     The kwargs are set for CAPPr's convenience.
     """
     model, tokenizer = model_and_tokenizer
-    # TODO: auto-batch?
     if padding is None:
         padding = getattr(tokenizer, "pad_token_id", None) is not None
     with dont_add_eos_token(tokenizer) if do_not_add_eos_token else nullcontext():
         encodings: BatchEncoding = tokenizer(
             texts, return_tensors="pt", padding=padding
         ).to(model.device)
-    with set_up_model(model):
-        out: CausalLMOutput = model(**encodings)
+    if batch_size is not None:
+        out: CausalLMOutput = _batched_model_call(batch_size, model, **encodings)
+    else:
+        with set_up_model(model):
+            out: CausalLMOutput = model(**encodings)
     if drop_bos_token and getattr(tokenizer, "add_bos_token", False):
         # Drop the first bos token after we're done encoding so that the shape is
         # consistent w/ other tokenizers. For CAPPr, we'll never be interested in

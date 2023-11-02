@@ -171,6 +171,7 @@ def _logits_completions_given_prompts(
     prompts: Sequence[str],
     completions: Sequence[str],
     end_of_prompt: Literal[" ", ""] = " ",
+    batch_size_completions: int | None = None,
 ):
     if isinstance(prompts, str):
         raise TypeError(
@@ -183,7 +184,9 @@ def _logits_completions_given_prompts(
         for completion in completions
     ]
     with hf._utils.set_up_model_and_tokenizer(model, tokenizer):
-        logits, encodings = hf._utils.logits_texts(texts, (model, tokenizer))
+        logits, encodings = hf._utils.logits_texts(
+            texts, (model, tokenizer), batch_size=batch_size_completions
+        )
     # Need these indices to slice completion tokens
     encodings["offsets"] = _prompts_offsets(
         tokenizer, prompts, num_completions_per_prompt=len(completions)
@@ -195,6 +198,7 @@ def _logits_completions_given_prompts_examples(
     model: ModelForCausalLM,
     tokenizer: PreTrainedTokenizerBase,
     examples: Sequence[Example],
+    batch_size_completions: int | None = None,
 ):
     texts = [
         example.prompt + example.end_of_prompt + completion
@@ -202,7 +206,9 @@ def _logits_completions_given_prompts_examples(
         for completion in example.completions
     ]
     with hf._utils.set_up_model_and_tokenizer(model, tokenizer):
-        logits, encodings = hf._utils.logits_texts(texts, (model, tokenizer))
+        logits, encodings = hf._utils.logits_texts(
+            texts, (model, tokenizer), batch_size=batch_size_completions
+        )
     # Need these indices to slice completion tokens
     prompts = [example.prompt for example in examples]
     num_completions_per_prompt = [len(example.completions) for example in examples]
@@ -236,6 +242,7 @@ def log_probs_conditional(
     end_of_prompt: Literal[" ", ""] = " ",
     show_progress_bar: bool | None = None,
     batch_size: int = 2,
+    batch_size_completions: int | None = None,
     **kwargs,
 ) -> list[list[float]] | list[list[list[float]]]:
     """
@@ -259,6 +266,9 @@ def log_probs_conditional(
     batch_size : int, optional
         the maximum number of `prompts` that the model will process in parallel, by
         default 2
+    batch_size_completions : int, optional
+        the maximum number of `completions` that the model will process in parallel. By
+        default, all completions are processed in parallel
 
     Returns
     -------
@@ -321,7 +331,11 @@ def log_probs_conditional(
         prompts, show_progress_bar=show_progress_bar, batch_size=batch_size
     ):
         logits, encodings = _logits_completions_given_prompts(
-            *model_and_tokenizer, prompts, completions, end_of_prompt=end_of_prompt
+            *model_and_tokenizer,
+            prompts,
+            completions,
+            end_of_prompt=end_of_prompt,
+            batch_size_completions=batch_size_completions,
         )
         return _logits_to_log_probs_completions(logits, encodings)
 
@@ -335,6 +349,7 @@ def log_probs_conditional_examples(
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     show_progress_bar: bool | None = None,
     batch_size: int = 2,
+    batch_size_completions: int | None = None,
 ) -> list[list[float]] | list[list[list[float]]]:
     """
     Log-probabilities of each completion token conditional on each prompt and previous
@@ -353,6 +368,9 @@ def log_probs_conditional_examples(
     batch_size : int, optional
         the maximum number of `examples` that the model will process in parallel, by
         default 2
+    batch_size_completions : int, optional
+        the maximum number of `completions` that the model will process in parallel. By
+        default, all completions are processed in parallel
 
     Returns
     -------
@@ -427,7 +445,9 @@ def log_probs_conditional_examples(
         examples, show_progress_bar=show_progress_bar, batch_size=batch_size
     ):
         logits, encodings = _logits_completions_given_prompts_examples(
-            *model_and_tokenizer, examples
+            *model_and_tokenizer,
+            examples,
+            batch_size_completions=batch_size_completions,
         )
         return _logits_to_log_probs_completions(logits, encodings)
 
@@ -450,6 +470,7 @@ def predict_proba(
     log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
     show_progress_bar: bool | None = None,
     batch_size: int = 2,
+    batch_size_completions: int | None = None,
 ) -> npt.NDArray[np.floating]:
     """
     Predict probabilities of each completion coming after each prompt.
@@ -491,6 +512,9 @@ def predict_proba(
     batch_size : int, optional
         the maximum number of `prompts` that the model will process in parallel, by
         default 2
+    batch_size_completions : int, optional
+        the maximum number of `completions` that the model will process in parallel. By
+        default, all completions are processed in parallel
 
     Returns
     -------
@@ -559,6 +583,7 @@ def predict_proba_examples(
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     show_progress_bar: bool | None = None,
     batch_size: int = 2,
+    batch_size_completions: int | None = None,
 ) -> npt.NDArray[np.floating] | list[npt.NDArray[np.floating]]:
     """
     Predict probabilities of each completion coming after each prompt.
@@ -576,6 +601,9 @@ def predict_proba_examples(
     batch_size : int, optional
         the maximum number of `examples` that the model will process in parallel, by
         default 2
+    batch_size_completions : int, optional
+        the maximum number of `completions` that the model will process in parallel. By
+        default, all completions are processed in parallel
 
     Returns
     -------
@@ -645,6 +673,7 @@ def predict(
     log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
     show_progress_bar: bool | None = None,
     batch_size: int = 2,
+    batch_size_completions: int | None = None,
 ) -> str | list[str]:
     """
     Predict which completion is most likely to follow each prompt.
@@ -680,6 +709,9 @@ def predict(
     batch_size : int, optional
         the maximum number of `prompts` that the model will process in parallel, by
         default 2
+    batch_size_completions : int, optional
+        the maximum number of `completions` that the model will process in parallel. By
+        default, all completions are processed in parallel
 
     Returns
     -------
@@ -734,6 +766,7 @@ def predict_examples(
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     show_progress_bar: bool | None = None,
     batch_size: int = 2,
+    batch_size_completions: int | None = None,
 ) -> str | list[str]:
     """
     Predict which completion is most likely to follow each prompt.

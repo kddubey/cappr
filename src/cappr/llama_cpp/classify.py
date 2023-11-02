@@ -2,7 +2,7 @@
 Perform prompt-completion classification using a model which can be loaded via
 ``llama_cpp.Llama``.
 
-You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
+You probably just want the :func:`predict` function :-)
 
 .. note:: When instantiating your Llama, set ``logits_all=True``.
 

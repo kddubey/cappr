@@ -1,5 +1,7 @@
 """
 Completion After Prompt Probability
+
+https://cappr.readthedocs.io/
 """
 __version__ = "0.6.6"
 

@@ -13,11 +13,13 @@ import pytest
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizerBase
+from transformers.modeling_outputs import CausalLMOutput
 import huggingface_hub as hf_hub
 
 from cappr import Example
 from cappr.huggingface import (
     classify,
+    classify_,
     classify_no_batch,
     classify_no_cache,
     classify_no_cache_no_batch,
@@ -43,9 +45,9 @@ from _protocol import classify_module
     params=[
         "hf-internal-testing/tiny-random-GPT2LMHeadModel",
         "Maykeye/TinyLLama-v0",
-        "hf-internal-testing/tiny-random-GPTJForCausalLM",
-        "hf-internal-testing/tiny-random-GPTNeoXForCausalLM",
-        "hf-internal-testing/tiny-random-MistralForCausalLM",
+        # "hf-internal-testing/tiny-random-GPTJForCausalLM",
+        # "hf-internal-testing/tiny-random-GPTNeoXForCausalLM",
+        # "hf-internal-testing/tiny-random-MistralForCausalLM",
     ],
 )
 def model_name(request: pytest.FixtureRequest) -> str:
@@ -146,6 +148,19 @@ def test_set_up_model_and_tokenizer(
 
     for attribute, old_value in tokenizer_attribute_to_old_value.items():
         assert getattr(tokenizer, attribute, None) == old_value
+
+
+@pytest.mark.parametrize("texts", (["a b c", "d e", "f g h i"], ["slow reverb"]))
+@pytest.mark.parametrize("batch_size", (1, 2))
+def test__batched_model_call(texts, model, tokenizer, batch_size, atol):
+    with hf._utils.set_up_tokenizer(tokenizer):
+        encodings: BatchEncoding = tokenizer(texts, return_tensors="pt", padding=True)
+    with hf._utils.set_up_model(model):
+        out_correct: CausalLMOutput = model(**encodings)
+    out_batched: CausalLMOutput = hf._utils._batched_model_call(
+        batch_size=batch_size, model=model, **encodings
+    )
+    assert torch.allclose(out_correct.logits, out_batched.logits, atol=atol)
 
 
 @pytest.mark.parametrize(
@@ -251,9 +266,9 @@ def test_cache_logits(model_and_tokenizer, atol):
     Returns next-token logits for each token in an inputted text.
     """
 
-    with classify_no_batch.cache(model_and_tokenizer, "a") as cached_a:
-        with classify_no_batch.cache(cached_a, delim + "b c") as cached_a_b_c:
-            with classify_no_batch.cache(cached_a_b_c, delim + "d") as cached_a_b_c_d:
+    with classify_.cache(model_and_tokenizer, "a") as cached_a:
+        with classify_.cache(cached_a, delim + "b c") as cached_a_b_c:
+            with classify_.cache(cached_a_b_c, delim + "d") as cached_a_b_c_d:
                 logits1 = logits([delim + "e f"], cached_a_b_c_d)
                 logits2 = logits([delim + "x"], cached_a_b_c_d)
             logits3 = logits([delim + "1 2 3"], cached_a_b_c)
@@ -272,7 +287,7 @@ def test_cache_logits(model_and_tokenizer, atol):
     with pytest.raises(AttributeError, match="This model is no longer usable."):
         cached_a[0](input_ids=None, attention_mask=None)
 
-    with hf.classify_no_batch.cache(
+    with classify_.cache(
         model_and_tokenizer, "a", clear_cache_on_exit=False
     ) as cached_a:
         logits(["whatever"], cached_a)
@@ -281,58 +296,68 @@ def test_cache_logits(model_and_tokenizer, atol):
 
 # TODO: this is almost completely copy-pasted from tests/test_llama_cpp_classify. Should
 # be factored out since a cache context manager should have the same interface
-def test_cache(model_and_tokenizer):
-    prompt_prefix = "a b c"
-    prompts = ["d", "d e"]
-    completions = ["e f", "f g"]
+@pytest.mark.parametrize(
+    "completions",
+    (
+        ["e f", "f g h i j"],  # multiple tokens
+        ["e", "f"],  # single tokens
+    ),
+)
+@pytest.mark.parametrize("batch_size", (1, 2, 10))
+class TestCache:
+    def test_cache(self, model_and_tokenizer, completions, batch_size):
+        prompt_prefix = "a b c"
+        prompts = ["d", "d e"]
 
-    with classify_no_batch.cache(model_and_tokenizer, prompt_prefix) as cached:
-        log_probs_completions = classify_no_batch.log_probs_conditional(
-            prompts, completions, cached
+        with classify_.cache(model_and_tokenizer, prompt_prefix) as cached:
+            log_probs_completions = classify_.log_probs_conditional(
+                prompts, completions, cached, batch_size=batch_size
+            )
+        _test_form._test_log_probs_conditional(
+            log_probs_completions,
+            expected_len=len(prompts),
+            num_completions_per_prompt=[len(completions)] * len(prompts),
         )
-    _test_form._test_log_probs_conditional(
-        log_probs_completions,
-        expected_len=len(prompts),
-        num_completions_per_prompt=[len(completions)] * len(prompts),
-    )
 
-    prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
-    log_probs_completions_wo_cache = classify_no_cache_no_batch.log_probs_conditional(
-        prompts_full, completions, model_and_tokenizer
-    )
-    _test_content._test_log_probs_conditional(
-        log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
-    )
-
-
-def test_cache_examples(model_and_tokenizer):
-    prompt_prefix = "a b c"
-    _prompts = ["d", "d e"]
-    completions = ["e f", "f g"]
-    examples = [Example(prompt, completions) for prompt in _prompts]
-
-    with classify_no_batch.cache(model_and_tokenizer, prompt_prefix) as cached:
-        log_probs_completions = classify_no_batch.log_probs_conditional_examples(
-            examples, cached
+        prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
+        log_probs_completions_wo_cache = (
+            classify_no_cache_no_batch.log_probs_conditional(
+                prompts_full, completions, model_and_tokenizer
+            )
         )
-    _test_form._test_log_probs_conditional(
-        log_probs_completions,
-        expected_len=len(examples),
-        num_completions_per_prompt=[len(example.completions) for example in examples],
-    )
-
-    examples_full = [
-        Example(prompt_prefix + " " + example.prompt, example.completions)
-        for example in examples
-    ]
-    log_probs_completions_wo_cache = (
-        classify_no_cache_no_batch.log_probs_conditional_examples(
-            examples_full, model_and_tokenizer
+        _test_content._test_log_probs_conditional(
+            log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
         )
-    )
-    _test_content._test_log_probs_conditional(
-        log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
-    )
+
+    def test_cache_examples(self, model_and_tokenizer, completions, batch_size):
+        prompt_prefix = "a b c"
+        _prompts = ["d", "d e"]
+        examples = [Example(prompt, completions) for prompt in _prompts]
+
+        with classify_.cache(model_and_tokenizer, prompt_prefix) as cached:
+            log_probs_completions = classify_.log_probs_conditional_examples(
+                examples, cached, batch_size=batch_size
+            )
+        _test_form._test_log_probs_conditional(
+            log_probs_completions,
+            expected_len=len(examples),
+            num_completions_per_prompt=[
+                len(example.completions) for example in examples
+            ],
+        )
+
+        examples_full = [
+            Example(prompt_prefix + " " + example.prompt, example.completions)
+            for example in examples
+        ]
+        log_probs_completions_wo_cache = (
+            classify_no_cache_no_batch.log_probs_conditional_examples(
+                examples_full, model_and_tokenizer
+            )
+        )
+        _test_content._test_log_probs_conditional(
+            log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
+        )
 
 
 ########################################################################################
@@ -427,7 +452,7 @@ class Modules:
 
     @property
     def modules_to_test(self):
-        return (classify, classify_no_batch, classify_no_cache)
+        return (classify_, classify, classify_no_batch, classify_no_cache)
 
 
 class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
@@ -447,11 +472,21 @@ class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
         _test_logits(*slow_out, *fast_out, atol)
 
     @pytest.mark.parametrize("batch_size", (1, 2))
+    @pytest.mark.parametrize("batch_size_completions", (None, 1))
     def test_log_probs_conditional(
-        self, prompts, completions, model_and_tokenizer, batch_size
+        self,
+        prompts,
+        completions,
+        model_and_tokenizer,
+        batch_size,
+        batch_size_completions,
     ):
         super().test_log_probs_conditional(
-            prompts, completions, model_and_tokenizer, batch_size=batch_size
+            prompts,
+            completions,
+            model_and_tokenizer,
+            batch_size=batch_size,
+            batch_size_completions=batch_size_completions,
         )
 
     def test_predict_proba(

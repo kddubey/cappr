@@ -216,7 +216,7 @@ gritty handling of pad tokens and position IDs. Some model implementations in
 HuggingFace don't always handle them correctly (but this will change `soon
 <https://github.com/huggingface/transformers/issues/18104#issuecomment-1465629955>`_).
 My current implementation of caching is suboptimal, as I got lost in the sauce of making
-many incremental improvements. I now see that it would've been much more efficient to
+incremental improvements. I now see that it would've been much more efficient to
 optimally implement caching + batching the first time around. See `this page
 <https://cappr.readthedocs.io/en/latest/computational_performance.html>`_ for more info.
 
@@ -241,7 +241,8 @@ Besides the algorithmic stuff, I was pleasantly surprised to find that I loved
 engineering this project from the ground up. Mulling over design decisions and managing
 myself was fun. Writing tests was enlightening using pytest. Writing docs was satisfying
 (and `almost <https://github.com/kddubey/dumpy/tree/main/sphinx_setup>`_ easy) using
-Sphinx. Writing GitHub workflows made releases convenient, and it made my project feel
+Sphinx and readthedocs. Writing GitHub workflows made releases convenient, and it made
+my project feel
 way more professional lol. I found `ReWrap <https://stkb.github.io/Rewrap/>`_ and
 `autoDocstring
 <https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring>`_ for the
