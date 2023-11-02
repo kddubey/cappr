@@ -129,7 +129,9 @@ def token_logprobs(
 ########################################################################################
 
 
-PastKeyValues = TypeVar("PastKeyValues", bound=Tuple[Tuple[torch.Tensor, torch.Tensor]])
+_PastKeyValues = TypeVar(
+    "_PastKeyValues", bound=Tuple[Tuple[torch.Tensor, torch.Tensor]]
+)
 """
 The `past_key_values` input to a HuggingFace `transformers` model's forward pass. It's a
 2-D tuple of 4-D tensors.
@@ -152,7 +154,7 @@ Index items:
 """
 
 
-def _past_key_values_tuple_to_tensor(past_key_values: PastKeyValues) -> torch.Tensor:
+def _past_key_values_tuple_to_tensor(past_key_values: _PastKeyValues) -> torch.Tensor:
     if past_key_values is None:
         raise TypeError(
             "past_key_values is None. Can your model be configured to output it? If "
@@ -161,14 +163,14 @@ def _past_key_values_tuple_to_tensor(past_key_values: PastKeyValues) -> torch.Te
     return torch.stack([torch.stack(block) for block in past_key_values], dim=0)
 
 
-def _past_key_values_tensor_to_tuple(past_key_values: torch.Tensor) -> PastKeyValues:
+def _past_key_values_tensor_to_tuple(past_key_values: torch.Tensor) -> _PastKeyValues:
     return tuple([(block[0], block[1]) for block in past_key_values])
 
 
 def _past_key_values_get(
-    past_key_values: PastKeyValues,
+    past_key_values: _PastKeyValues,
     batch_idxs: Sequence[int],
-) -> PastKeyValues:
+) -> _PastKeyValues:
     return _past_key_values_tensor_to_tuple(
         _past_key_values_tuple_to_tensor(past_key_values)[:, :, batch_idxs, ...]
     )
