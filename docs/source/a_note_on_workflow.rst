@@ -41,7 +41,7 @@ corresponds to the correct output/choice for that input.
 In general, you should gather as many of these input-output pairs/examples as is
 feasible. If there are only 2 possible choices (and say accuracy is 90%), then gather at
 least 150 examples.\ [#]_ As the number of possible choices increases, or as accuracy
-gets closer to random guessing, the more examples are needed to evaluate the system.
+gets closer to random guessing, more examples are needed to evaluate the system.
 
 If you don't have that many input-output examples immediately within reach, then do the
 hard but important work of making them up.\ [#]_ Think carefully about the types of
@@ -53,8 +53,9 @@ limits of your system. But don't evaluate anything just yet!
 Split data into train and test
 ------------------------------
 
-Now that you have a nice dataset, before you do anything else, randomly partition the
-dataset into a "training" dataset and a "test" dataset.\ [#]_ The importance of this
+Now that you have a nice dataset, before you do anything else, `randomly partition
+<https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html>`
+the dataset into a "training" dataset and a "test" dataset.\ [#]_ The importance of this
 step cannot be overstated.
 
 .. list-table:: training dataset (50 examples)
@@ -103,7 +104,8 @@ Iterate on the training dataset
 
 Evaluate your first prompt-completion format on the training dataset. Examine and
 understand failure cases. Is your prompt specific enough? Does it include enough
-context? Iterate the format and/or language model and/or prior, and evaluate.
+context? Iterate the format, language model, or prior, and evaluate on the training
+dataset again.
 
 Be disciplined and vigilant about not seeing or evaluating on the test dataset until
 you've finalized your selections for a format, langauge model, and prior.

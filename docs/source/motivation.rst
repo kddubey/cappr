@@ -13,9 +13,9 @@ Problem
 There are many ways to do text classification. The one that this package is competing
 against is text generation.
 
-To make text generation more concrete, let's work through an example. Your first task is
-to write up your classification task in a ``prompt`` string. For example, to classify a
-product review, text generation code looks like this:
+To make text generation more concrete, let's work through an example. In text
+generation, you write up your classification task in a ``prompt`` string. For example,
+to classify a product review:
 
 .. code:: python
 
@@ -68,9 +68,9 @@ Implementing ``post_process`` can be challenging, as the ``completion`` is sampl
 the space of all possible sequences of tokens. This means you'll likely have to deal
 with the cases where:
 
-- The ``completion`` includes multiple plausible classes from ``class_names``
-
 - The ``completion`` includes a bit of fluff
+
+- The ``completion`` includes multiple plausible classes from ``class_names``
 
 - The ``completion``\ 's word casing is different than the one used in ``class_names``,
   or it's spelled or phrased slightly differently
@@ -92,15 +92,18 @@ when you have quite a few classes, as it's not a typical instruction format. On 
 other hand, single-token transformations sacrifice useful semantics. And finetuning
 costs too much time, money, and data.
 
-**The fact is: you can endlessley accomodate text generation, but you'll still have to
-write custom code to post-process its arbitrary outputs.** Fundamentally, sampling is
-not a clean solution to a classification problem.
+Other modifications include mapping the ``completion`` to one of the ``class_names``
+using a separate similarity model, which introduces greater complexity.
+
+The fact is: you can endlessley accomodate text generation, but you'll still have to
+write custom code to post-process its arbitrary outputs. Fundamentally, sampling is not
+a clean solution to a classification problem.
 
 
 Recap
 -----
 
-Before moving on to the solution, let's recap the text generation workflow:
+Let's recap the text generation workflow:
 
 #. Design a prompt which asks the model to output exactly one choice from a given set of
    choices
@@ -116,7 +119,7 @@ Solution
 --------
 
 With CAPPr's ``predict`` interface, your job starts and stops at writing up your
-classification task as a ``{prompt}{end_of_prompt}{completion}`` string.
+classification task as a ``{prompt} {completion}`` string.
 
 Let's now run CAPPr on that product review classification task. Also, let's:
 
@@ -126,9 +129,8 @@ Let's now run CAPPr on that product review classification task. Also, let's:
 
 - use a smaller, "worse" model—``text-curie-001``
 
-  - Text generation with ``text-curie-001`` typically does not work well for slightly
-    complicated tasks, e.g., run that text generation code above with
-    ``model="text-curie-001"``\ .
+  - Text generation with ``text-curie-001`` does not work well for slightly complicated
+    tasks, e.g., run the text generation code above with ``model="text-curie-001"``\ .
 
 .. code:: python
 

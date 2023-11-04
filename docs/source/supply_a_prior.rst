@@ -33,6 +33,9 @@ experimental. It still needs to be evaluated.
 Examples
 --------
 
-For an examples of a prior in action, see the **Example** section for this function:
+See `this demo
+<https://github.com/kddubey/cappr/blob/main/demos/huggingface/banking_77_classes.ipynb>`_.
+
+For a minimal example of using a prior, see the **Example** section for this function:
 
 :func:`cappr.huggingface.classify.predict`

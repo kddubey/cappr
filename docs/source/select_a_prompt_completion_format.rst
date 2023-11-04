@@ -1,12 +1,12 @@
 Select a prompt-completion format
 =================================
 
-   *"If you can dodge a wrench, you can dodge a ball."*
+   *"If you can dodge a wrench, you can dodge a ball!"*
 
    -- Patches
 
-With CAPPr, your job is to write up your classification task as a string with three
-components:
+With CAPPr, your job is to write up your classification task as a prompt-completion
+formatted string:
 
 .. code:: python
 
@@ -17,7 +17,7 @@ either a whitespace ``" "`` or the empty string ``""``. One of the choices/class
 the text could belong to should appear in the ``completion``.\ [#]_
 
 The ``completion`` string should flow naturally after ``{prompt}{end_of_prompt}``. So
-pay close attention to the use of white spaces, newlines, and word casing. CAPPr doesn't
+pay close attention to the use of whitespaces, newlines, and word casing. CAPPr doesn't
 do any string processing for you; **it just concatenates the three strings and sends
 it**! It's on you to format the prompt according to the model's instruction/chat format,
 if that's applicable and beneficial. Before calling any CAPPr functions, consider
@@ -25,7 +25,7 @@ printing ``{prompt}{end_of_prompt}{completion}`` for each completion in your lis
 possible completions/choices, and ensure each passes the eye test.
 
 And yes, you'll likely need to do a bit of prompt engineering. But if you can write a
-sentence, you can write a prompt. It's mostly a matter of trial and error. (Here's an
+sentence, you can write a prompt! It's mostly a matter of trial and error. (Here's an
 `external guide`_ if you'd like to survey research in this field.\ [3]_) Empirically,
 the impact of the prompt-completion format on accuracy depends on the quality of the
 language model. For larger, instruction-trained models, the format is not as
@@ -51,8 +51,9 @@ Concat-Class
 ~~~~~~~~~~~~
 
 In this format, the full name of the class is directly used as the completion. In other
-words, the class name is directly concatenated after ``{prompt}{end_of_prompt}`` Here's
-an example:
+words, the class name is directly concatenated after ``{prompt}{end_of_prompt}``.
+
+Here's an example:
 
 .. code:: python
 
@@ -100,7 +101,7 @@ an example:
    # LeBron James is a scientist
 
 For each prompt, CAPPr will pick the completion which makes the sentence make the most
-sense (according to the model!).
+sense (according to the model).
 
 A reasonable hypothesis is that this prompt-completion format is especially well-suited
 to smaller models. See the footnote for a reason for this hypothesis.\ [#]_
@@ -123,15 +124,17 @@ each of these functions:
 
 :func:`cappr.llama_cpp.classify.predict_examples`
 
-.. warning:: I haven't evaluated CAPPr on completion strings which are longer than 15
-             tokens. Consider this domains uncharted and risky for CAPPr.
+.. warning:: CAPPr hasn't been evaluated on completion strings which are longer than 15
+             tokens. Consider this domain uncharted and risky for CAPPr.
 
 
 Yes-No
 ~~~~~~
 
-Sometimes, your task can be framed as a yes or no question. Here's an example of a
-successful format for instruction-trained models, which was pulled from `this demo
+Sometimes, your task can be framed as a yes or no question.
+
+Here's an example of a successful format for instruction-trained models, which was
+pulled from `this demo
 <https://github.com/kddubey/cappr/blob/main/demos/openai/raft/ade.ipynb>`_:
 
 .. code:: python
@@ -168,12 +171,13 @@ For another example of this prompt-completion format in action, see `this demo
 Multiple Choice
 ~~~~~~~~~~~~~~~
 
-Big, instruction-trained models are good at answering multiple choice questions, because
-they've been trained to do so. One caveat is that the number of choices shouldn't be
-more than five, because multiple choice question formats seen during training are
-usually limited to the letters from school exams: A, B, C, D, E. Also, ensure that the
-system prompt/message is explicit about answering with one of the letters. Here's an
-example of the system prompt used for the `Llama 2 COPA demo
+Big instruction-trained models are good at answering multiple choice questions because
+they've been trained to do so. One caveat is that the number of choices ideally
+shouldn't be more than five, because multiple choice question formats seen during
+training are usually limited to the letters from school exams: A, B, C, D, E.
+
+Also, ensure that the system prompt/message is explicit about answering with one of the
+letters. Here's an example of the system prompt used for the `Llama 2 COPA demo
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/superglue/copa.ipynb>`_:
 
 .. code:: python
@@ -223,12 +227,15 @@ Quirks
 
 Most models are sensitive to quirky differences between prompts.
 
-**Llama 2 / SentencePiece models**: when using a Concat-Class style prompt, it's
-possible to achieve higher accuracy by abandoning the chat format. See, e.g., the `Llama
-2 COPA demo`_. Moreover, instead of setting ``end_of_prompt=" "``, consider adding this
-whitespace to the end of the ``prompt`` string.
+**Llama 2 / SentencePiece models**: only ``{prompt} {completion}`` formats are possible,
+unless :mod:`cappr.huggingface.classify_no_cache` is used. In other words,
+``end_of_prompt`` cannot be the empty string; it's always a whitespace. Another quirk is
+that when using a Concat-Class style prompt, it's possible to achieve higher accuracy by
+abandoning the chat format. See, e.g., the `Llama 2 COPA demo`_. The placement of
+whitespaces can also affect performance. Instead of setting ``end_of_prompt=" "``,
+consider adding this whitespace to the end of the ``prompt`` string.
 
-I'll update these notes as more quirks are discovered. For now, if you don't already
+These notes will be updated as more quirks are discovered. For now, if you don't already
 have a good feel for the model, consider experimenting with things like:
 
 - using the chat/instruction format or not
@@ -321,9 +328,11 @@ A note on few-shot prompts
 --------------------------
 
 While all of the examples in the documentation are zero-shot prompts, nothing about
-CAPPr prevents you from using few-shot prompts. Just make sure you're not paying too
-much money or latency for a small benefit. And consider that you may not need to label
-many (or any!) examples for few-shot prompting to work well.\ [6]_
+CAPPr prevents you from using few-shot prompts / in-context learning. Just make sure
+you're not paying too much money, latency, or data for a small benefit. Use
+:func:`cappr.llama_cpp.classify.cache` or :func:`cappr.huggingface.classify.cache` if
+applicable. And consider that you may not need to label many (or any!) examples for
+few-shot prompting to work well.\ [6]_
 
 
 Footnotes

@@ -128,6 +128,49 @@ for more info on using these models.
 
 
 <details>
+<summary>Use a model from the OpenAI API</summary>
+
+Specifically, this model must be compatible with the
+[/v1/completions](https://platform.openai.com/docs/models/model-endpoint-compatibility)
+endpoint
+([excluding](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#openai)
+``gpt-3.5-turbo-instruct``).
+
+```python
+from cappr.openai.classify import predict
+
+prompt = """
+Tweet about a movie: "Oppenheimer was pretty good. But 3 hrs...cmon Nolan."
+This tweet contains the following criticism:
+""".strip("\n")
+
+completions = ("bad message", "too long", "unfunny")
+
+pred = predict(prompt, completions, model="text-ada-001")
+print(pred)
+# too long
+```
+
+See [this page of the
+documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#openai)
+for more info on using OpenAI models.
+</details>
+
+
+<details>
+<summary>Extract the final answer from a step-by-step completion</summary>
+
+Step-by-step and chain-of-thought prompts are highly effective ways to get an LLM to
+"reason" about more complex tasks. But if you need a structured output, a step-by-step
+completion is unwieldy. Use CAPPr to extract the final answer from these types of
+completions, given a list of possible answers.
+
+See this idea in action [here in the
+documentation](https://cappr.readthedocs.io/en/latest/select_a_prompt_completion_format.html#wrangle-step-by-step-completions).
+</details>
+
+
+<details>
 <summary>Run in batches</summary>
 
 Let's use a PyTorch ``transformers`` model. Also, let's predict probabilities instead of
@@ -237,51 +280,8 @@ print(preds)
 </details>
 
 
-<details>
-<summary>Use a model from the OpenAI API</summary>
-
-Specifically, this model must be compatible with the
-[/v1/completions](https://platform.openai.com/docs/models/model-endpoint-compatibility)
-endpoint
-([excluding](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#openai)
-``gpt-3.5-turbo-instruct``).
-
-```python
-from cappr.openai.classify import predict
-
-prompt = """
-Tweet about a movie: "Oppenheimer was pretty good. But 3 hrs...cmon Nolan."
-This tweet contains the following criticism:
-""".strip("\n")
-
-completions = ("bad message", "too long", "unfunny")
-
-pred = predict(prompt, completions, model="text-ada-001")
-print(pred)
-# too long
-```
-
-See [this page of the
-documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#openai)
-for more info on using OpenAI models.
-</details>
-
-
-<details>
-<summary>Extract the final answer from a step-by-step completion</summary>
-
-Step-by-step and chain-of-thought prompts are highly effective ways to get an LLM to
-"reason" about more complex tasks. But if you need a structured output, a step-by-step
-completion is unwieldy. Use CAPPr to extract the final answer from these types of
-completions, given a list of possible answers.
-
-See this idea in action [here in the
-documentation](https://cappr.readthedocs.io/en/latest/select_a_prompt_completion_format.html#wrangle-step-by-step-completions).
-</details>
-
-
 See the [`demos`](https://github.com/kddubey/cappr/blob/main/demos/) for demonstrations
-of slightly harder classification task.
+of slightly harder classification tasks.
 
 For CAPPr, GPTQd models are the most computationally performant. These models are
 compatible with `cappr.huggingface.classify`. See [this page of the

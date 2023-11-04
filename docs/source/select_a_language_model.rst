@@ -5,12 +5,13 @@ CAPPr typically works better with larger, instruction-trained models. But it may
 to `squeeze more out of smaller models
 <https://cappr.readthedocs.io/en/latest/future_research.html>`_ than other methods. So
 don't sleep on the little Llamas or Mistrals out there, especially if they've been
-trained for your domain/application.
+trained for your application.
 
 Besides that, selecting a language model is almost entirely a process of trial and
 error, balancing statistical performance with computational constraints. It should be
-easy to plug and play though. `GPTQd models`_ are the most well-suited to CAPPr. These
-models are compatible with :mod:`cappr.huggingface.classify`.
+easy to plug and play though. For CAPPr, `GPTQd models
+<https://huggingface.co/models?sort=trending&search=gptq>`_ are the most computationally
+performant. These models are compatible with :mod:`cappr.huggingface.classify`.
 
 
 HuggingFace
@@ -21,7 +22,7 @@ To work with models which implement the ``transformers`` CausalLM interface, inc
 <https://github.com/huggingface/transformers>`_ package. You can search the `HuggingFace
 model hub <https://huggingface.co/models>`_ for these models.
 
-.. note:: For `transformers>=4.32.0`, `GPTQd models`_ `can be loaded
+.. note:: For ``transformers>=4.32.0``, GPTQd models `can be loaded
           <https://huggingface.co/docs/transformers/main/en/main_classes/quantization#autogptq-integration>`_
           using ``transformers.AutoModelForCausalLM.from_pretrained``.
 
@@ -48,7 +49,7 @@ So far, CAPPr has been tested for code correctness on the following architecture
 
 - GPT-2
 - GPT-J
-- GPT-NeoX
+- GPT-NeoX (including StableLM)
 - Llama
 - Llama 2
 - Mistral.
@@ -76,8 +77,8 @@ settings are controlled by the ``batch_size`` and ``batch_size_completions`` key
 arguments, respectively. Decreasing their values decreases peak memory usage but costs
 runtime. Increasing their values decreases runtime but costs memory.
 
-:mod:`cappr.huggingface.classify` can also cache shared instructions for prompts. See
-:func:`cappr.huggingface.classify.cache`.
+:mod:`cappr.huggingface.classify` can also cache shared instructions for prompts,
+resulting in a modest speedup. See :func:`cappr.huggingface.classify.cache`.
 
 :mod:`cappr.huggingface.classify_no_cache` may be compatible with a slightly
 broader class of architectures and model interfaces. Here, the model is only assumed to
@@ -110,14 +111,14 @@ For an example of running Llama 2, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/superglue/copa.ipynb>`_.
 
 For an example of running an `AutoGPTQ`_ Mistral model, where we cache shared prompt
-instructions and batch completions to save memory, see `this notebook
+instructions to save time and batch completions to save memory, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/banking_77_classes.ipynb>`_.
 
 For a minimal example of running an `AutoAWQ`_ Mistral model, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/autoawq.ipynb>`_.
 
-For minimal examples you can run right now, see the **Example** section for each of
-these functions:
+For minimal examples you can quickly run, see the **Example** section for each of these
+functions:
 
 :func:`cappr.huggingface.classify.predict`
 
@@ -126,8 +127,6 @@ these functions:
 .. _AutoGPTQ: https://github.com/PanQiWei/AutoGPTQ
 
 .. _AutoAWQ: https://github.com/casper-hansen/AutoAWQ
-
-.. _GPTQd models: https://huggingface.co/models?sort=trending&search=gptq
 
 
 Llama CPP
@@ -140,7 +139,7 @@ model hub <https://huggingface.co/models?sort=trending&search=gguf>`_ for these 
 .. note:: When instantiating your Llama, set ``logits_all=True``.
 
 Here's a quick example (which assumes you've downloaded `this 6 MB model
-<https://huggingface.co/aladar/TinyLLama-v0-GGUF/blob/main/TinyLLama-v0.Q8_0.gguf>`_):
+<https://huggingface.co/aladar/TinyLLama-v0-GGUF>`_):
 
 .. code:: python
 
@@ -167,10 +166,6 @@ Here's a quick example (which assumes you've downloaded `this 6 MB model
    print(pred)
    # use your imagination
 
-So far, CAPPr has been tested for correctness on GGUF models which use SentencePiece
-tokenization, e.g., Llama. I'll test on models which use BPE soon. I think you may just
-need to add a space before each completion string.
-
 
 Examples
 ~~~~~~~~
@@ -178,12 +173,12 @@ Examples
 For an example of running Llama 2 on the COPA challenge, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb>`_.
 
-For an example of running Llama 2 on the AG News challenge, where instructions are
-cached, see `this notebook
+For an example of running Llama 2 on the AG News challenge, where we cache shared prompt
+instructions to save time, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/ag_news.ipynb>`_.
 
-For minimal examples you can run right now, see the **Example** section for each of
-these functions:
+For minimal examples you can quickly run, see the **Example** section for each of these
+functions:
 
 :func:`cappr.llama_cpp.classify.predict`
 
@@ -239,7 +234,7 @@ Great zero-shot WSC performance with ``text-curie-001`` is achieved in `this not
 Decent performance on RAFT training sets is demonstrated in `these notebooks
 <https://github.com/kddubey/cappr/blob/main/demos/openai/raft>`_.
 
-For minimal examples you can run right now, see the **Example** section for each of
+For minimal examples you can run quickly run, see the **Example** section for each of
 these functions:
 
 :func:`cappr.openai.classify.predict`
