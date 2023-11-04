@@ -11,7 +11,7 @@ For example:
       be a waste.
 """
 from __future__ import annotations
-from typing import Literal, Sequence
+from typing import Callable, Literal, Sequence
 
 import numpy as np
 
@@ -141,3 +141,34 @@ def normalize(completions: Sequence[str], normalize: bool):
             "probability to trivially be 1. Did you mean to set normalize=False, or "
             "did you mean to include more completions?"
         )
+
+
+def does_tokenizer_need_prepended_space(
+    tokenize: Callable[[str], list[int]], bos_token_id: int | None
+) -> bool:
+    """
+    Returns `True` if the `tokenize` function needs to prepend a whitespace for
+    subsequent model calls to be correct, else `False`. BPE tokenizers need it, while
+    SentencePiece tokenizers do not.
+
+    You should `@functools.cache` the function which calls this to save 12.13891 µs :D
+    """
+
+    def remove_bos(tokens: list[int]) -> list[int]:
+        if bos_token_id is None:
+            return tokens
+        if tokens[0] == bos_token_id:
+            return tokens[1:]
+        return tokens
+
+    tokens = tokenize("a b")
+    tokens_concat = tokenize("a") + remove_bos(tokenize("b"))
+    if tokens != tokens_concat:
+        tokens_concat_correct = tokenize("a") + remove_bos(tokenize(" b"))
+        if tokens != tokens_concat_correct:
+            raise ValueError(
+                "This tokenizer is weird. Please raise this as an issue so that I can "
+                "investigate: https://github.com/kddubey/cappr/issues"
+            )  # pragma: no cover
+        return True
+    return False

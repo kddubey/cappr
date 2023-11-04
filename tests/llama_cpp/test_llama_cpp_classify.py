@@ -14,8 +14,7 @@ import pytest
 import torch
 
 from cappr import Example
-from cappr.llama_cpp import classify, _classify_no_cache
-from cappr.llama_cpp._utils import log_softmax
+from cappr.llama_cpp import _utils, classify, _classify_no_cache
 
 # sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
@@ -35,13 +34,25 @@ _ABS_PATH_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 @pytest.fixture(
     scope="module",
     params=[
-        "TinyLLama-v0.Q8_0.gguf",  # TODO: include a BPE-based model like GPT
+        ("TinyLLama-v0.Q8_0.gguf", False),
+        ("tiny-random-BloomForCausalLM.gguf", True),
+        # If you're adding a new one, here's a rule for determining the second element:
+        # if the model's tokenizer is SentencePiece => False, elif BPE => True
     ],
 )
-def model(request: pytest.FixtureRequest) -> Llama:
-    model_path = os.path.join(_ABS_PATH_THIS_DIR, "fixtures", "models", request.param)
+def model_and_does_tokenizer_need_prepended_space(
+    request: pytest.FixtureRequest,
+) -> tuple[Llama, bool]:
+    model_path, does_tokenizer_need_prepended_space = request.param
+    model_path = os.path.join(_ABS_PATH_THIS_DIR, "fixtures", "models", model_path)
     model = Llama(model_path, logits_all=True, verbose=False)
-    # Correctness should not be affected by a user's previous actions. Mimic that:
+    return model, does_tokenizer_need_prepended_space
+
+
+@pytest.fixture(scope="module")
+def model(model_and_does_tokenizer_need_prepended_space: tuple[Llama, bool]) -> Llama:
+    model, _ = model_and_does_tokenizer_need_prepended_space
+    # Correctness should not be affected by a user's previous actions, which get cached
     model.eval(model.tokenize("a b c".encode("utf-8")))
     return model
 
@@ -59,13 +70,37 @@ def atol() -> float:
 ########################################################################################
 
 
+def test__does_tokenizer_need_prepended_space(
+    model_and_does_tokenizer_need_prepended_space,
+):
+    """
+    Explicitly test this b/c w/o it, headaches are possible.
+    """
+    (
+        model,
+        does_tokenizer_need_prepended_space_expected,
+    ) = model_and_does_tokenizer_need_prepended_space
+    assert (
+        _utils.does_tokenizer_need_prepended_space(model)
+        == does_tokenizer_need_prepended_space_expected
+    )
+    # If it's cached, let's double check that we still get the expected result
+    assert (
+        _utils.does_tokenizer_need_prepended_space(model)
+        == does_tokenizer_need_prepended_space_expected
+    )
+
+
 def test__check_model(model: Llama):
-    model.context_params.logits_all = False
-    with pytest.raises(TypeError):
-        classify.token_logprobs(["not used"], model)
-    with pytest.raises(TypeError):
-        classify.predict_proba("not used", ["not used"], model, normalize=False)
-    model.context_params.logits_all = True
+    try:
+        model.context_params.logits_all = False
+        error_msg = "model needed to be instantiated with logits_all=True"
+        with pytest.raises(TypeError, match=error_msg):
+            classify.token_logprobs(["not used"], model)
+        with pytest.raises(TypeError, match=error_msg):
+            classify.predict_proba("not used", ["not used"], model, normalize=False)
+    finally:
+        model.context_params.logits_all = True
 
 
 @pytest.mark.parametrize("shape_and_dim", [((10,), 0), ((3, 10), 1)])
@@ -74,7 +109,7 @@ def test_log_softmax(
 ):
     shape, dim = shape_and_dim
     data: np.ndarray = np.random.randn(*shape)
-    log_probs_observed = log_softmax(data, dim=dim)
+    log_probs_observed = _utils.log_softmax(data, dim=dim)
     log_probs_expected = torch.tensor(data).log_softmax(dim=dim).numpy()
     assert np.allclose(log_probs_observed, log_probs_expected, atol=atol)
 
@@ -87,24 +122,28 @@ def test_log_softmax(
         ["a fistful", "of tokens", "for a few", "tokens more"],
     ),
 )
-def test_token_logprobs(texts: Sequence[str], model: Llama):
+def test_token_logprobs(texts: Sequence[str], model: Llama, end_of_prompt=""):
     """
     Tests that the model's token log probabilities are correct by testing against a
     carefully, manually indexed result.
     """
-    log_probs_texts_observed = classify.token_logprobs(texts, model, add_bos=True)
+    log_probs_texts_observed = classify.token_logprobs(
+        texts, model, add_bos=True, end_of_prompt=end_of_prompt
+    )
 
     # Gather un-batched un-sliced log probs for the expected result
     is_str = isinstance(texts, str)
     texts = [texts] if is_str else texts
+    if not _utils.does_tokenizer_need_prepended_space(model):
+        end_of_prompt = ""
     log_probs_texts_from_unbatched = []
     input_ids_from_unbatched = []
     for text in texts:
-        input_ids = model.tokenize(text.encode("utf-8"), add_bos=True)
+        input_ids = model.tokenize((end_of_prompt + text).encode("utf-8"), add_bos=True)
         model.reset()
         model.eval(input_ids)
         log_probs_texts_from_unbatched.append(
-            log_softmax(classify._check_logits(model.eval_logits))
+            _utils.log_softmax(_utils.check_logits(model.eval_logits))
         )
         input_ids_from_unbatched.append(input_ids)
     model.reset()

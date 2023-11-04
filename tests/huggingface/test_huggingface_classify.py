@@ -180,9 +180,7 @@ def test_token_logprobs(
     is_str = isinstance(texts, str)
     texts = [texts] if is_str else texts
     # bleh
-    if not hf._utils.does_tokenizer_prepend_space_to_first_token(
-        model_and_tokenizer[1]
-    ):
+    if not hf._utils.does_tokenizer_need_prepended_space(model_and_tokenizer[1]):
         end_of_prompt = ""
     log_probs_texts_from_unbatched = []
     input_ids_from_unbatched = []
@@ -206,14 +204,15 @@ def test_token_logprobs(
 
 ########################################################################################
 ################################## Test cache context ##################################
+################### TODO: move to _base and share w/ tests/llama_cpp ###################
 ########################################################################################
 
 
 def test_cache_logits(model_and_tokenizer, atol):
+    # Can be done before testing predict_proba and whatnot
+    # TODO: move the 2 other caching fxns under the predict_proba tests
     delim = " "
-    if not hf._utils.does_tokenizer_prepend_space_to_first_token(
-        model_and_tokenizer[1]
-    ):
+    if not hf._utils.does_tokenizer_need_prepended_space(model_and_tokenizer[1]):
         # for SentencePiece tokenizers like Llama's
         delim = ""
 
@@ -250,7 +249,8 @@ def test_cache_logits(model_and_tokenizer, atol):
     assert hasattr(cached_a[0], "_cappr_past")
 
 
-# TODO: share w/ tests/test_llama_cpp_classify
+@pytest.mark.parametrize("prompt_prefix", ("a b c",))
+@pytest.mark.parametrize("prompts", (["d", "d e"],))
 @pytest.mark.parametrize(
     "completions",
     (
@@ -260,10 +260,9 @@ def test_cache_logits(model_and_tokenizer, atol):
 )
 @pytest.mark.parametrize("batch_size", (1, 2, 10))
 class TestCache:
-    def test_cache(self, model_and_tokenizer, completions, batch_size):
-        prompt_prefix = "a b c"
-        prompts = ["d", "d e"]
-
+    def test_cache(
+        self, prompt_prefix, prompts, completions, model_and_tokenizer, batch_size
+    ):
         with classify.cache(model_and_tokenizer, prompt_prefix) as cached:
             log_probs_completions = classify.log_probs_conditional(
                 prompts, completions, cached, batch_size=batch_size
@@ -282,10 +281,10 @@ class TestCache:
             log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
         )
 
-    def test_cache_examples(self, model_and_tokenizer, completions, batch_size):
-        prompt_prefix = "a b c"
-        _prompts = ["d", "d e"]
-        examples = [Example(prompt, completions) for prompt in _prompts]
+    def test_cache_examples(
+        self, prompt_prefix, prompts, completions, model_and_tokenizer, batch_size
+    ):
+        examples = [Example(prompt, completions) for prompt in prompts]
 
         with classify.cache(model_and_tokenizer, prompt_prefix) as cached:
             log_probs_completions = classify.log_probs_conditional_examples(

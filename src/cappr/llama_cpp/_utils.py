@@ -2,8 +2,46 @@
 Utilz
 """
 from __future__ import annotations
+from functools import lru_cache
 
+from llama_cpp import Llama
 import numpy as np
+
+from cappr.utils import _check
+
+
+def check_model(model: Llama):
+    """
+    Raises a `TypeError` if `model` was not instantiated correctly.
+    """
+    if not model.context_params.logits_all:
+        # Need every token's logits, not just the last token
+        # TODO: determine if we can instead use a context manager to temporarily reset
+        # the attribute like we do in cappr.huggingface. I'm not sure it's sufficient or
+        # sensible for llama_cpp. Will need to read more of their code.
+        raise TypeError("model needed to be instantiated with logits_all=True")
+
+
+def check_logits(logits) -> np.ndarray:
+    """
+    Returns back `logits` if there are no NaNs. Else raises a `TypeError`.
+    """
+    logits = np.array(logits)
+    if np.any(np.isnan(logits)):
+        raise TypeError(
+            "There are nan logits. This can happen if the model is re-loaded too many "
+            "times in the same session. Please raise this as an issue so that I can "
+            "investigate: https://github.com/kddubey/cappr/issues"
+        )  # pragma: no cover
+    return logits
+
+
+@lru_cache(maxsize=None)
+def does_tokenizer_need_prepended_space(model: Llama) -> bool:
+    def tokenize(text: str) -> list[int]:
+        return model.tokenize(text.encode("utf-8"))
+
+    return _check.does_tokenizer_need_prepended_space(tokenize, model.token_bos())
 
 
 def _log_sum_exp(array: np.ndarray, dim: int = -1) -> np.ndarray:

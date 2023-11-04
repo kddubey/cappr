@@ -75,6 +75,10 @@ def token_logprobs(
         `token_idx` of `texts[text_idx]` conditional on all previous tokens in
         `texts[text_idx]`.
 
+    Warning
+    -------
+    Set `end_of_prompt="" unless you're using the discount feature.
+
     Note
     ----
     For each text, the first token's log-probability is always ``None``.
@@ -88,9 +92,7 @@ def token_logprobs(
     """
     with hf._utils.set_up_model_and_tokenizer(*model_and_tokenizer):
         # bleh
-        if not hf._utils.does_tokenizer_prepend_space_to_first_token(
-            model_and_tokenizer[1]
-        ):
+        if not hf._utils.does_tokenizer_need_prepended_space(model_and_tokenizer[1]):
             end_of_prompt = ""
         texts = [end_of_prompt + text for text in texts]
 
@@ -193,7 +195,7 @@ class _ModelWithCache:
         self._model = model
         self._cappr_past = past
         self._logits_all = logits_all
-        self._batch_idxs: None | torch.Tensor = None
+        self._batch_idxs: torch.Tensor | None = None
         self._update_cache = True
         _ = self.forward(**encodings_to_cache)  # capture output here instead of stdout
         del _
@@ -246,8 +248,7 @@ class _ModelWithCache:
                 encodings_past["input_ids"].shape[0], device=self._model.device
             ),
         ):
-            # Must extract past manually by converting it to a tensor, which is costly
-            # TODO: only do the tensor transfer once since it might be costly
+            # Must extract past by converting the tuple to a tensor and back
             past_key_values = _past_key_values_get(out_past.past_key_values, batch_idxs)
         else:
             past_key_values = out_past.past_key_values
@@ -398,7 +399,7 @@ def cache(
         from transformers import AutoModelForCausalLM, AutoTokenizer
         from cappr.huggingface.classify import cache
         from cappr.huggingface._utils import (
-            does_tokenizer_prepend_space_to_first_token,
+            does_tokenizer_need_prepended_space,
             logits_texts,
         )
 
@@ -409,7 +410,7 @@ def cache(
 
         # Assume that all strings will be separated by a whitespace
         delim = " "
-        if not does_tokenizer_prepend_space_to_first_token(tokenizer):
+        if not does_tokenizer_need_prepended_space(tokenizer):
             # for SentencePiece tokenizers like Llama's
             delim = ""
 
@@ -502,10 +503,9 @@ def _blessed_helper(
         .split(batch_size_completions)
     )
     # Prepare completions data
-    # For Llama (and probably others) we don't want the completions to start w/ a bos
-    # token <s> b/c we need to mimic sending the prompt + completion together.
-    # For example, if 'a b' is the prompt and 'c' is the completion, the encoding
-    # should correspond to '<s> a b c' not '<s> a b <s> c'.
+    # Completions shouldn't start w/ a bos token <s> b/c we need to mimic sending the
+    # prompt + completion together. For example, if 'a b' is the prompt and 'c' is the
+    # completion, the encoding should correspond to '<s> a b c' not '<s> a b <s> c'.
     with hf._utils.set_up_tokenizer(tokenizer), hf._utils.dont_add_bos_token(tokenizer):
         # This computation is repeated for constant completions, but it doesn't matter
         completions_encoding: BatchEncoding = tokenizer(
@@ -523,7 +523,7 @@ def _blessed_helper(
     num_batches = len(completions_input_ids)
 
     # TODO: put this in the context manager? Little weird.
-    if not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer):
+    if not hf._utils.does_tokenizer_need_prepended_space(tokenizer):
         start_of_prompt = ""
     else:
         in_cache_context = isinstance(model, _ModelWithCache)
@@ -601,7 +601,7 @@ def _logits_completions_given_prompts(
     end_of_prompt: Literal[" ", ""] = " ",
     batch_size_completions: int | None = None,
 ):
-    if not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer):
+    if not hf._utils.does_tokenizer_need_prepended_space(tokenizer):
         end_of_prompt = ""
     completions = [end_of_prompt + completion for completion in completions]
     return _blessed_helper(
@@ -621,8 +621,8 @@ def _logits_completions_given_prompts_examples(
     examples: Sequence[Example],
     batch_size_completions: int | None = None,
 ):
-    should_end_of_prompt_be_empty = (
-        not hf._utils.does_tokenizer_prepend_space_to_first_token(tokenizer)
+    should_end_of_prompt_be_empty = not hf._utils.does_tokenizer_need_prepended_space(
+        tokenizer
     )
     prompts: list[str] = []
     num_completions_per_prompt: list[int] = []

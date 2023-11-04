@@ -17,12 +17,11 @@ import numpy as np
 import numpy.typing as npt
 import torch
 from transformers import PreTrainedTokenizerBase
-from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from cappr.utils import _batch, _check, classify
 from cappr import Example
 from cappr import huggingface as hf
-from cappr.huggingface._utils import BatchEncoding, ModelForCausalLM
+from cappr.huggingface._utils import ModelForCausalLM
 
 
 def token_logprobs(
@@ -71,6 +70,10 @@ def token_logprobs(
         `log_probs[text_idx][token_idx]` is the log-probability of the token at
         `token_idx` of `texts[text_idx]` conditional on all previous tokens in
         `texts[text_idx]`.
+
+    Warning
+    -------
+    Set `end_of_prompt="" unless you're using the discount feature.
 
     Note
     ----

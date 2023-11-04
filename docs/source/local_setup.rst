@@ -3,6 +3,7 @@ Local setup
 
 These instructions work for \*nix systems.
 
+
 Setup
 -----
 
@@ -38,12 +39,21 @@ Setup
 
       pre-commit install
 
-#. Download `the tiny GGUF Llama model
-   <https://huggingface.co/aladar/TinyLLama-v0-GGUF>`_ I uploaded to HF::
+#. Download these tiny GGUF models I uploaded to HF
+
+::
 
       huggingface-cli download \
       aladar/TinyLLama-v0-GGUF \
       TinyLLama-v0.Q8_0.gguf \
+      --local-dir ./tests/llama_cpp/fixtures/models \
+      --local-dir-use-symlinks False
+
+::
+
+      huggingface-cli download \
+      aladar/tiny-random-BloomForCausalLM-GGUF \
+      tiny-random-BloomForCausalLM.gguf \
       --local-dir ./tests/llama_cpp/fixtures/models \
       --local-dir-use-symlinks False
 
@@ -60,6 +70,7 @@ VS code extensions
 - Set Python formatting to ``black``.
 
 And set the vertical line ruler to 88.
+
 
 Testing
 -------

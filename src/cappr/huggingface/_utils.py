@@ -3,17 +3,14 @@ YouTils
 """
 from __future__ import annotations
 from contextlib import contextmanager, ExitStack, nullcontext
+from functools import lru_cache
 from typing import Collection, Mapping, Sequence, TypeVar
 
 import torch
-from transformers import (
-    LlamaTokenizer,
-    LlamaTokenizerFast,
-    PreTrainedModel,
-    PreTrainedTokenizerBase,
-)
+from transformers import PreTrainedModel, PreTrainedTokenizerBase
 from transformers.modeling_outputs import CausalLMOutput
 
+from cappr.utils import _check
 
 BatchEncoding = TypeVar("BatchEncoding", bound=Mapping[str, torch.Tensor])
 """
@@ -30,43 +27,15 @@ A pretrained model with the same inference interface as a model loaded via
 """
 
 
-def does_tokenizer_prepend_space_to_first_token(
+@lru_cache(maxsize=None)
+def does_tokenizer_need_prepended_space(
     tokenizer: PreTrainedTokenizerBase,
 ) -> bool:
-    """
-    Why is this? Good question. Run and read this code::
+    def tokenize(text: str) -> list[int]:
+        return tokenizer(text)["input_ids"]
 
-        from transformers import AutoTokenizer
-
-        model_name = "Maykeye/TinyLLama-v0"
-        # After running all of the code below on Llama, try the following
-        # model (with BPE tokenization) instead:
-        # model_name = "gpt2"
-
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-        # Run on the whole input text
-        print(tokenizer(["Answer: A"])["input_ids"])
-        # [[1, 19775, 31871, 308]]
-
-        # Run on a partitioned version
-        print(tokenizer(["Answer:", " A"])["input_ids"])
-        # [[1, 19775, 31871], [1, 31822, 308]]
-        # The input IDs are NOT the same as the whole input for Llama.
-        # They are the same for GPT-2.
-
-        # Run on a split but fixed version, removing the space before "A"
-        print(tokenizer(["Answer:", "A"])["input_ids"])
-        # [[1, 19775, 31871], [1, 308]]
-        # Besides the <bos> token (id 1), the input IDs are now the same
-        # as running on the whole input text for Llama.
-        # For GPT-2, they're different.
-    """
-    # TODO: should somehow check if it's not a SentencePiece tokenizer / if it's a BPE
-    # tokenizer. We should be able to try running the tokenizer on something and seeing
-    # what happens. That'd also let us get rid of the crude isinstance check. Can @cache
-    # this function after that.
-    return not isinstance(tokenizer, (LlamaTokenizer, LlamaTokenizerFast))
+    bos_token_id = getattr(tokenizer, "bos_token_id", None)
+    return _check.does_tokenizer_need_prepended_space(tokenize, bos_token_id)
 
 
 ########################################################################################
@@ -140,13 +109,6 @@ _DEFAULT_CONTEXT_MANAGERS_MODEL = (
     _return_dict,
     _use_cache,
 )
-"""
-Default model settings:
-- set the model in eval mode
-- don't compute gradients
-- return output as a dataclass instead of a tuple
-- return past_key_values if possible.
-"""
 
 
 @contextmanager
@@ -193,11 +155,6 @@ _DEFAULT_CONTEXT_MANAGERS_TOKENIZER = (
     _pad_on_right,
     dont_add_eos_token,
 )
-"""
-Default tokenizer settings:
-- pad on right
-- don't add EOS token.
-"""
 
 
 @contextmanager
@@ -214,6 +171,13 @@ def _combine_context_managers(context_managers, obj):
 def set_up_model(
     model: ModelForCausalLM, context_managers=_DEFAULT_CONTEXT_MANAGERS_MODEL
 ):
+    """
+    Default model settings:
+    - set the model in eval mode
+    - don't compute gradients
+    - return output as a dataclass instead of a tuple
+    - return `past_key_values` if possible.
+    """
     with _combine_context_managers(context_managers, model):
         yield
 
@@ -223,6 +187,11 @@ def set_up_tokenizer(
     tokenizer: PreTrainedTokenizerBase,
     context_managers=_DEFAULT_CONTEXT_MANAGERS_TOKENIZER,
 ):
+    """
+    Default tokenizer settings:
+    - pad on right
+    - don't add EOS token.
+    """
     with _combine_context_managers(context_managers, tokenizer):
         yield
 

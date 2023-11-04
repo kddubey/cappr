@@ -21,10 +21,9 @@ your current working directory)::
     --local-dir . \\
     --local-dir-use-symlinks False
 """
-# TODO: may need to support end_of_prompt for GPT/BPE models
 from __future__ import annotations
 from contextlib import contextmanager
-from typing import Sequence
+from typing import Literal, Sequence
 
 from llama_cpp import Llama
 import numpy as np
@@ -33,39 +32,14 @@ import numpy.typing as npt
 from cappr.utils import classify
 from cappr.utils._batch import ProgressBar
 from cappr import Example
-from cappr.llama_cpp._utils import log_softmax, logits_to_log_probs
-
-
-def _check_model(model: Llama):
-    """
-    Raises a `TypeError` if `model` was not instantiated correctly.
-    """
-    if not model.context_params.logits_all:
-        # Need every token's logits, not just the last token TODO: determine if we can
-        # instead use a context manager to temporarily reset the attribute like we do in
-        # cappr.huggingface. I'm not sure it's sufficient or sensible for llama_cpp.
-        # Will need to read more of their code.
-        raise TypeError("model needed to be instantiated with logits_all=True")
-
-
-def _check_logits(logits) -> np.ndarray:
-    """
-    Returns back `logits` if there are no NaNs. Else raises a `TypeError`.
-    """
-    logits = np.array(logits)
-    if np.any(np.isnan(logits)):
-        raise TypeError(
-            "There are nan logits. This can happen if the model is re-loaded too many "
-            "times in the same session. Please raise this as an issue so that I can "
-            "investigate: https://github.com/kddubey/cappr/issues"
-        )  # pragma: no cover
-    return logits
+from cappr.llama_cpp import _utils
 
 
 @classify._token_logprobs
 def token_logprobs(
     texts: str | Sequence[str],
     model: Llama,
+    end_of_prompt: Literal[" ", ""] = " ",
     show_progress_bar: bool | None = None,
     add_bos: bool = False,
     **kwargs,
@@ -80,6 +54,9 @@ def token_logprobs(
         input text(s)
     model : Llama
         a model instantiated with ``logits_all=True``
+    end_of_prompt : Literal[' ', ''], optional
+        This string gets added to the beginning of each text. It's important to set this
+        if you're using the discount feature. Otherwise, set it to "". By default " "
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
@@ -100,6 +77,10 @@ def token_logprobs(
         `token_idx` of `texts[text_idx]` conditional on all previous tokens in
         `texts[text_idx]`.
 
+    Warning
+    -------
+    Set `end_of_prompt="", add_bos=True` unless you're using the discount feature.
+
     Note
     ----
     For each text, the first token's log-probability is always ``None``.
@@ -111,8 +92,11 @@ def token_logprobs(
     ValueError
         if `texts` is empty
     """
-    _check_model(model)
+    _utils.check_model(model)
     first_token_log_prob = [None]  # no CausalLM estimates Pr(token), so call it None
+    if not _utils.does_tokenizer_need_prepended_space(model):
+        end_of_prompt = ""
+    texts = [end_of_prompt + text for text in texts]
     # Loop through completions, b/c llama cpp currently doesn't support batch inference
     # Note: we could instead run logits_to_log_probs over a batch to save a bit of time,
     # but that'd cost more memory.
@@ -123,8 +107,8 @@ def token_logprobs(
         input_ids = model.tokenize(text.encode("utf-8"), add_bos=add_bos)
         model.reset()  # clear the model's KV cache and logits
         model.eval(input_ids)
-        log_probs_text: list[float] = logits_to_log_probs(
-            _check_logits(model.eval_logits),
+        log_probs_text: list[float] = _utils.logits_to_log_probs(
+            _utils.check_logits(model.eval_logits),
             np.array(input_ids),
             input_ids_start_idx=1,  # this token's log-prob is in the prev token's logit
             logits_end_idx=-1,
@@ -210,18 +194,30 @@ def _log_probs_conditional_prompt(
     prompt: str,
     completions: Sequence[str],
     model: Llama,
+    end_of_prompt: Literal[" ", ""],
 ) -> list[list[float]]:
-    _check_model(model)
-    # 1. Cache the prompt's KVs and logits
+    _utils.check_model(model)
+    # Prepend whitespaces if the tokenizer or context call for it
+    # TODO: put this in the context manager? Little weird.
+    if not _utils.does_tokenizer_need_prepended_space(model):
+        start_of_prompt = ""
+        end_of_prompt = ""
+    else:
+        in_cache_context = model.n_tokens > 0
+        start_of_prompt = " " if in_cache_context else ""
+    prompt = start_of_prompt + prompt
+    completions = [end_of_prompt + completion for completion in completions]
+
+    # Cache the prompt's KVs and logits
     with cache(model, prompt, reset_model=False) as model:
         num_tokens_prompt = model.n_tokens
-        # 2. Tokenize completions to determine whether or not we can do the single-token
-        #    optimization.
+        # Tokenize completions to determine whether or not we can do the single-token
+        # optimization.
         #
-        #    For Llama (and probably others) we don't want the completions to start w/ a
-        #    bos token <s> b/c we need to mimic sending the prompt + completion
-        #    together. For example, if 'a b' is the prompt and 'c' is the completion,
-        #    the encoding should correspond to '<s> a b c' not '<s> a b <s> c'.
+        # For Llama (and probably others) we don't want the completions to start w/ a
+        # bos token <s> b/c we need to mimic sending the prompt + completion together.
+        # For example, if 'a b' is the prompt and 'c' is the completion, the encoding
+        # should correspond to '<s> a b c' not '<s> a b <s> c'.
         input_ids_completions = [
             model.tokenize(completion.encode("utf-8"), add_bos=False)
             for completion in completions
@@ -231,33 +227,32 @@ def _log_probs_conditional_prompt(
             for input_ids_completion in input_ids_completions
         ):
             # Single-token optimization
-            prompt_next_token_log_probs = log_softmax(
-                _check_logits(model.eval_logits[-1])
+            prompt_next_token_log_probs = _utils.log_softmax(
+                _utils.check_logits(model.eval_logits[-1])
             )
             return [
                 [prompt_next_token_log_probs[input_ids_completion[0]]]
                 for input_ids_completion in input_ids_completions
             ]
-        # 3. Loop through completions, b/c llama cpp currently doesn't support batch
-        #    inference
+        # Loop through completions, b/c llama cpp currently doesn't support batch
+        # inference
         log_probs_completions: list[list[float]] = []
         for input_ids_completion in input_ids_completions:
-            # 3.1. Given the prompt, compute all next-token logits for each completion
-            #      token.
+            # Given the prompt, compute all next-token logits for each completion token
             model.eval(input_ids_completion)
-            # 3.2. Logits -> log-probs. We need the prompt's last token's logits b/c it
-            #      contains the first completion token's log-prob. But we don't need the
-            #      last completion token's next-token logits ofc. Also, it's
-            #      num_tokens_prompt - 1 b/c of 0-indexing
-            logits_completion = _check_logits(model.eval_logits)[
+            # Logits -> log-probs. We need the prompt's last token's logits b/c it
+            # contains the first completion token's log-prob. But we don't need the last
+            # completion token's next-token logits ofc. Also, it's num_tokens_prompt - 1
+            # b/c of 0-indexing
+            logits_completion = _utils.check_logits(model.eval_logits)[
                 num_tokens_prompt - 1 : -1
             ]
-            log_probs_completion: list[float] = logits_to_log_probs(
+            log_probs_completion: list[float] = _utils.logits_to_log_probs(
                 logits_completion, np.array(input_ids_completion)
             ).tolist()
             log_probs_completions.append(log_probs_completion)
-            # 3.3. Reset the model's KV cache to the prompt. Without this line, the
-            #      cache would include this completion's KVs, which is mega wrong
+            # Reset the model's KV cache to the prompt. Without this line, the cache
+            # would include this completion's KVs, which is mega wrong
             model.n_tokens = num_tokens_prompt
         return log_probs_completions
 
@@ -267,6 +262,7 @@ def log_probs_conditional(
     prompts: str | Sequence[str],
     completions: Sequence[str],
     model: Llama,
+    end_of_prompt: Literal[" ", ""] = " ",
     show_progress_bar: bool | None = None,
     reset_model: bool = True,
     **kwargs,
@@ -284,6 +280,8 @@ def log_probs_conditional(
         prompt
     model : Llama
         a model instantiated with ``logits_all=True``
+    end_of_prompt : Literal[' ', ''], optional
+        whitespace or empty string to join prompt and completion, by default whitespace
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompts
@@ -346,7 +344,7 @@ def log_probs_conditional(
     if reset_model:
         model.reset()
     log_probs_completions = [
-        _log_probs_conditional_prompt(prompt, completions, model)
+        _log_probs_conditional_prompt(prompt, completions, model, end_of_prompt)
         for prompt in ProgressBar(
             prompts, show_progress_bar=show_progress_bar, desc="conditional log-probs"
         )
@@ -405,8 +403,7 @@ def log_probs_conditional_examples(
 
     Note
     ----
-    The attributes :attr:`cappr.Example.end_of_prompt` and :attr:`cappr.Example.prior`
-    are unused.
+    The attribute :attr:`cappr.Example.prior` is unused.
 
     Example
     -------
@@ -449,7 +446,9 @@ def log_probs_conditional_examples(
     if reset_model:
         model.reset()
     log_probs_completions = [
-        _log_probs_conditional_prompt(example.prompt, example.completions, model)
+        _log_probs_conditional_prompt(
+            example.prompt, example.completions, model, example.end_of_prompt
+        )
         for example in ProgressBar(
             examples, show_progress_bar=show_progress_bar, desc="conditional log-probs"
         )
@@ -464,6 +463,7 @@ def predict_proba(
     prompts: str | Sequence[str],
     completions: Sequence[str],
     model: Llama,
+    end_of_prompt: Literal[" ", ""] = " ",
     prior: Sequence[float] | None = None,
     normalize: bool = True,
     discount_completions: float = 0.0,
@@ -483,6 +483,8 @@ def predict_proba(
         prompt
     model : Llama
         a model instantiated with ``logits_all=True``
+    end_of_prompt : Literal[' ', ''], optional
+        whitespace or empty string to join prompt and completion, by default whitespace
     prior : Sequence[float] | None, optional
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
@@ -597,10 +599,6 @@ def predict_proba_examples(
         constant `k`, then an array with shape `(len(examples), k)` is returned instead
         of a list of 1-D arrays.
 
-    Note
-    ----
-    The attribute :attr:`cappr.Example.end_of_prompt` is unused.
-
     Example
     -------
     Some story analysis::
@@ -647,6 +645,7 @@ def predict(
     prompts: str | Sequence[str],
     completions: Sequence[str],
     model: Llama,
+    end_of_prompt: Literal[" ", ""] = " ",
     prior: Sequence[float] | None = None,
     discount_completions: float = 0.0,
     log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
@@ -665,6 +664,8 @@ def predict(
         prompt
     model : Llama
         a model instantiated with ``logits_all=True``
+    end_of_prompt : Literal[' ', ''], optional
+        whitespace or empty string to join prompt and completion, by default whitespace
     prior : Sequence[float] | None, optional
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
@@ -771,10 +772,6 @@ def predict_examples(
         length `len(examples)` is returned: `preds[example_idx]` is the completion in
         `examples[example_idx].completions` which is predicted to most likely follow
         `examples[example_idx].prompt`.
-
-    Note
-    ----
-    The attribute :attr:`cappr.Example.end_of_prompt` is unused.
 
     Example
     -------

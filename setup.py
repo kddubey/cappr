@@ -32,6 +32,8 @@ requirements_huggingface_dev = [
 ] + ["huggingface-hub>=0.16.4"]
 
 requirements_llama_cpp = ["llama-cpp-python>=0.2.11"]
+# To test Bloom in our testing workflow, we need this update
+requirements_llama_cpp_dev = ["llama-cpp-python>=0.2.13"]
 
 requirements_demos = [
     "datasets>=2.10.0",
@@ -75,11 +77,13 @@ setup(
         "llama-cpp": requirements_llama_cpp,
         "all": requirements_huggingface + requirements_llama_cpp,
         "demos": (
-            requirements_huggingface_dev + requirements_llama_cpp + requirements_demos
+            requirements_huggingface_dev
+            + requirements_llama_cpp_dev
+            + requirements_demos
         ),
         "dev": (
             requirements_huggingface_dev
-            + requirements_llama_cpp
+            + requirements_llama_cpp_dev
             + requirements_demos
             + requirements_dev
         ),

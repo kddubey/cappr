@@ -25,6 +25,7 @@ jobs:
           python -m pip install wheel --upgrade pip setuptools
           python -m pip install .[dev]
           huggingface-cli download aladar/TinyLLama-v0-GGUF TinyLLama-v0.Q8_0.gguf --local-dir ./tests/llama_cpp/fixtures/models --local-dir-use-symlinks False
+          huggingface-cli download aladar/tiny-random-BloomForCausalLM-GGUF tiny-random-BloomForCausalLM.gguf --local-dir ./tests/llama_cpp/fixtures/models --local-dir-use-symlinks False
 
       - name: Run tests
         run: |

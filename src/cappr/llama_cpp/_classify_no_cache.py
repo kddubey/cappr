@@ -2,7 +2,7 @@
 Mirror. For testing purposes only. Should be strictly slower.
 """
 from __future__ import annotations
-from typing import Sequence
+from typing import Literal, Sequence
 
 from llama_cpp import Llama
 import numpy as np
@@ -11,10 +11,12 @@ import numpy.typing as npt
 from cappr.utils import _batch, classify
 from cappr import Example
 from cappr.llama_cpp.classify import token_logprobs
+from cappr.llama_cpp import _utils
 
 
 def _slice_completions(
     completions: Sequence[str],
+    end_of_prompt: Literal[" ", ""],
     log_probs: Sequence[Sequence[float]],
     model: Llama,
 ) -> list[list[float]]:
@@ -28,6 +30,9 @@ def _slice_completions(
             "Different number of completions and log_probs: "
             f"{len(completions)}, {len(log_probs)}."
         )  # pragma: no cover
+    if not _utils.does_tokenizer_need_prepended_space(model):
+        end_of_prompt = ""
+    completions = [end_of_prompt + completion for completion in completions]
     completion_lengths = []
     for completion in completions:
         input_ids = model.tokenize(completion.encode("utf-8"), add_bos=False)
@@ -43,21 +48,20 @@ def log_probs_conditional(
     prompts: str | Sequence[str],
     completions: Sequence[str],
     model: Llama,
-    prompt_prefix: str = "",
+    end_of_prompt: Literal[" ", ""] = " ",
     **kwargs,
 ) -> list[list[list[float]]]:
     # Flat list of prompts and their completions. Will post-process
-    prefix = "" if not prompt_prefix else prompt_prefix + " "
     texts = [
-        prefix + prompt + " " + completion
+        prompt + end_of_prompt + completion
         for prompt in prompts
         for completion in completions
     ]
-    log_probs = token_logprobs(texts, model, add_bos=True)
+    log_probs = token_logprobs(texts, model, end_of_prompt="", add_bos=True)
     # Since log_probs is a flat list, we'll need to batch them by the size and order of
     # completions to fulfill the spec.
     return [
-        _slice_completions(completions, log_probs_batch, model)
+        _slice_completions(completions, end_of_prompt, log_probs_batch, model)
         for log_probs_batch in _batch.constant(log_probs, size=len(completions))
     ]
 
@@ -66,24 +70,28 @@ def log_probs_conditional(
 def log_probs_conditional_examples(
     examples: Example | Sequence[Example],
     model: Llama,
-    show_progress_bar: bool | None = None,
 ) -> list[list[float]] | list[list[list[float]]]:
     # Little weird. I want my IDE to know that examples is always a Sequence[Example]
     # b/c of the decorator.
     examples: Sequence[Example] = examples
     # Flat list of prompts and their completions. Will post-process
     texts = [
-        example.prompt + " " + completion
+        example.prompt + example.end_of_prompt + completion
         for example in examples
         for completion in example.completions
     ]
-    log_probs_all = token_logprobs(texts, model=model, add_bos=True)
+    log_probs_all = token_logprobs(texts, model=model, end_of_prompt="", add_bos=True)
     # Flatten completions in same order as examples were flattened
-    completions_all = [
-        completion for example in examples for completion in example.completions
-    ]
+    should_end_of_prompt_be_empty = not _utils.does_tokenizer_need_prepended_space(
+        model
+    )
+    completions_all = []
+    for example in examples:
+        end_of_prompt = "" if should_end_of_prompt_be_empty else example.end_of_prompt
+        for completion in example.completions:
+            completions_all.append(end_of_prompt + completion)
     log_probs_completions_all = _slice_completions(
-        completions_all, log_probs_all, model
+        completions_all, "", log_probs_all, model
     )
     # Batch by completions to fulfill the spec
     num_completions_per_prompt = [len(example.completions) for example in examples]
@@ -97,12 +105,11 @@ def predict_proba(
     prompts: str | Sequence[str],
     completions: Sequence[str],
     model: Llama,
+    end_of_prompt: Literal[" ", ""] = " ",
     prior: Sequence[float] | None = None,
     normalize: bool = True,
     discount_completions: float = 0.0,
     log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
-    show_progress_bar: bool | None = None,
-    prompt_prefix: str = "",
 ) -> npt.NDArray[np.floating]:
     return log_probs_conditional(**locals())
 
@@ -111,7 +118,6 @@ def predict_proba(
 def predict_proba_examples(
     examples: Example | Sequence[Example],
     model: Llama,
-    show_progress_bar: bool | None = None,
 ) -> npt.NDArray[np.floating] | list[npt.NDArray[np.floating]]:
     return log_probs_conditional_examples(**locals())
 
@@ -121,11 +127,10 @@ def predict(
     prompts: str | Sequence[str],
     completions: Sequence[str],
     model: Llama,
+    end_of_prompt: Literal[" ", ""] = " ",
     prior: Sequence[float] | None = None,
     discount_completions: float = 0.0,
     log_marg_probs_completions: Sequence[Sequence[float]] | None = None,
-    show_progress_bar: bool | None = None,
-    prompt_prefix: str = "",
 ) -> str | list[str]:
     return predict_proba(**locals())
 
@@ -134,6 +139,5 @@ def predict(
 def predict_examples(
     examples: Example | Sequence[Example],
     model: Llama,
-    show_progress_bar: bool | None = None,
 ) -> str | list[str]:
     return predict_proba_examples(**locals())
