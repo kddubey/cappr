@@ -9,8 +9,8 @@ trained for your domain/application.
 
 Besides that, selecting a language model is almost entirely a process of trial and
 error, balancing statistical performance with computational constraints. It should be
-easy to plug and play though. `AutoGPTQ`_ models are the most well-suited to CAPPr.
-These models are compatible with :mod:`cappr.huggingface.classify`.
+easy to plug and play though. `GPTQd models`_ are the most well-suited to CAPPr. These
+models are compatible with :mod:`cappr.huggingface.classify`.
 
 
 HuggingFace
@@ -20,6 +20,10 @@ To work with models which implement the ``transformers`` CausalLM interface, inc
 `AutoGPTQ`_ and `AutoAWQ`_ models, CAPPr depends on the `transformers
 <https://github.com/huggingface/transformers>`_ package. You can search the `HuggingFace
 model hub <https://huggingface.co/models>`_ for these models.
+
+.. note:: For `transformers>=4.32.0`, `GPTQd models`_ `can be loaded
+          <https://huggingface.co/docs/transformers/main/en/main_classes/quantization#autogptq-integration>`_
+          using ``transformers.AutoModelForCausalLM.from_pretrained``.
 
 Here's a quick example (which will download a small GPT-2 model to your computer):
 
@@ -40,7 +44,7 @@ Here's a quick example (which will download a small GPT-2 model to your computer
    print(pred)
    # Mercury
 
-So far, CAPPr has been tested for correctness on the following architectures:
+So far, CAPPr has been tested for code correctness on the following architectures:
 
 - GPT-2
 - GPT-J
@@ -79,12 +83,13 @@ runtime. Increasing their values decreases runtime but costs memory.
 broader class of architectures and model interfaces. Here, the model is only assumed to
 input token/input IDs and an attention mask, and then output logits for each input ID.
 
-.. note:: For ``transformers>=4.35.0``, AutoAWQ models `can be loaded
-          <https://huggingface.co/docs/transformers/main/en/main_classes/quantization#example-usage>`_
-          using ``transformers.AutoModelForCausalLM.from_pretrained``. In this case,
-          you can use :mod:`cappr.huggingface.classify`.
+.. note:: For ``transformers>=4.35.0``, AWQd models `can be loaded
+          <https://huggingface.co/docs/transformers/main/en/main_classes/quantization#awq-integration>`_
+          using ``transformers.AutoModelForCausalLM.from_pretrained``. AWQd models
+          loaded this way are compatible with :mod:`cappr.huggingface.classify`.
 
-:mod:`cappr.huggingface.classify_no_cache` is compatible with models loaded via:
+In particular, :mod:`cappr.huggingface.classify_no_cache` is compatible with models
+loaded via:
 
 .. code:: python
 
@@ -121,6 +126,8 @@ these functions:
 .. _AutoGPTQ: https://github.com/PanQiWei/AutoGPTQ
 
 .. _AutoAWQ: https://github.com/casper-hansen/AutoAWQ
+
+.. _GPTQd models: https://huggingface.co/models?sort=trending&search=gptq
 
 
 Llama CPP

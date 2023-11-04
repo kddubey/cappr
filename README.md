@@ -90,14 +90,14 @@ for more info on using ``transformers`` models.
 <details>
 <summary>Use an AutoGPTQ model</summary>
 
-[`cappr.huggingface`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html)
-seems to play nice with models loaded via
+[`cappr.huggingface`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html) is
+compatible with models loaded via
 [`auto_gptq.AutoGPTQForCausalLM.from_quantized`](https://github.com/PanQiWei/AutoGPTQ).
 See [this
 notebook](https://github.com/kddubey/cappr/blob/main/demos/huggingface/auto_gptq.ipynb)
 for a minimal demo.
 
-Note that for `transformers>=4.32.0`, you can load AutoGPTQ models using
+Note that for `transformers>=4.32.0`, you can load GPTQd models using
 `transformers.AutoModelForCausalLM`.
 
 See [this page of the
@@ -110,16 +110,16 @@ for more info on using these models.
 <summary>Use an AutoAWQ model</summary>
 
 [`cappr.huggingface.classify_no_cache`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html)
-seems to play nice with models loaded via
+is compatible with models loaded via
 [`awq.AutoAWQForCausalLM.from_quantized`](https://github.com/casper-hansen/AutoAWQ). See
 [this
 notebook](https://github.com/kddubey/cappr/blob/main/demos/huggingface/autoawq.ipynb)
 for a minimal demo.
 
-Note that for `transformers>=4.35.0`, you can load AutoAWQ models using
-`transformers.AutoModelForCausalLM`. In this case, use
+Note that for `transformers>=4.35.0`, you can load AWQd models using
+`transformers.AutoModelForCausalLM`. AWQd models loaded this way are compatible with
 [`cappr.huggingface.classify`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html),
-which is faster.
+which is usually faster.
 
 See [this page of the
 documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#huggingface)
@@ -212,7 +212,9 @@ examples = [
 ]
 
 # Run CAPPr
-pred_probs = predict_proba_examples(examples, model_and_tokenizer=(model, tokenizer))
+pred_probs = predict_proba_examples(
+    examples, model_and_tokenizer=(model, tokenizer)
+)
 
 # pred_probs[i][j] = probability that examples[i].prompt is classified as
 # examples[i].completions[j]
@@ -221,7 +223,9 @@ print([example_pred_probs.round(2) for example_pred_probs in pred_probs])
 #  array([0.03, 0.97, 0.  ])]
 
 # For each example, which completion is most likely?
-pred_class_idxs = [example_pred_probs.argmax() for example_pred_probs in pred_probs]
+pred_class_idxs = [
+    example_pred_probs.argmax() for example_pred_probs in pred_probs
+]
 preds = [
     example.completions[pred_class_idx]
     for example, pred_class_idx in zip(examples, pred_class_idxs)
@@ -276,9 +280,13 @@ documentation](https://cappr.readthedocs.io/en/latest/select_a_prompt_completion
 </details>
 
 
-See
-[`demos/llama_cpp/superglue/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb)
-for a demonstration of a slightly harder classification task.
+See the [`demos`](https://github.com/kddubey/cappr/blob/main/demos/) for demonstrations
+of slightly harder classification task.
+
+For CAPPr, GPTQd models are the most computationally performant. These models are
+compatible with `cappr.huggingface.classify`. See [this page of the
+documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#huggingface)
+for more info on using these models.
 
 
 ## Documentation
