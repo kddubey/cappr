@@ -12,85 +12,11 @@
 CAPPr performs text classification. No training. No post-processing. <br>
 Just have your LLM pick from a list of choices. <br>
 Or compute the probability of a completion given a prompt. <br>
-Squeeze more out of open source LLMs.
+Squeeze [more](https://cappr.readthedocs.io/en/latest/future_research.html) out of open
+source LLMs.
 
 
 ## Usage
-
-<details>
-<summary>Use a model from the OpenAI API</summary>
-
-Specifically, this model must be compatible with the
-[/v1/completions](https://platform.openai.com/docs/models/model-endpoint-compatibility)
-endpoint
-([excluding](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#openai)
-``gpt-3.5-turbo-instruct``).
-
-```python
-from cappr.openai.classify import predict
-
-prompt = """
-Tweet about a movie: "Oppenheimer was pretty good. But 3 hrs...cmon Nolan."
-This tweet contains the following criticism:
-""".strip("\n")
-
-completions = ("bad message", "too long", "unfunny")
-
-pred = predict(prompt, completions, model="text-ada-001")
-print(pred)
-# too long
-```
-
-Notice that a completion can contain many tokens.
-
-See [this page of the
-documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#openai)
-for more info on using OpenAI models.
-</details>
-
-
-<details>
-<summary>Extract the final answer from a step-by-step completion</summary>
-
-Step-by-step and chain-of-thought prompts are highly effective ways to get an LLM to
-"reason" about more complex tasks. But if you need a structured output, a step-by-step
-completion is unwieldy. Use CAPPr to extract the final answer from these types of
-completions, given a list of possible answers.
-
-See this idea in action [here in the
-documentation](https://cappr.readthedocs.io/en/latest/select_a_prompt_completion_format.html#wrangle-step-by-step-completions).
-CAPPr is **100% guaranteed** to return an output from the list of possible answers.
-</details>
-
-
-<details>
-<summary>Use a AutoModelForCausalLM</summary>
-
-Specifically, this model must be able to be loaded using
-[`transformers.AutoModelForCausalLM.from_pretrained`](https://huggingface.co/docs/transformers/model_doc/auto#transformers.AutoModelForCausalLM).
-
-```python
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from cappr.huggingface.classify import predict
-
-# Load a model and its corresponding tokenizer
-model_name = "gpt2"
-model = AutoModelForCausalLM.from_pretrained(model_name)
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-prompt = "Which planet is closer to the Sun: Mercury or Earth?"
-completions = ("Mercury", "Earth")
-
-pred = predict(prompt, completions, model_and_tokenizer=(model, tokenizer))
-print(pred)
-# Mercury
-```
-
-See [this page of the
-documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#huggingface)
-for more info on using PyTorch ``transformers`` models.
-</details>
-
 
 <details>
 <summary>Use a GGUF model</summary>
@@ -123,9 +49,41 @@ print(pred)
 # use your imagination
 ```
 
+Notice that a completion can contain many tokens. CAPPr is **100% guaranteed** to return
+an output from the list of possible answers.
+
 See [this page of the
 documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#llama-cpp)
 for more info on using GGUF models.
+</details>
+
+
+<details>
+<summary>Use a HuggingFace AutoModelForCausalLM</summary>
+
+This model must be able to be loaded using
+[`transformers.AutoModelForCausalLM.from_pretrained`](https://huggingface.co/docs/transformers/model_doc/auto#transformers.AutoModelForCausalLM).
+
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from cappr.huggingface.classify import predict
+
+# Load a model and its corresponding tokenizer
+model_name = "gpt2"
+model = AutoModelForCausalLM.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+prompt = "Which planet is closer to the Sun: Mercury or Earth?"
+completions = ("Mercury", "Earth")
+
+pred = predict(prompt, completions, model_and_tokenizer=(model, tokenizer))
+print(pred)
+# Mercury
+```
+
+See [this page of the
+documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#huggingface)
+for more info on using ``transformers`` models.
 </details>
 
 
@@ -135,9 +93,16 @@ for more info on using GGUF models.
 [`cappr.huggingface`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html)
 seems to play nice with models loaded via
 [`auto_gptq.AutoGPTQForCausalLM.from_quantized`](https://github.com/PanQiWei/AutoGPTQ).
+See [this
+notebook](https://github.com/kddubey/cappr/blob/main/demos/huggingface/auto_gptq.ipynb)
+for a minimal demo.
 
 Note that for `transformers>=4.32.0`, you can load AutoGPTQ models using
 `transformers.AutoModelForCausalLM`.
+
+See [this page of the
+documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#huggingface)
+for more info on using these models.
 </details>
 
 
@@ -155,6 +120,10 @@ Note that for `transformers>=4.35.0`, you can load AutoAWQ models using
 `transformers.AutoModelForCausalLM`. In this case, use
 [`cappr.huggingface.classify`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html),
 which is faster.
+
+See [this page of the
+documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#huggingface)
+for more info on using these models.
 </details>
 
 
@@ -262,6 +231,50 @@ print(preds)
 #  'Kevin Conroy']
 ```
 </details>
+
+
+<details>
+<summary>Use a model from the OpenAI API</summary>
+
+Specifically, this model must be compatible with the
+[/v1/completions](https://platform.openai.com/docs/models/model-endpoint-compatibility)
+endpoint
+([excluding](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#openai)
+``gpt-3.5-turbo-instruct``).
+
+```python
+from cappr.openai.classify import predict
+
+prompt = """
+Tweet about a movie: "Oppenheimer was pretty good. But 3 hrs...cmon Nolan."
+This tweet contains the following criticism:
+""".strip("\n")
+
+completions = ("bad message", "too long", "unfunny")
+
+pred = predict(prompt, completions, model="text-ada-001")
+print(pred)
+# too long
+```
+
+See [this page of the
+documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#openai)
+for more info on using OpenAI models.
+</details>
+
+
+<details>
+<summary>Extract the final answer from a step-by-step completion</summary>
+
+Step-by-step and chain-of-thought prompts are highly effective ways to get an LLM to
+"reason" about more complex tasks. But if you need a structured output, a step-by-step
+completion is unwieldy. Use CAPPr to extract the final answer from these types of
+completions, given a list of possible answers.
+
+See this idea in action [here in the
+documentation](https://cappr.readthedocs.io/en/latest/select_a_prompt_completion_format.html#wrangle-step-by-step-completions).
+</details>
+
 
 See
 [`demos/llama_cpp/superglue/copa.ipynb`](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb)

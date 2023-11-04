@@ -9,16 +9,17 @@ trained for your domain/application.
 
 Besides that, selecting a language model is almost entirely a process of trial and
 error, balancing statistical performance with computational constraints. It should be
-easy to plug and play though.
+easy to plug and play though. `AutoGPTQ`_ models are the most well-suited to CAPPr.
+These models are compatible with :mod:`cappr.huggingface.classify`.
 
 
 HuggingFace
 -----------
 
-To work with models which implement the PyTorch ``transformers`` CausalLM interface,
-including `AutoGPTQ`_ and `AutoAWQ`_ models, CAPPr depends on the `transformers
+To work with models which implement the ``transformers`` CausalLM interface, including
+`AutoGPTQ`_ and `AutoAWQ`_ models, CAPPr depends on the `transformers
 <https://github.com/huggingface/transformers>`_ package. You can search the `HuggingFace
-model hub <https://huggingface.co/models?library=pytorch>`_ for these models.
+model hub <https://huggingface.co/models>`_ for these models.
 
 Here's a quick example (which will download a small GPT-2 model to your computer):
 
@@ -69,8 +70,10 @@ There are two CAPPr HuggingFace modules. In general, stick to
 prompts are processed two-at-a-time and completions are processed in parallel. These
 settings are controlled by the ``batch_size`` and ``batch_size_completions`` keyword
 arguments, respectively. Decreasing their values decreases peak memory usage but costs
-runtime. :mod:`cappr.huggingface.classify` can also cache shared instructions for
-prompts: see :func:`cappr.huggingface.classify.cache`.
+runtime. Increasing their values decreases runtime but costs memory.
+
+:mod:`cappr.huggingface.classify` can also cache shared instructions for prompts. See
+:func:`cappr.huggingface.classify.cache`.
 
 :mod:`cappr.huggingface.classify_no_cache` may be compatible with a slightly
 broader class of architectures and model interfaces. Here, the model is only assumed to

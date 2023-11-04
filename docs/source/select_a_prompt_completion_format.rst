@@ -13,8 +13,8 @@ components:
    {prompt}{end_of_prompt}{completion}
 
 The text you want to classify should appear in the ``prompt``. ``end_of_prompt`` is
-either a whitespace ``" "`` or empty ``""``. One of the classes which the text could
-belong to should appear in the ``completion``.\ [#]_
+either a whitespace ``" "`` or the empty string ``""``. One of the choices/classes which
+the text could belong to should appear in the ``completion``.\ [#]_
 
 The ``completion`` string should flow naturally after ``{prompt}{end_of_prompt}``. So
 pay close attention to the use of white spaces, newlines, and word casing. CAPPr doesn't
@@ -226,7 +226,7 @@ Most models are sensitive to quirky differences between prompts.
 **Llama 2 / SentencePiece models**: when using a Concat-Class style prompt, it's
 possible to achieve higher accuracy by abandoning the chat format. See, e.g., the `Llama
 2 COPA demo`_. Moreover, instead of setting ``end_of_prompt=" "``, consider adding this
-whitespace to the end of the ``prompt`` string and set ``end_of_prompt=""``.
+whitespace to the end of the ``prompt`` string.
 
 I'll update these notes as more quirks are discovered. For now, if you don't already
 have a good feel for the model, consider experimenting with things like:
@@ -248,8 +248,6 @@ sorts of prompts, it may be applied to post-process completions:
 2. Pass this completion in a second prompt, and have CAPPr classify the answer. You can
    probably get away with using a cheap model for this task, as it just takes a bit of
    semantic parsing.
-
-(Indeed, I am advocating for replacing string processing with a small LLM.)
 
 Here's an example:
 
@@ -324,8 +322,8 @@ A note on few-shot prompts
 
 While all of the examples in the documentation are zero-shot prompts, nothing about
 CAPPr prevents you from using few-shot prompts. Just make sure you're not paying too
-much for a small benefit. And consider that you may not need to label many (or any!)
-examples for few-shot prompting to work well.\ [6]_
+much money or latency for a small benefit. And consider that you may not need to label
+many (or any!) examples for few-shot prompting to work well.\ [6]_
 
 
 Footnotes

@@ -4,12 +4,12 @@ The Misfit Toys Hypothesis
 Modern language models undergo two training stages: pretraining, and instruction
 training. When solving a classification task, it's tempting to lean on instruction-style
 prompts in combination with text generation. This combination works incredibly well for
-multi-GPU, proprietary models. But what about open source ones? Perhaps there are
-untapped, smaller, or undertrained models which are not good at generating a choice, but
-are good at estimating probabilities.
+multi-GPU, proprietary models. But what about smaller, open source ones? Perhaps there
+are smaller or undertrained models which are not good at generating a choice, but are
+good at estimating probabilities.
 
-A handful of experiments suggest that CAPPr squeezes more out of smaller LLMs. In the
-`OpenAI COPA demo
+A handful of experiments suggest that CAPPr squeezes more out of smaller LLMs for text
+classification tasks. In the `OpenAI COPA demo
 <https://github.com/kddubey/cappr/blob/main/demos/openai/superglue/copa.ipynb>`_, text
 generation using OpenAI's smaller model, ``text-curie-001``, is less than 50% accurate,
 while CAPPr using the same model is 80% accurate. Similar results can be seen in:
@@ -20,15 +20,16 @@ while CAPPr using the same model is 80% accurate. Similar results can be seen in
 - the 4 GB Mistral `Craigslist Bargains demo`_
 - the 4 GB Mistral `Banking 77 demo`_ (with 77 multi-token choices).
 
-I'll study how replicable this result is across datasets, model sizes, architectures,
-and levels of quantization. I'll also study explanations for these results. The working
-hypothesis is two-fold:
+I'll study how replicable this result is across classification tasks, model sizes,
+architectures, and levels of quantization. I'll also study explanations for these
+results. The working hypothesis is two-fold:
 
-- CAPPr-style prompt-completion formats can look more like pretraining data. This is
-  demonstrated in the `COPA demo`_.
-- In text generation, the model can generate "I don't know", or make a choice that isn't
-  one in the given list of choices. CAPPr instead has the model to make its "best" guess
-  among the given choices. This is demonstrated in the `Banking 77 demo`_.
+- CAPPr-style `prompt-completion formats
+  <https://cappr.readthedocs.io/en/latest/select_a_prompt_completion_format.html>`_ can
+  look more like pretraining data. This is demonstrated in the `COPA demo`_
+- In text generation, the model can generate "I don't know", or make a choice that's
+  difficult to map to the given list of choices. CAPPr instead has the model make its
+  "best" guess among the given choices. This is demonstrated in the `Banking 77 demo`_.
 
 
 Calibration
