@@ -1,5 +1,5 @@
 """
-Note that you need to install the Llama CPP requirements to use this module::
+Install the Llama CPP requirements to use this module::
 
     pip install "cappr[llama-cpp]"
 

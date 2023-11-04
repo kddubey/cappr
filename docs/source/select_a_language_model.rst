@@ -43,9 +43,9 @@ So far, CAPPr has been tested for correctness on the following architectures:
 
 - GPT-2
 - GPT-J
-- GPT-NeoX (including StableLM, and its tuned/instruct and GPTQd versions)
+- GPT-NeoX
 - Llama
-- Llama 2 (chat, raw, and its GPTQd versions)
+- Llama 2
 - Mistral.
 
 You'll need access to beefier hardware to run models from the HuggingFace hub, as
@@ -62,29 +62,37 @@ Which CAPPr HuggingFace module should I use?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There are two CAPPr HuggingFace modules. In general, stick to
-:mod:`cappr.huggingface.classify`. If you're running an `AutoAWQ`_ model, then
-(currently) you must use :mod:`cappr.huggingface.classify_no_cache`.
+:mod:`cappr.huggingface.classify`.
 
 :mod:`cappr.huggingface.classify` has the greatest `throughput
 <https://cappr.readthedocs.io/en/latest/computational_performance.html>`_. By default,
 prompts are processed two-at-a-time and completions are processed in parallel. These
 settings are controlled by the ``batch_size`` and ``batch_size_completions`` keyword
-arguments, respectively. Decreasing them decreases memory usage but costs more time.
+arguments, respectively. Decreasing their values decreases peak memory usage but costs
+runtime. :mod:`cappr.huggingface.classify` can also cache shared instructions for
+prompts: see :func:`cappr.huggingface.classify.cache`.
 
-:mod:`cappr.huggingface.classify` can also cache shared prefixes for prompts: see
-:func:`cappr.huggingface.classify.cache`.
+:mod:`cappr.huggingface.classify_no_cache` may be compatible with a slightly
+broader class of architectures and model interfaces. Here, the model is only assumed to
+input token/input IDs and an attention mask, and then output logits for each input ID.
 
-:mod:`cappr.huggingface.classify_no_cache` is compatible with `AutoAWQ`_ models. In
-general, it may be compatible with a slightly broader class of architectures and model
-interfaces. Here, the model is only assumed to input token/input IDs and an attention
-mask, and then output logits for each input ID.
+.. note:: For ``transformers>=4.35.0``, AutoAWQ models `can be loaded
+          <https://huggingface.co/docs/transformers/main/en/main_classes/quantization#example-usage>`_
+          using ``transformers.AutoModelForCausalLM.from_pretrained``. In this case,
+          you can use :mod:`cappr.huggingface.classify`.
 
-.. warning:: When instantiating your `AutoAWQ`_ model, you must set an extra attribute
-             indicating the device(s) which the model is on, e.g.,
-             ``model.device = "cuda"``.
+:mod:`cappr.huggingface.classify_no_cache` is compatible with models loaded via:
 
-.. note:: If you're using an `AutoAWQ`_ model, pass ``batch_size=len(completions)`` to
-          the model's initialization.
+.. code:: python
+
+   from awq import AutoAWQForCausalLM
+
+   model = AutoAWQForCausalLM.from_quantized(
+      model_id,
+      ...,
+      batch_size=batch_size_completions,
+   )
+   model.device = "cuda"
 
 
 Examples
@@ -93,8 +101,8 @@ Examples
 For an example of running Llama 2, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/superglue/copa.ipynb>`_.
 
-For a minimal example of running an `AutoGPTQ`_ Mistral model, where we cache a shared
-prompt prefix and batch completions to save memory, see `this notebook
+For an example of running an `AutoGPTQ`_ Mistral model, where we cache shared prompt
+instructions and batch completions to save memory, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/banking_77_classes.ipynb>`_.
 
 For a minimal example of running an `AutoAWQ`_ Mistral model, see `this notebook

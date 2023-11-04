@@ -1,5 +1,5 @@
 """
-Note that you need to install the HuggingFace requirements to use this module::
+Install the HuggingFace requirements to use this module::
 
     pip install "cappr[hf]"
 

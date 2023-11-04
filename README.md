@@ -64,7 +64,7 @@ CAPPr is **100% guaranteed** to return an output from the list of possible answe
 
 
 <details>
-<summary>Use a PyTorch transformers model</summary>
+<summary>Use a AutoModelForCausalLM</summary>
 
 Specifically, this model must be able to be loaded using
 [`transformers.AutoModelForCausalLM.from_pretrained`](https://huggingface.co/docs/transformers/model_doc/auto#transformers.AutoModelForCausalLM).
@@ -135,9 +135,9 @@ for more info on using GGUF models.
 [`cappr.huggingface`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html)
 seems to play nice with models loaded via
 [`auto_gptq.AutoGPTQForCausalLM.from_quantized`](https://github.com/PanQiWei/AutoGPTQ).
-But I haven't thoroughly tested that. See [this
-notebook](https://github.com/kddubey/cappr/blob/main/demos/huggingface/auto_gptq.ipynb)
-for a minimal demo.
+
+Note that for `transformers>=4.32.0`, you can load AutoGPTQ models using
+`transformers.AutoModelForCausalLM`.
 </details>
 
 
@@ -146,10 +146,15 @@ for a minimal demo.
 
 [`cappr.huggingface.classify_no_cache`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html)
 seems to play nice with models loaded via
-[`awq.AutoAWQForCausalLM.from_quantized`](https://github.com/casper-hansen/AutoAWQ). But
-I haven't thoroughly tested that. See [this
+[`awq.AutoAWQForCausalLM.from_quantized`](https://github.com/casper-hansen/AutoAWQ). See
+[this
 notebook](https://github.com/kddubey/cappr/blob/main/demos/huggingface/autoawq.ipynb)
 for a minimal demo.
+
+Note that for `transformers>=4.35.0`, you can load AutoAWQ models using
+`transformers.AutoModelForCausalLM`. In this case, use
+[`cappr.huggingface.classify`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html),
+which is faster.
 </details>
 
 

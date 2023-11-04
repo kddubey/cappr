@@ -124,7 +124,7 @@ Let's now run CAPPr on that product review classification task. Also, let's:
 
 - predict a probability distribution over classes (optional)
 
-- use a smaller, "dumber" model—``text-curie-001``
+- use a smaller, "worse" model—``text-curie-001``
 
   - Text generation with ``text-curie-001`` typically does not work well for slightly
     complicated tasks, e.g., run that text generation code above with

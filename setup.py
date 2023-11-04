@@ -26,8 +26,9 @@ requirements_huggingface = [
 ]
 
 requirements_huggingface_dev = [
-    req if not req.startswith("transformers>=") else "transformers>=4.34.0"
-    # To test Mistral in our testing workflow, we need this update
+    req if not req.startswith("transformers>=") else "transformers>=4.35.0"
+    # To test Mistral in our testing workflow, we need >=4.34.0. To demo AutoGPTQ on CPU
+    # and AutoAWQ with caching, need >=4.35.0
     for req in requirements_huggingface
 ] + ["huggingface-hub>=0.16.4"]
 

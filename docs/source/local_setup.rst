@@ -41,7 +41,7 @@ Setup
 
 #. Download these tiny GGUF models I uploaded to HF
 
-::
+   ::
 
       huggingface-cli download \
       aladar/TinyLLama-v0-GGUF \
@@ -49,7 +49,7 @@ Setup
       --local-dir ./tests/llama_cpp/fixtures/models \
       --local-dir-use-symlinks False
 
-::
+   ::
 
       huggingface-cli download \
       aladar/tiny-random-BloomForCausalLM-GGUF \

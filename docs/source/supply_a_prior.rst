@@ -18,8 +18,8 @@ simply compute the fraction of examples belonging to each class, e.g.,
    prior = [3/9, 5/9, 1/9]
 
 There are better but slighly more complicated ways to estimate a prior, e.g., `additive
-smoothing <https://en.wikipedia.org/wiki/Additive_smoothing>`_. You may also simply
-guess a prior if you have some good domain knowledge.
+smoothing <https://en.wikipedia.org/wiki/Additive_smoothing>`_. You may also guess a
+prior based on domain knowledge.
 
 If you have absolutely no idea what a reasonable prior could be, then you may leave out
 the ``prior`` keyword argument for ``predict`` and ``predict_proba`` functions.

@@ -12,6 +12,7 @@ from transformers.modeling_outputs import CausalLMOutput
 
 from cappr.utils import _check
 
+
 BatchEncoding = TypeVar("BatchEncoding", bound=Mapping[str, torch.Tensor])
 """
 Type of the output of `tokenizer(texts, return_tensors="pt", ...)`.
