@@ -11,7 +11,7 @@ across completions.
 """
 from __future__ import annotations
 from contextlib import contextmanager, nullcontext
-from typing import Literal, Mapping, Sequence, Tuple, TypeVar
+from typing import cast, Literal, Mapping, Sequence, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -22,7 +22,7 @@ from transformers.modeling_outputs import CausalLMOutput, CausalLMOutputWithPast
 from cappr.utils import _batch, _check, classify
 from cappr import Example
 from cappr import huggingface as hf
-from cappr.huggingface._utils import BatchEncoding, ModelForCausalLM
+from cappr.huggingface._utils import BatchEncodingPT, ModelForCausalLM
 
 
 @classify._token_logprobs
@@ -77,7 +77,7 @@ def token_logprobs(
 
     Warning
     -------
-    Set `end_of_prompt="" unless you're using the discount feature.
+    Set `end_of_prompt=""` unless you're using the discount feature.
 
     Note
     ----
@@ -91,7 +91,6 @@ def token_logprobs(
         if `texts` is empty
     """
     with hf._utils.set_up_model_and_tokenizer(*model_and_tokenizer):
-        # bleh
         if not hf._utils.does_tokenizer_need_prepended_space(model_and_tokenizer[1]):
             end_of_prompt = ""
         texts = [end_of_prompt + text for text in texts]
@@ -100,8 +99,6 @@ def token_logprobs(
         logits, encodings = hf._utils.logits_texts(
             texts, model_and_tokenizer, drop_bos_token=drop_bos_token_log_prob
         )
-        # y is this^ type hint not working
-        encodings: BatchEncoding = encodings
 
         # Convert next-token logits to this-token logprobs.
         # It's still wrong to set input_ids_start_idx=0 for tokenizers which add a bos
@@ -131,9 +128,7 @@ def token_logprobs(
 ########################################################################################
 
 
-_PastKeyValues = TypeVar(
-    "_PastKeyValues", bound=Tuple[Tuple[torch.Tensor, torch.Tensor]]
-)
+_PastKeyValues = Tuple[Tuple[torch.Tensor, torch.Tensor]]
 """
 The `past_key_values` input to a HuggingFace `transformers` model's forward pass. It's a
 2-D tuple of 4-D tensors.
@@ -187,8 +182,8 @@ class _ModelWithCache:
     def __init__(
         self,
         model: ModelForCausalLM,
-        encodings_to_cache: BatchEncoding,
-        past: tuple[BatchEncoding, CausalLMOutputWithPast] | None = None,
+        encodings_to_cache: BatchEncodingPT,
+        past: tuple[BatchEncodingPT, CausalLMOutputWithPast] | None = None,
         logits_all: bool = True,
     ):
         # "Private" attributes b/c the interface should mimic that of a ModelForCausalLM
@@ -444,7 +439,7 @@ def cache(
 
     with hf._utils.set_up_tokenizer(tokenizer):
         with nullcontext() if past is None else hf._utils.dont_add_bos_token(tokenizer):
-            encodings_prefixes: BatchEncoding = tokenizer(
+            encodings_prefixes: BatchEncodingPT = tokenizer(
                 prefixes, return_tensors="pt", padding=True
             ).to(model.device)
 
@@ -491,7 +486,7 @@ def _blessed_helper(
     num_completions_per_prompt: int | Sequence[int],
     completions_repeats: int,
     batch_size_completions: int | None = None,
-):
+) -> tuple[torch.Tensor, BatchEncodingPT]:
     if not isinstance(num_completions_per_prompt, int):
         num_completions_per_prompt: torch.Tensor = torch.tensor(
             num_completions_per_prompt, device=model.device
@@ -508,9 +503,10 @@ def _blessed_helper(
     # completion, the encoding should correspond to '<s> a b c' not '<s> a b <s> c'.
     with hf._utils.set_up_tokenizer(tokenizer), hf._utils.dont_add_bos_token(tokenizer):
         # This computation is repeated for constant completions, but it doesn't matter
-        completions_encoding: BatchEncoding = tokenizer(
+        completions_encoding: BatchEncodingPT = tokenizer(
             completions, return_tensors="pt", padding=True
         ).to(model.device)
+    completions_encoding = cast(BatchEncodingPT, completions_encoding)
     # Repeat then batch completions. The other way around corrupts the order
     completions_input_ids = torch.split(
         completions_encoding["input_ids"].repeat(completions_repeats, 1),
@@ -581,7 +577,7 @@ def _blessed_helper(
         [prompts_last_nonpad_token_logits, completions_logits], dim=1
     )
     # You may need the offsets to be able to ignore pad tokens
-    completions_encoding: BatchEncoding = {
+    completions_encoding = {
         "input_ids": torch.cat(completions_input_ids),
         "attention_mask": torch.cat(completions_attention_mask),
         "offsets": offsets.repeat_interleave(num_completions_per_prompt, dim=0),
@@ -600,7 +596,7 @@ def _logits_completions_given_prompts(
     completions: Sequence[str],
     end_of_prompt: Literal[" ", ""] = " ",
     batch_size_completions: int | None = None,
-):
+) -> tuple[torch.Tensor, BatchEncodingPT]:
     if not hf._utils.does_tokenizer_need_prepended_space(tokenizer):
         end_of_prompt = ""
     completions = [end_of_prompt + completion for completion in completions]
@@ -620,7 +616,7 @@ def _logits_completions_given_prompts_examples(
     tokenizer: PreTrainedTokenizerBase,
     examples: Sequence[Example],
     batch_size_completions: int | None = None,
-):
+) -> tuple[torch.Tensor, BatchEncodingPT]:
     should_end_of_prompt_be_empty = not hf._utils.does_tokenizer_need_prepended_space(
         tokenizer
     )

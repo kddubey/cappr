@@ -73,7 +73,7 @@ def token_logprobs(
 
     Warning
     -------
-    Set `end_of_prompt="" unless you're using the discount feature.
+    Set `end_of_prompt=""` unless you're using the discount feature.
 
     Note
     ----

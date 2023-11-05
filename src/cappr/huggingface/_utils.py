@@ -4,7 +4,7 @@ YouTils
 from __future__ import annotations
 from contextlib import contextmanager, ExitStack, nullcontext
 from functools import lru_cache
-from typing import Collection, Mapping, Sequence, TypeVar
+from typing import Collection, Mapping, Sequence
 
 import torch
 from transformers import PreTrainedModel, PreTrainedTokenizerBase
@@ -13,7 +13,7 @@ from transformers.modeling_outputs import CausalLMOutput
 from cappr.utils import _check
 
 
-BatchEncoding = TypeVar("BatchEncoding", bound=Mapping[str, torch.Tensor])
+BatchEncodingPT = Mapping[str, torch.Tensor]
 """
 Type of the output of `tokenizer(texts, return_tensors="pt", ...)`.
 """
@@ -21,7 +21,7 @@ Type of the output of `tokenizer(texts, return_tensors="pt", ...)`.
 # return other objects. In this package, tokenizers will always return PyTorch tensors.
 
 
-ModelForCausalLM = TypeVar("ModelForCausalLM", bound=PreTrainedModel)
+ModelForCausalLM = PreTrainedModel
 """
 A pretrained model with the same inference interface as a model loaded via
 `transformers.AutoModelForCausalLM.from_pretrained`.
@@ -258,10 +258,10 @@ def _batched_model_call(
 
 
 def drop_first_token(
-    logits: torch.Tensor, encodings: BatchEncoding
-) -> tuple[torch.Tensor, BatchEncoding]:
+    logits: torch.Tensor, encodings: BatchEncodingPT
+) -> tuple[torch.Tensor, BatchEncodingPT]:
     logits = logits[:, 1:, :]
-    encodings: BatchEncoding = {key: value[:, 1:] for key, value in encodings.items()}
+    encodings = {key: value[:, 1:] for key, value in encodings.items()}
     return logits, encodings
 
 
@@ -272,7 +272,7 @@ def logits_texts(
     do_not_add_eos_token: bool = True,
     padding: bool | None = None,
     batch_size: int | None = None,
-) -> tuple[torch.Tensor, BatchEncoding]:
+) -> tuple[torch.Tensor, BatchEncodingPT]:
     """
     Basically::
 
@@ -284,7 +284,7 @@ def logits_texts(
     if padding is None:
         padding = getattr(tokenizer, "pad_token_id", None) is not None
     with dont_add_eos_token(tokenizer) if do_not_add_eos_token else nullcontext():
-        encodings: BatchEncoding = tokenizer(
+        encodings: BatchEncodingPT = tokenizer(
             texts, return_tensors="pt", padding=padding
         ).to(model.device)
     if batch_size is not None:

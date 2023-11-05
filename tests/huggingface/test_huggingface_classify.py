@@ -18,7 +18,7 @@ import huggingface_hub as hf_hub
 from cappr import Example
 from cappr.huggingface import classify, classify_no_cache
 from cappr import huggingface as hf
-from cappr.huggingface._utils import BatchEncoding, ModelForCausalLM
+from cappr.huggingface._utils import BatchEncodingPT, ModelForCausalLM
 
 # sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
@@ -147,7 +147,7 @@ def test_set_up_model_and_tokenizer(
 @pytest.mark.parametrize("batch_size", (1, 2))
 def test__batched_model_call(texts, model, tokenizer, batch_size, atol):
     with hf._utils.set_up_tokenizer(tokenizer):
-        encodings: BatchEncoding = tokenizer(texts, return_tensors="pt", padding=True)
+        encodings: BatchEncodingPT = tokenizer(texts, return_tensors="pt", padding=True)
     with hf._utils.set_up_model(model):
         out_correct: CausalLMOutput = model(**encodings)
     out_batched: CausalLMOutput = hf._utils._batched_model_call(
@@ -179,7 +179,6 @@ def test_token_logprobs(
     # Gather un-batched un-sliced log probs for the expected result
     is_str = isinstance(texts, str)
     texts = [texts] if is_str else texts
-    # bleh
     if not hf._utils.does_tokenizer_need_prepended_space(model_and_tokenizer[1]):
         end_of_prompt = ""
     log_probs_texts_from_unbatched = []
@@ -319,9 +318,9 @@ class TestCache:
 
 def _test_encodings(
     logits_slow: torch.Tensor,
-    encodings_slow: BatchEncoding,
+    encodings_slow: BatchEncodingPT,
     logits_fast: torch.Tensor,
-    encodings_fast: BatchEncoding,
+    encodings_fast: BatchEncodingPT,
 ):
     """
     Tests that all objects have the expected shape, and that the encodings `offsets` are
@@ -332,7 +331,7 @@ def _test_encodings(
         # doesn't repeat any data, unlike what's done in the slow/no-cache module
         return
 
-    def _test_shapes(logits: torch.Tensor, encodings: BatchEncoding):
+    def _test_shapes(logits: torch.Tensor, encodings: BatchEncodingPT):
         assert encodings["input_ids"].shape == logits.shape[:2]  # 3rd dim is vocab
         assert encodings["input_ids"].shape == encodings["attention_mask"].shape
         assert encodings["input_ids"].shape[0] == encodings["offsets"].shape[0]
@@ -347,9 +346,9 @@ def _test_encodings(
 
 def _test_logits(
     logits_slow: torch.Tensor,
-    encodings_slow: BatchEncoding,
+    encodings_slow: BatchEncodingPT,
     logits_fast: torch.Tensor,
-    encodings_fast: BatchEncoding,
+    encodings_fast: BatchEncodingPT,
     atol,
 ):
     """
