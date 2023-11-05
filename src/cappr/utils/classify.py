@@ -66,7 +66,7 @@ def _agg_log_probs_vectorized(
                 )
                 for completion_idx in range(num_completions_per_prompt)
             ]
-        except:
+        except ValueError:
             raise ValueError(
                 "log_probs has a constant # of completions, but there are a "
                 "non-constant # of tokens. Vectorization is not possible."
@@ -107,7 +107,7 @@ def _ndim(sequence) -> int:
     def _is_sliceable(object) -> bool:
         try:
             object[0:0]
-        except:
+        except (TypeError, IndexError, ValueError):
             return False
         else:
             return True

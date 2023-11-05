@@ -63,7 +63,7 @@ def tokenizer(model_name: str) -> PreTrainedTokenizerBase:
     # field, tokenizer_file, which is hard-coded to some specific machine
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_name)
-    except:
+    except Exception:
         # tokenizer_file not found. Find it locally
         local_path = hf_hub.try_to_load_from_cache(model_name, "tokenizer.json")
         tokenizer = AutoTokenizer.from_pretrained(model_name, tokenizer_file=local_path)
@@ -127,11 +127,21 @@ def test_set_up_model_and_tokenizer(
     # Enter the context
     assert torch.is_grad_enabled()
     with hf._utils.set_up_model_and_tokenizer(model, tokenizer):
-        # TODO: add manual checks for correct attribute values!
+        # model
         assert not torch.is_grad_enabled()
-    assert torch.is_grad_enabled()
+        assert not model.training
+        if hasattr(model, "config"):
+            # If the model doesn't have these attributes, then we'll see the error loud
+            # and clear later in the code. So default to the expected values
+            assert getattr(model.config, "return_dict", True)
+            assert getattr(model.config, "use_cache", True)
+        # tokenizer
+        assert tokenizer.padding_side == "right"
+        assert tokenizer.pad_token is not None
+        assert tokenizer.pad_token_id is not None
 
     # Exit the context. No attributes should have changed.
+    assert torch.is_grad_enabled()
     assert model.training == model_attribute_to_old_value["training"]
     for i, module in enumerate(model.children()):
         assert module.training == model_attribute_to_old_value[i]

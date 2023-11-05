@@ -28,13 +28,11 @@ A pretrained model with the same inference interface as a model loaded via
 """
 
 
-@lru_cache(maxsize=None)
+@lru_cache()
 def does_tokenizer_need_prepended_space(
     tokenizer: PreTrainedTokenizerBase,
 ) -> bool:
-    def tokenize(text: str) -> list[int]:
-        return tokenizer(text)["input_ids"]
-
+    tokenize = lambda text: tokenizer(text)["input_ids"]
     bos_token_id = getattr(tokenizer, "bos_token_id", None)
     return _check.does_tokenizer_need_prepended_space(tokenize, bos_token_id)
 
@@ -69,22 +67,31 @@ def _no_grad(model: ModelForCausalLM):  # model given to keep interface the same
 
 
 @contextmanager
+def _setattr(obj, name: str, value):
+    hasattr_ = hasattr(obj, name)
+    if hasattr_:
+        value_prev = getattr(obj, name)
+    try:
+        if hasattr_:
+            setattr(obj, name, value)
+        yield
+    finally:
+        if hasattr_:
+            setattr(obj, name, value_prev)
+
+
+@contextmanager
 def _return_dict(model: ModelForCausalLM):
     """
     In this context, the model returns a dataclass when it's called. (B/c of previous
     versions of `transformers`, the attribute is called `return_dict`.)
     """
-    hasattr_return_dict = hasattr(model, "config") and hasattr(
-        model.config, "return_dict"
-    )
-    try:
-        if hasattr_return_dict:
-            return_dict = model.config.return_dict
-            model.config.return_dict = True
+    with _setattr(model.config, "return_dict", True) if hasattr(
+        model, "config"
+    ) else nullcontext():
+        # nullcontext() b/c we can just try model(...).logits when needed. If it fails,
+        # it'll be obvious and loud
         yield
-    finally:
-        if hasattr_return_dict:
-            model.config.return_dict = return_dict
 
 
 @contextmanager
@@ -92,16 +99,12 @@ def _use_cache(model: ModelForCausalLM):
     """
     In this context, the model output includes a `past_key_values` attribute.
     """
-    hasattr_use_cache = hasattr(model, "config") and hasattr(model.config, "use_cache")
-    if hasattr_use_cache:
-        use_cache: bool = getattr(model.config, "use_cache")
-    try:
-        if hasattr_use_cache:
-            setattr(model.config, "use_cache", True)
+    with _setattr(model.config, "use_cache", True) if hasattr(
+        model, "config"
+    ) else nullcontext():
+        # nullcontext() b/c we can just try model(...).past_key_values when needed. If
+        # it fails it'll be obvious and loud
         yield
-    finally:
-        if hasattr_use_cache:
-            setattr(model.config, "use_cache", use_cache)
 
 
 _DEFAULT_CONTEXT_MANAGERS_MODEL = (
@@ -125,9 +128,8 @@ def _pad_on_right(tokenizer: PreTrainedTokenizerBase):
     try:
         if pad_token_id is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
-            # Note: a PreTrainedTokenizerBase tokenizer is smart about setting auxiliary
-            # attributes, e.g., it updates tokenizer.special_tokens_map after setting
-            # tokenizer.pad_token_id
+            # PreTrainedTokenizerBase is smart about setting auxiliary attributes, e.g.,
+            # tokenizer.special_tokens_map is updated after tokenizer.pad_token_id = ...
         tokenizer.padding_side = "right"
         yield
     finally:
@@ -140,16 +142,8 @@ def dont_add_eos_token(tokenizer: PreTrainedTokenizerBase):
     """
     In this context, don't add an end-of-sentence token.
     """
-    has_attr_add_eos_token = hasattr(tokenizer, "add_eos_token")
-    if has_attr_add_eos_token:
-        add_eos_token: bool = getattr(tokenizer, "add_eos_token")
-    try:
-        if has_attr_add_eos_token:
-            setattr(tokenizer, "add_eos_token", False)
+    with _setattr(tokenizer, "add_eos_token", False):
         yield
-    finally:
-        if has_attr_add_eos_token:
-            setattr(tokenizer, "add_eos_token", add_eos_token)
 
 
 _DEFAULT_CONTEXT_MANAGERS_TOKENIZER = (
@@ -219,16 +213,19 @@ def dont_add_bos_token(tokenizer: PreTrainedTokenizerBase):
     """
     In this context, don't add a beginning-of-sentence token.
     """
-    hasattr_add_bos_token = hasattr(tokenizer, "add_bos_token")
-    if hasattr_add_bos_token:
-        add_bos_token: bool = getattr(tokenizer, "add_bos_token")
-    try:
-        if hasattr_add_bos_token:
-            setattr(tokenizer, "add_bos_token", False)
+    with _setattr(tokenizer, "add_bos_token", False):
         yield
-    finally:
-        if hasattr_add_bos_token:
-            setattr(tokenizer, "add_bos_token", add_bos_token)
+    # attr_name = "add_bos_token"
+    # hasattr_add_bos_token = hasattr(tokenizer, attr_name)
+    # if hasattr_add_bos_token:
+    #     add_bos_token: bool = getattr(tokenizer, attr_name)
+    # try:
+    #     if hasattr_add_bos_token:
+    #         setattr(tokenizer, attr_name, False)
+    #     yield
+    # finally:
+    #     if hasattr_add_bos_token:
+    #         setattr(tokenizer, attr_name, add_bos_token)
 
 
 ########################################################################################

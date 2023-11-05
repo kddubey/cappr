@@ -266,7 +266,7 @@ def predict_examples(
     def is_hashable(objects):
         try:
             set(objects)
-        except:
+        except TypeError:
             return False
         else:
             return True

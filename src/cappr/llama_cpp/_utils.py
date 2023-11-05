@@ -36,7 +36,7 @@ def check_logits(logits) -> np.ndarray:
     return logits
 
 
-@lru_cache(maxsize=None)
+@lru_cache()
 def does_tokenizer_need_prepended_space(model: Llama) -> bool:
     def tokenize(text: str) -> list[int]:
         return model.tokenize(text.encode("utf-8"))
