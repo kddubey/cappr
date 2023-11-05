@@ -4,10 +4,12 @@ functions' outputs are numerically close to those from
 `cappr.llama_cpp._classify_no_cache`.
 """
 from __future__ import annotations
+from dataclasses import dataclass
 import os
 import sys
 from typing import Sequence
 
+from huggingface_hub import hf_hub_download
 from llama_cpp import Llama
 import numpy as np
 import pytest
@@ -23,7 +25,9 @@ import _test_form
 import _test_content
 
 
-_ABS_PATH_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+_MODELS_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "fixtures", "models"
+)
 
 
 ########################################################################################
@@ -31,22 +35,40 @@ _ABS_PATH_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 ########################################################################################
 
 
+@dataclass(frozen=True)
+class _HFHubModel:
+    repo_id: str
+    filename: str
+    does_tokenizer_need_prepended_space: bool
+
+
 @pytest.fixture(
     scope="module",
     params=[
-        ("TinyLLama-v0.Q8_0.gguf", False),
-        ("tiny-random-BloomForCausalLM.gguf", True),
-        # If you're adding a new one, here's a rule for determining the second element:
-        # if the model's tokenizer is SentencePiece => False, elif BPE => True
+        _HFHubModel(
+            repo_id="aladar/tiny-random-BloomForCausalLM-GGUF",
+            filename="tiny-random-BloomForCausalLM.gguf",
+            does_tokenizer_need_prepended_space=True,  # BPE
+        ),
+        _HFHubModel(
+            repo_id="aladar/tiny-random-LlamaForCausalLM-GGUF",
+            filename="tiny-random-LlamaForCausalLM.gguf",
+            does_tokenizer_need_prepended_space=False,  # SentencePiece
+        ),
     ],
 )
 def model_and_does_tokenizer_need_prepended_space(
     request: pytest.FixtureRequest,
 ) -> tuple[Llama, bool]:
-    model_path, does_tokenizer_need_prepended_space = request.param
-    model_path = os.path.join(_ABS_PATH_THIS_DIR, "fixtures", "models", model_path)
+    hf_hub_model: _HFHubModel = request.param
+    model_path = hf_hub_download(
+        hf_hub_model.repo_id,
+        hf_hub_model.filename,
+        local_dir=_MODELS_DIR,
+        local_dir_use_symlinks=False,
+    )
     model = Llama(model_path, logits_all=True, verbose=False)
-    return model, does_tokenizer_need_prepended_space
+    return model, hf_hub_model.does_tokenizer_need_prepended_space
 
 
 @pytest.fixture(scope="module")

@@ -37,7 +37,7 @@ from _protocol import classify_module
     scope="module",
     params=[
         "hf-internal-testing/tiny-random-GPT2LMHeadModel",
-        "Maykeye/TinyLLama-v0",
+        "HuggingFaceH4/tiny-random-LlamaForCausalLM",
         "hf-internal-testing/tiny-random-GPTJForCausalLM",
         "hf-internal-testing/tiny-random-GPTNeoXForCausalLM",
         "hf-internal-testing/tiny-random-MistralForCausalLM",

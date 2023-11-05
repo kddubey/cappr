@@ -39,24 +39,6 @@ Setup
 
       pre-commit install
 
-#. Download these tiny GGUF models I uploaded to HF
-
-   ::
-
-      huggingface-cli download \
-      aladar/TinyLLama-v0-GGUF \
-      TinyLLama-v0.Q8_0.gguf \
-      --local-dir ./tests/llama_cpp/fixtures/models \
-      --local-dir-use-symlinks False
-
-   ::
-
-      huggingface-cli download \
-      aladar/tiny-random-BloomForCausalLM-GGUF \
-      tiny-random-BloomForCausalLM.gguf \
-      --local-dir ./tests/llama_cpp/fixtures/models \
-      --local-dir-use-symlinks False
-
 
 VS code extensions
 ------------------
@@ -84,14 +66,6 @@ Note that a few small transformers and tokenizers will be downloaded to your com
 Sometimes I get worried about bigger code changes. So consider additionally testing
 statistical performance by running an appropriate demo in the repo's `demos
 <https://github.com/kddubey/cappr/tree/main/demos>`_.
-
-When you add a new testing module, add it to the list in ``pyproject.toml``. The list is
-in order of dependencies: ``Example`` and ``utils`` must pass for the rest of the
-modules to pass.
-
-To test a specific module, e.g., ``huggingface``::
-
-   pytest -k huggingface
 
 
 Docs
