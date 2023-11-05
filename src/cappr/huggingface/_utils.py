@@ -88,9 +88,7 @@ def _return_dict(model: ModelForCausalLM):
     """
     with _setattr(model.config, "return_dict", True) if hasattr(
         model, "config"
-    ) else nullcontext():
-        # nullcontext() b/c we can just try model(...).logits when needed. If it fails,
-        # it'll be obvious and loud
+    ) else nullcontext():  # null b/c just try model(...).logits when needed
         yield
 
 
@@ -101,9 +99,7 @@ def _use_cache(model: ModelForCausalLM):
     """
     with _setattr(model.config, "use_cache", True) if hasattr(
         model, "config"
-    ) else nullcontext():
-        # nullcontext() b/c we can just try model(...).past_key_values when needed. If
-        # it fails it'll be obvious and loud
+    ) else nullcontext():  # null b/c just try model(...).past_key_values when needed
         yield
 
 
@@ -215,17 +211,6 @@ def dont_add_bos_token(tokenizer: PreTrainedTokenizerBase):
     """
     with _setattr(tokenizer, "add_bos_token", False):
         yield
-    # attr_name = "add_bos_token"
-    # hasattr_add_bos_token = hasattr(tokenizer, attr_name)
-    # if hasattr_add_bos_token:
-    #     add_bos_token: bool = getattr(tokenizer, attr_name)
-    # try:
-    #     if hasattr_add_bos_token:
-    #         setattr(tokenizer, attr_name, False)
-    #     yield
-    # finally:
-    #     if hasattr_add_bos_token:
-    #         setattr(tokenizer, attr_name, add_bos_token)
 
 
 ########################################################################################
