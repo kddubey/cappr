@@ -39,9 +39,10 @@ from _protocol import classify_module
     params=[
         "hf-internal-testing/tiny-random-GPT2LMHeadModel",
         "HuggingFaceH4/tiny-random-LlamaForCausalLM",
-        "hf-internal-testing/tiny-random-GPTJForCausalLM",
-        "hf-internal-testing/tiny-random-GPTNeoXForCausalLM",
-        "hf-internal-testing/tiny-random-MistralForCausalLM",
+        # These models are reduntant. They're all transformers w/ BPE or SentencePiece
+        # "hf-internal-testing/tiny-random-GPTJForCausalLM",
+        # "hf-internal-testing/tiny-random-GPTNeoXForCausalLM",
+        # "hf-internal-testing/tiny-random-MistralForCausalLM",
     ],
 )
 def model_name(request: pytest.FixtureRequest) -> str:

@@ -241,7 +241,7 @@ def posterior_prob(
 
 
 def _wrap_call_unwrap(
-    type_indicating_singleness: type, input, func: Callable, *args, **kwargs
+    type_indicating_singleness: type, func: Callable, input, *args, **kwargs
 ):
     """
     Handles single inputs for a `func` call which only takes multiple inputs and returns
@@ -267,7 +267,7 @@ def _token_logprobs(token_log_probs):
         if not isinstance(texts, str):
             texts = list(texts)  # 0-index
         _check.end_of_prompt(kwargs.get("end_of_prompt", " "))
-        return _wrap_call_unwrap(str, texts, token_log_probs, *args, **kwargs)
+        return _wrap_call_unwrap(str, token_log_probs, texts, *args, **kwargs)
 
     return wrapper
 
@@ -282,11 +282,11 @@ def _log_probs_conditional(log_probs_conditional):
     def wrapper(
         prompts: str | Sequence[str], completions: Sequence[str], *args, **kwargs
     ) -> list[list[float]] | list[list[list[float]]]:
-        if not isinstance(prompts, str):
-            _check.nonempty_and_ordered(prompts, variable_name="prompts")
+        _check.nonempty_and_ordered(prompts, variable_name="prompts")
         _check.completions(completions)
+        _check.end_of_prompt(kwargs.get("end_of_prompt", " "))
         return _wrap_call_unwrap(
-            str, prompts, log_probs_conditional, completions, *args, **kwargs
+            str, log_probs_conditional, prompts, completions, *args, **kwargs
         )
 
     return wrapper
@@ -307,7 +307,7 @@ def _log_probs_conditional_examples(log_probs_conditional_examples):
         if not isinstance(examples, Example):
             _check.nonempty_and_ordered(examples, variable_name="examples")
         return _wrap_call_unwrap(
-            Example, examples, log_probs_conditional_examples, *args, **kwargs
+            Example, log_probs_conditional_examples, examples, *args, **kwargs
         )
 
     return wrapper
@@ -377,7 +377,7 @@ def _predict_proba(log_probs_conditional):
 
         # Check normalization
         normalize = kwargs.get("normalize", True)
-        _check.normalize(completions, normalize)
+        _check.normalize(normalize, completions)
 
         # Check inputs for discount feature
         discount_completions = kwargs.get("discount_completions", 0)

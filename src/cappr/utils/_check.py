@@ -14,6 +14,7 @@ from __future__ import annotations
 from typing import Callable, Literal, Sequence
 
 import numpy as np
+import numpy.typing as npt
 
 
 def _is_reversible(object) -> bool:
@@ -103,7 +104,9 @@ def end_of_prompt(end_of_prompt: Literal[" ", ""]):
         raise ValueError(msg)
 
 
-def prior(prior: Sequence[float] | None, expected_length: int):
+def prior(
+    prior: Sequence[float] | None, expected_length: int
+) -> npt.NDArray[np.floating] | None:
     """
     Return back `prior` if it's None, or return it as a numpy array if it's not None and
     valid. Raises an error if `prior is not None` and isn't a probability distribution
@@ -131,11 +134,11 @@ def prior(prior: Sequence[float] | None, expected_length: int):
     return prior_arr
 
 
-def normalize(completions: Sequence[str], normalize: bool):
+def normalize(normalize: bool, completions: Sequence[str]):
     """
-    Raises a `ValueError` if `len(completions) == 1 and normalize`.
+    Raises a `ValueError` if `normalize and len(completions) == 1`.
     """
-    if len(completions) == 1 and normalize:
+    if normalize and len(completions) == 1:
         raise ValueError(
             "Setting normalize=True when there's only 1 completion causes the "
             "probability to trivially be 1. Did you mean to set normalize=False, or "

@@ -74,4 +74,4 @@ class Example:
         _check.end_of_prompt(self.end_of_prompt)
         prior = _check.prior(self.prior, expected_length=len(self.completions))
         object.__setattr__(self, "prior", prior)
-        _check.normalize(self.completions, self.normalize)
+        _check.normalize(self.normalize, self.completions)
