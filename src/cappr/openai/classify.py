@@ -21,9 +21,9 @@ def token_logprobs(
     texts: str | Sequence[str],
     model: openai.api.Model,
     end_of_prompt: Literal[" ", ""] = " ",
+    show_progress_bar: bool | None = None,
     ask_if_ok: bool = False,
     api_key: str | None = None,
-    show_progress_bar: bool | None = None,
     **kwargs,
 ) -> list[float] | list[list[float]]:
     """
@@ -41,6 +41,9 @@ def token_logprobs(
     end_of_prompt : Literal[' ', ''], optional
         This string gets added to the beginning of each text. It's important to set this
         if you're using the discount feature. Otherwise, set it to "". By default " "
+    show_progress_bar : bool | None, optional
+        whether or not to show a progress bar. By default, it will be shown only if
+        there are at least 5 texts
     ask_if_ok : bool, optional
         whether or not to prompt you to manually give the go-ahead to run this function,
         after notifying you of the approximate cost of the OpenAI API calls. By default,
@@ -48,9 +51,6 @@ def token_logprobs(
     api_key : str | None, optional
         your OpenAI API key. By default, it's set to the OpenAI's module attribute
         ``openai.api_key``, or the environment variable ``OPENAI_API_KEY``
-    show_progress_bar : bool | None, optional
-        whether or not to show a progress bar. By default, it will be shown only if
-        there are at least 5 texts
 
     Returns
     -------
@@ -65,9 +65,14 @@ def token_logprobs(
         `token_idx` of `texts[text_idx]` conditional on all previous tokens in
         `texts[text_idx]`.
 
+    Warning
+    -------
+    Set `end_of_prompt=""` unless you're using the discount feature.
+
     Note
     ----
-    For each text, the first token's log-probability is always ``None``.
+    For each text, the first token's log-probability is always ``None`` because no
+    autoregressive LM estimates the marginal probability of a token.
 
     Raises
     ------

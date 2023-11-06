@@ -79,7 +79,8 @@ def token_logprobs(
 
     Note
     ----
-    For each text, the first token's log-probability is always ``None``.
+    For each text, the first token's log-probability is always ``None`` because no
+    autoregressive LM estimates the marginal probability of a token.
 
     Raises
     ------
@@ -112,7 +113,7 @@ def token_logprobs(
     # Remove pad token logprobs
     num_non_pad_tokens = encodings["attention_mask"].sum(dim=1)
     log_probs = []
-    first_token_log_prob = [None]  # no CausalLM estimates Pr(token), so call it None
+    first_token_log_prob = [None]
     for log_probs_text, n in zip(log_probs_texts, num_non_pad_tokens):
         # we slice off the right side b/c the tokenizer was set up to do padding on
         # the right

@@ -83,7 +83,8 @@ def token_logprobs(
 
     Note
     ----
-    For each text, the first token's log-probability is always ``None``.
+    For each text, the first token's log-probability is always ``None`` because no
+    autoregressive LM estimates the marginal probability of a token.
 
     Raises
     ------
@@ -93,7 +94,6 @@ def token_logprobs(
         if `texts` is empty
     """
     _utils.check_model(model)
-    first_token_log_prob = [None]  # no CausalLM estimates Pr(token), so call it None
     if not _utils.does_tokenizer_need_prepended_space(model):
         end_of_prompt = ""
     texts = [end_of_prompt + text for text in texts]
@@ -101,6 +101,7 @@ def token_logprobs(
     # Note: we could instead run logits_to_log_probs over a batch to save a bit of time,
     # but that'd cost more memory.
     log_probs = []
+    first_token_log_prob = [None]
     for text in ProgressBar(
         texts, show_progress_bar=show_progress_bar, desc="marginal log-probs"
     ):
