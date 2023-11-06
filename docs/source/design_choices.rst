@@ -2,8 +2,8 @@ Design choices
 ==============
 
 This is the first open source software project I've created. I thought I'd write about
-some of its design choices, and what I learned from creating it. This page is more
-reflective than educational. Feel free to ignore it.
+some of its design choices, and what I learned from creating it. These thoughts are more
+reflective than educational.
 
 
 An alternate design
@@ -96,7 +96,7 @@ function wrapping. Decorators are sufficient.
 Input checks
 ------------
 
-Some silent and some loud errors would be hard to debug. For example:
+There are some silent and some loud errors would be hard to debug. For example:
 
 - inputting an unordered iterable will cause an output array of predicted probabilities
   to be meaningless
@@ -142,8 +142,8 @@ No string formatting abstractions
 ---------------------------------
 
 Many tools in this space includes some type of string formatting abstraction. Some
-abstract the complex process of structuring a *completion*, which makes parsing it
-straightforward. Others format the *prompt* to, e.g., abstract the process of writing a
+abstract the complex process of structuring a completion or a chain of prompts and
+completions. Others format a single prompt to, e.g., abstract the process of writing a
 few-shot prompt. Prompt formatters are not as helpful. Not to be too dismissive, but
 anyone who uses Python knows how to format a string. Prompt formatters replace the
 question of "how do I tell the LM to do what I want?" with "how do I use this string
@@ -212,13 +212,11 @@ Too many half-measures
 
 It's well known that attention keys and values can be cached whenever substrings are
 repeated for inference. Getting this feature to align with the CAPPr scheme took nitty
-gritty handling of pad tokens and position IDs. Some model implementations in
-HuggingFace don't always handle them correctly (but this will change `soon
-<https://github.com/huggingface/transformers/issues/18104#issuecomment-1465629955>`_).
-My current implementation of caching is suboptimal, as I got lost in the sauce of making
-incremental improvements. I now see that it would've been much more efficient to
-optimally implement caching + batching the first time around. See `this page
-<https://cappr.readthedocs.io/en/latest/computational_performance.html>`_ for more info.
+gritty work. My first few implementations of caching were suboptimal from both a
+computational and a UI perspective. I got lost in the sauce of making lots and lots of
+incremental improvements. Eventually I `re-did
+<https://github.com/kddubey/cappr/commit/d3b52e975918fa83b52c963116b79d5132ba5277>` the
+whole thing with some success.
 
 Marketing matters
 ~~~~~~~~~~~~~~~~~
@@ -241,10 +239,9 @@ Besides the algorithmic stuff, I was pleasantly surprised to find that I loved
 engineering this project from the ground up. Mulling over design decisions and managing
 myself was fun. Writing tests was enlightening using pytest. Writing docs was satisfying
 (and `almost <https://github.com/kddubey/dumpy/tree/main/sphinx_setup>`_ easy) using
-Sphinx and readthedocs. Writing GitHub workflows made releases convenient, and it made
-my project feel
-way more professional lol. I found `ReWrap <https://stkb.github.io/Rewrap/>`_ and
-`autoDocstring
+Sphinx and readthedocs. Writing GitHub workflows made releases convenient, and they made
+my project feel way more professional lol. I found `ReWrap
+<https://stkb.github.io/Rewrap/>`_ and `autoDocstring
 <https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring>`_ for the
 first time. I'll be using them for every project from now on. Overall, as a result of
-working on this project, I now appreciate open source at a much higher level.
+working on this project, I appreciate open source software at a much higher level.

@@ -98,5 +98,5 @@ Add the import to ``src/cappr/__init__.py``, and add its dependencies as extras 
 ``setup.py``. Add a testing module. The testing module for any API LM interface will
 look a lot like `OpenAI's testing module
 <https://github.com/kddubey/cappr/blob/main/tests/openai/test_openai_classify.py>`_.
-After passing these tests, evaluate the module on a few demos in
-`https://github.com/kddubey/cappr/blob/main/demos`.
+After passing these tests, evaluate the module on a few `demos
+<https://github.com/kddubey/cappr/blob/main/demos>`_.

@@ -2,7 +2,7 @@
 Local development
 =================
 
-Some notes about how to develop this package, and design choices.
+Notes about how to develop this package.
 
 .. toctree::
    :maxdepth: 2

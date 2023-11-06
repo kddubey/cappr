@@ -12,9 +12,6 @@ CAPPr
 | Squeeze `more <https://cappr.readthedocs.io/en/latest/future_research.html>`_ out of
   open source LLMs.
 
-.. note:: This package is in early stages, and the method needs to be evaluated on more
-          datasets.
-
 
 Get started
 ===========

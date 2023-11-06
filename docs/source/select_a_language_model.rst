@@ -9,8 +9,11 @@ trained for your application.
 
 Besides that, selecting a language model is almost entirely a process of trial and
 error, balancing statistical performance with computational constraints. It should be
-easy to plug and play though. For CAPPr, `GPTQd models
-<https://huggingface.co/models?sort=trending&search=gptq>`_ are the most computationally
+easy to plug and play though.
+
+For CAPPr, `GPTQd models <https://huggingface.co/models?sort=trending&search=gptq>`_ are
+the most computationally performant. `Mistral trained on OpenOrca
+<https://huggingface.co/TheBloke/Mistral-7B-OpenOrca-GPTQ>`_ is statistically
 performant. These models are compatible with :mod:`cappr.huggingface.classify`.
 
 
