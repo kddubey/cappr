@@ -1,5 +1,5 @@
 """
-Mirror. For testing purposes only. Should be strictly slower.
+Mirror. For testing purposes only. Is strictly slower.
 """
 from __future__ import annotations
 from functools import partial

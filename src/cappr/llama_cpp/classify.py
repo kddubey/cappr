@@ -537,23 +537,30 @@ def predict_proba(
     -------
     Let's have our little Llama predict some story beginnings::
 
-        from llama_cpp import Llama from cappr.llama_cpp.classify import predict_proba
+        from llama_cpp import Llama
+        from cappr.llama_cpp.classify import predict_proba
 
-        # Load model # The top of this page has instructions to download this model
-        model_path = "./TinyLLama-v0.Q8_0.gguf" # Always set logits_all=True for CAPPr
+        # Load model
+        # The top of this page has instructions to download this model
+        model_path = "./TinyLLama-v0.Q8_0.gguf"
+        # Always set logits_all=True for CAPPr
         model = Llama(model_path, logits_all=True, verbose=False)
 
-        # Define a classification task prompts = ["In a hole in", "Once upon"]
+        # Define a classification task
+        prompts = ["In a hole in", "Once upon"]
         completions = ("a time", "the ground")
 
-        # Compute pred_probs = predict_proba(prompts, completions, model)
+        # Compute
+        pred_probs = predict_proba(prompts, completions, model)
 
         pred_probs_rounded = pred_probs.round(2)  # just for cleaner output
 
-        # predicted probability that the ending for the clause # "In a hole in" is "the
-        ground" print(pred_probs_rounded[0, 1]) # 0.98
+        # predicted probability that the ending for the clause
+        # "In a hole in" is "the ground"
+        print(pred_probs_rounded[0, 1]) # 0.98
 
-        # predicted probability that the ending for the clause # "Once upon" is "a time"
+        # predicted probability that the ending for the clause
+        # "Once upon" is "a time"
         print(pred_probs_rounded[1, 0]) # 1.0
     """
     return log_probs_conditional(**locals())

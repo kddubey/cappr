@@ -54,7 +54,6 @@ def log_probs_conditional(
     )
     # Since log_probs is a flat list, we'll need to batch them by the size and order of
     # completions to fulfill the spec
-    print(f"end_of_prompt_for_slicing={repr(end_of_prompt_for_slicing)}")
     return [
         _slice_completions(
             completions, end_of_prompt_for_slicing, log_probs_batch, tokenize

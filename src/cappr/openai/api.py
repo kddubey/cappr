@@ -185,6 +185,10 @@ def openai_method_retry(
     fail. Logs at level INFO when requests fail, and level ERROR if an exception is
     raised.
 
+    Note
+    ----
+    For ``openai>=1.0.0`, auto-retry is builtin.
+
     Parameters
     ----------
     openai_method : Callable
