@@ -256,14 +256,20 @@ def test_cache_logits(model_and_tokenizer, atol):
     assert torch.allclose(logits4, logits_correct(["a b c d"]), atol=atol)
 
     # Test clear_cache_on_exit
-    with pytest.raises(AttributeError, match="This model is no longer usable."):
+    with pytest.raises(
+        classify._CacheClearedError, match="This model is no longer usable."
+    ):
         cached_a[0](input_ids=None, attention_mask=None)
 
     with classify.cache(
         model_and_tokenizer, "a", clear_cache_on_exit=False
     ) as cached_a:
-        logits(["whatever"], cached_a)
-    assert hasattr(cached_a[0], "_cappr_past")
+        with classify.cache(
+            cached_a, delim + "b c", clear_cache_on_exit=False
+        ) as cached_a_b_c:
+            logits(["whatever"], cached_a_b_c)
+    assert cached_a_b_c[0]._cappr.past is not None
+    assert hasattr(cached_a[0]._cappr, "past")
 
 
 @pytest.mark.parametrize("prompt_prefix", ("a b c",))

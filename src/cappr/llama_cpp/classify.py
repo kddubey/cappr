@@ -84,7 +84,7 @@ def token_logprobs(
     Note
     ----
     For each text, the first token's log-probability is always ``None`` because no
-    autoregressive LM estimates the marginal probability of a token.
+    autoregressive LM directly estimates the marginal probability of a token.
 
     Raises
     ------
@@ -210,7 +210,7 @@ def _log_probs_conditional_prompt(
     completions = [end_of_prompt + completion for completion in completions]
 
     # Cache the prompt's KVs and logits
-    with cache(model, prompt, reset_model=False) as model:
+    with cache(model, prompt, reset_model=False):
         num_tokens_prompt = model.n_tokens
         # Tokenize completions to determine whether or not we can do the single-token
         # optimization.

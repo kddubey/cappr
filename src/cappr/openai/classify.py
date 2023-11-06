@@ -72,7 +72,7 @@ def token_logprobs(
     Note
     ----
     For each text, the first token's log-probability is always ``None`` because no
-    autoregressive LM estimates the marginal probability of a token.
+    autoregressive LM directly estimates the marginal probability of a token.
 
     Raises
     ------

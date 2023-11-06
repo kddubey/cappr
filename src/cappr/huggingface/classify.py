@@ -11,6 +11,7 @@ across completions.
 """
 from __future__ import annotations
 from contextlib import contextmanager, nullcontext
+from dataclasses import dataclass
 from typing import cast, Literal, Mapping, Sequence, Tuple
 
 import numpy as np
@@ -80,7 +81,7 @@ def token_logprobs(
     Note
     ----
     For each text, the first token's log-probability is always ``None`` because no
-    autoregressive LM estimates the marginal probability of a token.
+    autoregressive LM directly estimates the marginal probability of a token.
 
     Raises
     ------
@@ -172,8 +173,22 @@ def _past_key_values_get(
 
 
 ########################################################################################
-############################ KV caching as a context manager ###########################
+############################# KV caching + batch inference #############################
 ########################################################################################
+
+
+@dataclass
+class _CAPPr:
+    model: ModelForCausalLM
+    logits_all: bool = True
+    past: tuple[BatchEncodingPT, CausalLMOutputWithPast] | None = None
+    batch_idxs: torch.Tensor | None = None
+    update_cache: bool = False
+    _is_cache_cleared: bool = False
+
+
+class _CacheClearedError(Exception):
+    """Raise to prevent a user from using a cached model outside of the context"""
 
 
 class _ModelWithCache:
@@ -184,48 +199,50 @@ class _ModelWithCache:
         past: tuple[BatchEncodingPT, CausalLMOutputWithPast] | None = None,
         logits_all: bool = True,
     ):
-        # "Private" attributes b/c the interface should mimic that of a ModelForCausalLM
-        self._model = model
-        self._cappr_past = past
-        self._logits_all = logits_all
-        self._batch_idxs: torch.Tensor | None = None
-        self._update_cache = True
+        self._cappr = _CAPPr(model, logits_all=logits_all, past=past)
+        """
+        Contains data which controls the cache
+        """
+        # This data is in one place to avoid polluting the inputted model's namespace,
+        # which should be treated as a ModelForCausalLM by the user
+        self._cappr.update_cache = True
         _ = self.forward(**encodings_to_cache)  # capture output here instead of stdout
         del _
-        self._update_cache = False
+        self._cappr.update_cache = False
 
     def forward(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor
     ) -> CausalLMOutputWithPast:
-        if not hasattr(self, "_cappr_past"):
-            raise AttributeError(
-                "This model is no longer usable. It was used in a temporary context "
-                "where clear_cache_on_exit=True to save memory. If you meant to retain "
-                "the cache for future use, then do: "
-                "with cache(..., clear_cache_on_exit=False)"
+        if self._cappr._is_cache_cleared:
+            raise _CacheClearedError(
+                "This model is no longer usable. It was used in a context where "
+                "clear_cache_on_exit=True. Did you mean to use the model inputted to "
+                "`with cache(...)`? If you instead meant to retain the cache for "
+                "future use, then do: `with cache(..., clear_cache_on_exit=False)`"
             )
 
         encodings = {"input_ids": input_ids, "attention_mask": attention_mask}
 
-        if self._cappr_past is None:
-            # There's no past to pass to the model. Just run it.
-            with hf._utils.set_up_model(self._model):
-                out: CausalLMOutputWithPast = self._model(**encodings)
-            self._cappr_past = encodings, out
+        if self._cappr.past is None:
+            with hf._utils.set_up_model(self._cappr.model):
+                out: CausalLMOutputWithPast = self._cappr.model(**encodings)
+            self._cappr.past = encodings, out
             return out
 
-        encodings_past, out_past = self._cappr_past
+        encodings_past, out_past = self._cappr.past
 
-        if self._batch_idxs is None:
+        if self._cappr.batch_idxs is None:
             # Attempt to broadcast the past with the present
             if encodings_past["input_ids"].shape[0] == 1 and input_ids.shape[0] > 1:
                 # Assume the past of present input[i] is past[0] (the only past)
                 batch_idxs = torch.zeros(
-                    input_ids.shape[0], device=self._model.device, dtype=torch.int
+                    input_ids.shape[0], device=self._cappr.model.device, dtype=torch.int
                 )
             elif encodings_past["input_ids"].shape[0] == input_ids.shape[0]:
                 # Assume the past of present input[i] is past[i]
-                batch_idxs = torch.arange(input_ids.shape[0], device=self._model.device)
+                batch_idxs = torch.arange(
+                    input_ids.shape[0], device=self._cappr.model.device
+                )
             else:
                 raise ValueError(
                     f'Could not broadcast {encodings_past["input_ids"].shape[0]} '
@@ -233,12 +250,12 @@ class _ModelWithCache:
                 )
         else:
             # Externally set to a tensor. Bad design but whatever
-            batch_idxs: torch.Tensor = self._batch_idxs
+            batch_idxs: torch.Tensor = self._cappr.batch_idxs
 
         if not torch.equal(
             batch_idxs,
             torch.arange(
-                encodings_past["input_ids"].shape[0], device=self._model.device
+                encodings_past["input_ids"].shape[0], device=self._cappr.model.device
             ),
         ):
             # Must extract past by converting the tuple to a tensor and back
@@ -254,31 +271,30 @@ class _ModelWithCache:
         # Some model implementations don't do this, so gotta do it manually
         offsets = attention_mask_past.sum(dim=1)  # numbers of nonpad tokens in past
         position_ids_present = (
-            torch.arange(input_ids.shape[1], device=self._model.device)
+            torch.arange(input_ids.shape[1], device=self._cappr.model.device)
             + offsets[:, None]
         )
 
-        # Everything should now be aligned 🤞 🙏
-        with hf._utils.set_up_model(self._model):
-            out = self._model(
+        with hf._utils.set_up_model(self._cappr.model):
+            out: CausalLMOutputWithPast = self._cappr.model(
                 input_ids=input_ids,
                 attention_mask=attention_mask_past_cat_present,
                 position_ids=position_ids_present,
                 past_key_values=past_key_values,
             )
-        # 😎
 
         # past_key_values is already concatenated in out.past_key_values
-        if self._logits_all:
+        if self._cappr.logits_all:
             out.logits = torch.cat([out_past.logits[batch_idxs], out.logits], dim=1)
-        if self._update_cache:
+        if self._cappr.update_cache:
             # Concatenate encodings for future model calls
             input_ids_past = encodings_past["input_ids"][batch_idxs]
             encodings = {
                 "input_ids": torch.cat([input_ids_past, input_ids], dim=1),
                 "attention_mask": attention_mask_past_cat_present,
             }
-            self._cappr_past = encodings, out
+            encodings = cast(BatchEncodingPT, encodings)
+            self._cappr.past = encodings, out
         return out
 
     def __call__(
@@ -287,7 +303,7 @@ class _ModelWithCache:
         return self.forward(input_ids, attention_mask)
 
     def __getattr__(self, __name: str):
-        return getattr(self._model, __name)
+        return getattr(self._cappr.model, __name)
 
 
 @contextmanager
@@ -431,18 +447,20 @@ def cache(
         assert torch.allclose(logits4, logits_correct(["a b c d"]), atol=atol)
     """
     _check.nonempty_and_ordered(prefixes, variable_name="prefixes")
-    model, tokenizer = model_and_tokenizer
     prefixes = [prefixes] if isinstance(prefixes, str) else list(prefixes)
-    past = getattr(model, "_cappr_past", None)
+    model, tokenizer = model_and_tokenizer
+    try:
+        past = getattr(getattr(model, "_cappr"), "past")
+    except AttributeError:
+        past = None
 
     with hf._utils.set_up_tokenizer(tokenizer):
         with nullcontext() if past is None else hf._utils.dont_add_bos_token(tokenizer):
             encodings_prefixes: BatchEncodingPT = tokenizer(
                 prefixes, return_tensors="pt", padding=True
             ).to(model.device)
-
         model_for_causal_lm = (
-            model._model if isinstance(model, _ModelWithCache) else model
+            model._cappr.model if isinstance(model, _ModelWithCache) else model
         )
         model_with_cache = _ModelWithCache(
             model_for_causal_lm,
@@ -450,18 +468,18 @@ def cache(
             past=past,
             logits_all=logits_all,
         )
-
         # Now that model_with_cache has a past, we should never add a BOS token
         with hf._utils.dont_add_bos_token(tokenizer):
             yield model_with_cache, tokenizer
 
     if clear_cache_on_exit:
-        # model_with_cache._cappr_past contains a lot of data—logits, past_key_values,
+        # model_with_cache._cappr.past contains a lot of data—logits, past_key_values,
         # hidden_states (usually taking up GPU RAM)—that should be cleared when we exit
         # the context
-        delattr(model_with_cache, "_cappr_past")
+        model_with_cache._cappr.past = None
+        model_with_cache._cappr._is_cache_cleared = True
     else:
-        model_with_cache._cappr_past = past
+        model_with_cache._cappr.past = past
 
 
 ########################################################################################
@@ -527,9 +545,9 @@ def _blessed_helper(
     # Run model, caching prompts
     with cache((model, tokenizer), prompts, logits_all=False) as cached_prompts:
         cached_prompts_model, _ = cached_prompts
+        prompts_encodings, prompts_out = cached_prompts_model._cappr.past
         prompts_last_nonpad_token_logits = _last_nonpad_token_logits(
-            cached_prompts_model._cappr_past[1].logits,
-            cached_prompts_model._cappr_past[0]["attention_mask"],
+            prompts_out.logits, prompts_encodings["attention_mask"]
         )
         # fmt: off
         _are_completions_constant = (
@@ -548,18 +566,18 @@ def _blessed_helper(
             # Note that completions_encoding["input_ids"].shape[1] == logits.shape[1]
             return prompts_last_nonpad_token_logits, completions_encoding
 
-        offsets = cached_prompts_model._cappr_past[0]["attention_mask"].sum(dim=1)
         completions_logits = []
-        _batch_idxs = cached_prompts_model._batch_idxs
+        _batch_idxs = cached_prompts_model._cappr.batch_idxs
         for batch_idx in range(num_batches):
-            cached_prompts_model._batch_idxs = prompts_idxs[batch_idx]
+            cached_prompts_model._cappr.batch_idxs = prompts_idxs[batch_idx]
             out: CausalLMOutput = cached_prompts_model(
                 input_ids=completions_input_ids[batch_idx],
                 attention_mask=completions_attention_mask[batch_idx],
             )
             # B/c logits_all=False, out.logits only has completion token logits
             completions_logits.append(out.logits)
-        cached_prompts_model._batch_idxs = _batch_idxs
+        cached_prompts_model._cappr.batch_idxs = _batch_idxs
+        offsets = prompts_encodings["attention_mask"].sum(dim=1)
 
     # Drop the next-token logits for the last completion token. They're not useful for
     # CAPPr. Moreover, dropping ensures completions_logits.shape[:2] ==
