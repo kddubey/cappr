@@ -28,8 +28,8 @@ def token_logprobs(
     texts: str | Sequence[str],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     end_of_prompt: Literal[" ", ""] = " ",
-    drop_bos_token_log_prob: bool = True,
     show_progress_bar: bool | None = None,
+    add_bos: bool = False,
     batch_size: int = 16,
     **kwargs,
 ) -> list[float] | list[list[float]]:
@@ -46,14 +46,12 @@ def token_logprobs(
     end_of_prompt : Literal[' ', ''], optional
         This string gets added to the beginning of each text. It's important to set this
         if you're using the discount feature. Otherwise, set it to "". By default " "
-    drop_bos_token_log_prob : bool, optional
-        whether or not to include the tokenizer's beginning-of-sentence token
-        log-probability in the output if the tokenizer adds this token. It's important
-        to set this to `True` if you're using the discount feature By default, its
-        log-probability is not included in the output
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
+    add_bos : bool, optional
+        whether or not to add a beginning-of-sentence token to all `texts`, by default
+        False
     batch_size : int, optional
         the maximum number of `texts` that the model will process in parallel, by
         default 16
@@ -73,7 +71,7 @@ def token_logprobs(
 
     Warning
     -------
-    Set `end_of_prompt=""` unless you're using the discount feature.
+    Set `end_of_prompt="", add_bos=True` unless you're using the discount feature.
 
     Note
     ----
@@ -86,14 +84,7 @@ def token_logprobs(
     ValueError
         if `texts` is empty
     """
-    return hf.classify.token_logprobs(
-        texts,
-        model_and_tokenizer,
-        end_of_prompt=end_of_prompt,
-        drop_bos_token_log_prob=drop_bos_token_log_prob,
-        show_progress_bar=show_progress_bar,
-        batch_size=batch_size,
-    )
+    return hf.classify.token_logprobs(**locals())
 
 
 def _prompts_offsets(
@@ -138,10 +129,9 @@ def _logits_completions_given_prompts(
         for prompt in prompts
         for completion in completions
     ]
-    with hf._utils.set_up_model_and_tokenizer(model, tokenizer):
-        logits, encodings = hf._utils.logits_texts(
-            texts, (model, tokenizer), batch_size=batch_size_completions
-        )
+    logits, encodings = hf._utils.logits_texts(
+        texts, (model, tokenizer), batch_size=batch_size_completions
+    )
     # Need these indices to slice completion tokens
     encodings["offsets"] = _prompts_offsets(
         tokenizer, prompts, num_completions_per_prompt=len(completions)
@@ -160,10 +150,9 @@ def _logits_completions_given_prompts_examples(
         for example in examples
         for completion in example.completions
     ]
-    with hf._utils.set_up_model_and_tokenizer(model, tokenizer):
-        logits, encodings = hf._utils.logits_texts(
-            texts, (model, tokenizer), batch_size=batch_size_completions
-        )
+    logits, encodings = hf._utils.logits_texts(
+        texts, (model, tokenizer), batch_size=batch_size_completions
+    )
     # Need these indices to slice completion tokens
     prompts = [example.prompt for example in examples]
     num_completions_per_prompt = [len(example.completions) for example in examples]

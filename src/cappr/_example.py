@@ -8,10 +8,11 @@ from cappr.utils import _check
 @dataclass(frozen=True)
 class Example:
     """
-    Represents a single prompt-completion classification example.
+    Represents a single prompt-completion task.
 
-    This data structure is only useful if different classification examples may belong
-    to a different set of classes, and you want to run the model in batches.
+    This data structure is only useful if:
+    - different prompts correspond to a different set of possible choices/completions
+    - and you want to run the model in batches for greater throughput.
 
     Parameters
     ----------

@@ -32,8 +32,8 @@ def token_logprobs(
     texts: str | Sequence[str],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     end_of_prompt: Literal[" ", ""] = " ",
-    drop_bos_token_log_prob: bool = True,
     show_progress_bar: bool | None = None,
+    add_bos: bool = False,
     batch_size: int = 16,
     **kwargs,
 ) -> list[float] | list[list[float]]:
@@ -50,14 +50,12 @@ def token_logprobs(
     end_of_prompt : Literal[' ', ''], optional
         This string gets added to the beginning of each text. It's important to set this
         if you're using the discount feature. Otherwise, set it to "". By default " "
-    drop_bos_token_log_prob : bool, optional
-        whether or not to include the tokenizer's beginning-of-sentence token
-        log-probability in the output if the tokenizer adds this token. It's important
-        to set this to `True` if you're using the discount feature By default, its
-        log-probability is not included in the output
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
+    add_bos : bool, optional
+        whether or not to add a beginning-of-sentence token to all `texts`, by default
+        False
     batch_size : int, optional
         the maximum number of `texts` that the model will process in parallel, by
         default 16
@@ -77,7 +75,7 @@ def token_logprobs(
 
     Warning
     -------
-    Set `end_of_prompt=""` unless you're using the discount feature.
+    Set `end_of_prompt="", add_bos=True` unless you're using the discount feature.
 
     Note
     ----
@@ -90,36 +88,35 @@ def token_logprobs(
     ValueError
         if `texts` is empty
     """
-    with hf._utils.set_up_model_and_tokenizer(*model_and_tokenizer):
-        if not hf._utils.does_tokenizer_need_prepended_space(model_and_tokenizer[1]):
-            end_of_prompt = ""
-        texts = [end_of_prompt + text for text in texts]
+    model, tokenizer = model_and_tokenizer
+    if not hf._utils.does_tokenizer_need_prepended_space(tokenizer):
+        end_of_prompt = ""
+    texts = [end_of_prompt + text for text in texts]
 
-        # Batch inference
+    # Batch inference
+    with hf._utils.dont_add_bos_token(tokenizer) if not add_bos else nullcontext():
         logits, encodings = hf._utils.logits_texts(
-            texts, model_and_tokenizer, drop_bos_token=drop_bos_token_log_prob
+            texts, (model, tokenizer), drop_bos_token=not add_bos
         )
 
-        # Convert next-token logits to this-token logprobs.
-        # It's still wrong to set input_ids_start_idx=0 for tokenizers which add a bos
-        # token (like SentencePiece for Llama). Pr(token | <s>) is not Pr(token).
-        log_probs_texts = hf._utils.logits_to_log_probs(
-            logits=logits,
-            input_ids=encodings["input_ids"],
-            input_ids_start_idx=1,  # this token's log-prob is in the prev token's logit
-            logits_end_idx=-1,
-        )
+    # Convert next-token logits to this-token logprobs
+    # It's still wrong to set input_ids_start_idx=0 for tokenizers which add a bos
+    # token (like SentencePiece for Llama). Pr(token | <s>) is not Pr(token)
+    log_probs_texts = hf._utils.logits_to_log_probs(
+        logits=logits,
+        input_ids=encodings["input_ids"],
+        input_ids_start_idx=1,  # this token's log-prob is in the prev token's logit
+        logits_end_idx=-1,
+    )
 
-        # Remove pad token logprobs
-        num_non_pad_tokens = encodings["attention_mask"].sum(dim=1)
-        log_probs = []
-        first_token_log_prob = [
-            None
-        ]  # no CausalLM estimates Pr(token), so call it None
-        for log_probs_text, n in zip(log_probs_texts, num_non_pad_tokens):
-            # we slice off the right side b/c the tokenizer was set up to do padding on
-            # the right
-            log_probs.append(first_token_log_prob + log_probs_text[: (n - 1)].tolist())
+    # Remove pad token logprobs
+    num_non_pad_tokens = encodings["attention_mask"].sum(dim=1)
+    log_probs = []
+    first_token_log_prob = [None]  # no CausalLM estimates Pr(token), so call it None
+    for log_probs_text, n in zip(log_probs_texts, num_non_pad_tokens):
+        # we slice off the right side b/c the tokenizer was set up to do padding on
+        # the right
+        log_probs.append(first_token_log_prob + log_probs_text[: (n - 1)].tolist())
     return log_probs
 
 

@@ -4,7 +4,7 @@ YouTils
 from __future__ import annotations
 from contextlib import contextmanager, ExitStack, nullcontext
 from functools import lru_cache
-from typing import Collection, Mapping, Sequence
+from typing import Mapping, Sequence
 
 import torch
 from transformers import PreTrainedModel, PreTrainedTokenizerBase
@@ -28,19 +28,11 @@ A pretrained model with the same inference interface as a model loaded via
 """
 
 
-@lru_cache()
-def does_tokenizer_need_prepended_space(
-    tokenizer: PreTrainedTokenizerBase,
-) -> bool:
-    tokenize = lambda text: tokenizer(text)["input_ids"]
-    bos_token_id = getattr(tokenizer, "bos_token_id", None)
-    return _check.does_tokenizer_need_prepended_space(tokenize, bos_token_id)
-
-
 ########################################################################################
-# Set up the model and tokenizer using context managers, because we shouldn't modify a
-# user's settings when CAPPr is done. It's conceivable that someone uses CAPPr as part
-# of a larger system where the model and tokenizer needs to be configured differently.
+# Set up the model and tokenizer to enable correct, batched inference. Use context
+# managers, because we shouldn't modify a user's settings when CAPPr is done. It's
+# conceivable that someone uses CAPPr as part of a larger system where the model and
+# tokenizer needs to be configured differently.
 ########################################################################################
 
 
@@ -103,14 +95,6 @@ def _use_cache(model: ModelForCausalLM):
         yield
 
 
-_DEFAULT_CONTEXT_MANAGERS_MODEL = (
-    _eval_mode,
-    _no_grad,
-    _return_dict,
-    _use_cache,
-)
-
-
 @contextmanager
 def _pad_on_right(tokenizer: PreTrainedTokenizerBase):
     """
@@ -142,12 +126,6 @@ def dont_add_eos_token(tokenizer: PreTrainedTokenizerBase):
         yield
 
 
-_DEFAULT_CONTEXT_MANAGERS_TOKENIZER = (
-    _pad_on_right,
-    dont_add_eos_token,
-)
-
-
 @contextmanager
 def _combine_context_managers(context_managers, obj):
     with ExitStack() as stack:
@@ -160,15 +138,9 @@ def _combine_context_managers(context_managers, obj):
 
 @contextmanager
 def set_up_model(
-    model: ModelForCausalLM, context_managers=_DEFAULT_CONTEXT_MANAGERS_MODEL
+    model: ModelForCausalLM,
+    context_managers=(_eval_mode, _no_grad, _return_dict, _use_cache),
 ):
-    """
-    Default model settings:
-    - set the model in eval mode
-    - don't compute gradients
-    - return output as a dataclass instead of a tuple
-    - return `past_key_values` if possible.
-    """
     with _combine_context_managers(context_managers, model):
         yield
 
@@ -176,31 +148,9 @@ def set_up_model(
 @contextmanager
 def set_up_tokenizer(
     tokenizer: PreTrainedTokenizerBase,
-    context_managers=_DEFAULT_CONTEXT_MANAGERS_TOKENIZER,
+    context_managers=(_pad_on_right, dont_add_eos_token),
 ):
-    """
-    Default tokenizer settings:
-    - pad on right
-    - don't add EOS token.
-    """
     with _combine_context_managers(context_managers, tokenizer):
-        yield
-
-
-@contextmanager
-def set_up_model_and_tokenizer(
-    model: ModelForCausalLM,
-    tokenizer: PreTrainedTokenizerBase,
-    context_managers_model: Collection = _DEFAULT_CONTEXT_MANAGERS_MODEL,
-    context_managers_tokenizer: Collection = _DEFAULT_CONTEXT_MANAGERS_TOKENIZER,
-):
-    """
-    In this context, internal attributes of the model and tokenizer are set to enable
-    correct, batched inference.
-    """
-    with set_up_model(model, context_managers_model), set_up_tokenizer(
-        tokenizer, context_managers_tokenizer
-    ):
         yield
 
 
@@ -211,6 +161,21 @@ def dont_add_bos_token(tokenizer: PreTrainedTokenizerBase):
     """
     with _setattr(tokenizer, "add_bos_token", False):
         yield
+
+
+########################################################################################
+####################### Handle SentencePiece vs BPE tokenization #######################
+########################################################################################
+
+
+@lru_cache()
+def does_tokenizer_need_prepended_space(
+    tokenizer: PreTrainedTokenizerBase,
+) -> bool:
+    with dont_add_eos_token(tokenizer):
+        tokenize = lambda text: tokenizer(text)["input_ids"]
+        bos_token_id = getattr(tokenizer, "bos_token_id", None)
+        return _check.does_tokenizer_need_prepended_space(tokenize, bos_token_id)
 
 
 ########################################################################################
@@ -251,8 +216,6 @@ def logits_texts(
     texts: Sequence[str],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     drop_bos_token: bool = True,
-    do_not_add_eos_token: bool = True,
-    padding: bool | None = None,
     batch_size: int | None = None,
 ) -> tuple[torch.Tensor, BatchEncodingPT]:
     """
@@ -263,14 +226,12 @@ def logits_texts(
     The kwargs are set for CAPPr's convenience.
     """
     model, tokenizer = model_and_tokenizer
-    if padding is None:
-        padding = getattr(tokenizer, "pad_token_id", None) is not None
-    with dont_add_eos_token(tokenizer) if do_not_add_eos_token else nullcontext():
+    with set_up_tokenizer(tokenizer):
         encodings: BatchEncodingPT = tokenizer(
-            texts, return_tensors="pt", padding=padding
+            texts, return_tensors="pt", padding=True
         ).to(model.device)
     if batch_size is not None:
-        out: CausalLMOutput = _batched_model_call(batch_size, model, **encodings)
+        out = _batched_model_call(batch_size, model, **encodings)
     else:
         with set_up_model(model):
             out: CausalLMOutput = model(**encodings)

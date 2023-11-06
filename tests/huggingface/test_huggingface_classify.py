@@ -4,6 +4,7 @@ functions' outputs are numerically close to those from
 `cappr.huggingface.classify_no_cache`.
 """
 from __future__ import annotations
+from contextlib import nullcontext
 import os
 import sys
 from typing import Sequence
@@ -94,40 +95,20 @@ def atol() -> float:
 ########################################################################################
 
 
-def test_set_up_model_and_tokenizer(
-    model: ModelForCausalLM, tokenizer: PreTrainedTokenizerBase
-):
-    """
-    Tests that the context manager doesn't change any attributes of the model or
-    tokenizer after exiting the context.
-    """
-
-    # Grab old attribute values.
-    model_attribute_to_old_value = {
+def test_set_up_model(model: ModelForCausalLM):
+    # Grab old attribute values
+    attribute_to_old_value = {
         "training": model.training,
         **{i: module.training for i, module in enumerate(model.children())},
     }
-    model_config_attribute_to_old_value = {
+    config_attribute_to_old_value = {
         "return_dict": model.config.return_dict,
         "use_cache": getattr(model.config, "use_cache", None),
     }
-    tokenizer_attributes = [
-        "pad_token_id",
-        "padding_side",
-        "add_eos_token",
-        "pad_token",
-        "special_tokens_map",
-    ]
-    tokenizer_attribute_to_old_value = {
-        attribute: getattr(tokenizer, attribute, None)
-        # None is for tokenizers which don't have an add_eos_token attribute
-        for attribute in tokenizer_attributes
-    }
+    assert torch.is_grad_enabled()
 
     # Enter the context
-    assert torch.is_grad_enabled()
-    with hf._utils.set_up_model_and_tokenizer(model, tokenizer):
-        # model
+    with hf._utils.set_up_model(model):
         assert not torch.is_grad_enabled()
         assert not model.training
         if hasattr(model, "config"):
@@ -135,21 +116,40 @@ def test_set_up_model_and_tokenizer(
             # and clear later in the code. So default to the expected values
             assert getattr(model.config, "return_dict", True)
             assert getattr(model.config, "use_cache", True)
-        # tokenizer
+
+    # Exit the context. No attributes should have changed
+    assert torch.is_grad_enabled()
+    assert model.training == attribute_to_old_value["training"]
+    for i, module in enumerate(model.children()):
+        assert module.training == attribute_to_old_value[i]
+
+    for attribute, old_value in config_attribute_to_old_value.items():
+        assert getattr(model.config, attribute, None) == old_value
+
+
+def test_set_up_tokenizer(tokenizer: PreTrainedTokenizerBase):
+    # Grab old attribute values
+    attributes = [
+        "pad_token_id",
+        "padding_side",
+        "add_eos_token",
+        "pad_token",
+        "special_tokens_map",
+    ]
+    attribute_to_old_value = {
+        attribute: getattr(tokenizer, attribute, None)
+        # None is for tokenizers which don't have an add_eos_token attribute
+        for attribute in attributes
+    }
+
+    # Enter the context
+    with hf._utils.set_up_tokenizer(tokenizer):
         assert tokenizer.padding_side == "right"
         assert tokenizer.pad_token is not None
         assert tokenizer.pad_token_id is not None
 
-    # Exit the context. No attributes should have changed.
-    assert torch.is_grad_enabled()
-    assert model.training == model_attribute_to_old_value["training"]
-    for i, module in enumerate(model.children()):
-        assert module.training == model_attribute_to_old_value[i]
-
-    for attribute, old_value in model_config_attribute_to_old_value.items():
-        assert getattr(model.config, attribute, None) == old_value
-
-    for attribute, old_value in tokenizer_attribute_to_old_value.items():
+    # Exit the context. No attributes should have changed
+    for attribute, old_value in attribute_to_old_value.items():
         assert getattr(tokenizer, attribute, None) == old_value
 
 
@@ -177,7 +177,12 @@ def test__batched_model_call(texts, model, tokenizer, batch_size, atol):
 )
 @pytest.mark.parametrize("batch_size", (1, 2))
 def test_token_logprobs(
-    module: classify_module, texts, model_and_tokenizer, batch_size, end_of_prompt=" "
+    module: classify_module,
+    texts,
+    model_and_tokenizer,
+    batch_size,
+    end_of_prompt=" ",
+    add_bos=False,
 ):
     """
     Tests that the model's token log probabilities are correct by testing against an
@@ -186,20 +191,23 @@ def test_token_logprobs(
     log_probs_texts_observed = module.token_logprobs(
         texts, model_and_tokenizer, end_of_prompt=end_of_prompt, batch_size=batch_size
     )
+
+    model, tokenizer = model_and_tokenizer
     # Gather un-batched un-sliced log probs for the expected result
     is_str = isinstance(texts, str)
     texts = [texts] if is_str else texts
-    if not hf._utils.does_tokenizer_need_prepended_space(model_and_tokenizer[1]):
+    if not hf._utils.does_tokenizer_need_prepended_space(tokenizer):
         end_of_prompt = ""
     log_probs_texts_from_unbatched = []
     input_ids_from_unbatched = []
-    for text in texts:
-        _logits, _encoding = hf._utils.logits_texts(
-            [end_of_prompt + text], model_and_tokenizer
-        )
-        # grab first index b/c we only gave it 1 text
-        log_probs_texts_from_unbatched.append(_logits[0].log_softmax(dim=1))
-        input_ids_from_unbatched.append(_encoding["input_ids"][0])
+    with hf._utils.dont_add_bos_token(tokenizer) if not add_bos else nullcontext():
+        for text in texts:
+            _logits, _encoding = hf._utils.logits_texts(
+                [end_of_prompt + text], (model, tokenizer)
+            )
+            # grab first index b/c we only gave it 1 text
+            log_probs_texts_from_unbatched.append(_logits[0].log_softmax(dim=1))
+            input_ids_from_unbatched.append(_encoding["input_ids"][0])
 
     log_probs_texts_observed = (
         [log_probs_texts_observed] if is_str else log_probs_texts_observed

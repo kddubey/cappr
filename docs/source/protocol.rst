@@ -94,10 +94,9 @@ This decorator-based design always works because ``predict_proba`` is a transfor
 of the output of ``log_probs_conditional``—a transformation which is always independent
 of the LM interface. ``predict`` is just the argmax of the output of ``predict_proba``.
 
-The testing module for any API LM interface will look a lot like `OpenAI's testing
-module
-<https://github.com/kddubey/cappr/blob/main/tests/openai/test_openai_classify.py>`_. Add
-``tests/anthropic`` to ``pyproject.toml``.
-
-Finally, add the import to ``src/cappr/__init__.py``, and add its dependencies as extras
-to ``setup.py``.
+Add the import to ``src/cappr/__init__.py``, and add its dependencies as extras to
+``setup.py``. Add a testing module. The testing module for any API LM interface will
+look a lot like `OpenAI's testing module
+<https://github.com/kddubey/cappr/blob/main/tests/openai/test_openai_classify.py>`_.
+After passing these tests, evaluate the module on a few demos in
+`https://github.com/kddubey/cappr/blob/main/demos`.

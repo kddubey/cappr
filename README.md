@@ -307,21 +307,6 @@ Minimize engineering complexity.
 See [this page of the
 documentation](https://cappr.readthedocs.io/en/latest/motivation.html) for more info.
 
-<details>
-<summary>Cool</summary>
-
-A handful of experiments suggest that CAPPr squeezes more out of smaller LLMs. See [this
-page of the
-documentation](https://cappr.readthedocs.io/en/latest/future_research.html).
-</details>
-
-
-<details>
-<summary>Honest</summary>
-
-am bored. am unemployed.
-</details>
-
 
 ## Performance
 
