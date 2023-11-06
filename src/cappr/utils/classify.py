@@ -14,6 +14,11 @@ import numpy.typing as npt
 from cappr.utils import _check
 
 
+########################################################################################
+############################## Aggregate log probabilities #############################
+########################################################################################
+
+
 def _agg_log_probs_vectorized(
     log_probs: Sequence[Sequence[Sequence[float]]],
     func: Callable[[Sequence[Sequence[float]]], Sequence[float]] = np.mean,
@@ -238,6 +243,11 @@ def posterior_prob(
     marginals = posteriors_unnorm.sum(axis=axis, keepdims=True)
     marginals[~normalize] = 1  # denominator of 1 <=> no normalization
     return posteriors_unnorm / marginals
+
+
+########################################################################################
+############################ Decorators for classify modules ###########################
+########################################################################################
 
 
 def _wrap_call_unwrap(

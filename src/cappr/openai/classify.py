@@ -11,7 +11,7 @@ import numpy as np
 import numpy.typing as npt
 import tiktoken
 
-from cappr.utils import _batch, classify
+from cappr.utils import _no_cache, classify
 from cappr import Example
 from cappr import openai
 
@@ -104,33 +104,6 @@ def token_logprobs(
     return log_probs
 
 
-def _slice_completions(
-    completions: Sequence[str],
-    end_of_prompt: str,
-    log_probs: Sequence[Sequence[float]],
-    model: openai.api.Model,
-) -> list[list[float]]:
-    """
-    TODO: convert docstring to numpy style, expose
-
-    Returns a list `log_probs_completions` where `log_probs_completions[i]` is a list of
-    conditional log-probablities for each token in `end_of_prompt + completions[i]`,
-    extracted by slicing `log_probs[i]`.
-    """
-    if len(completions) != len(log_probs):
-        raise ValueError(
-            "Different number of completions and log_probs: "
-            f"{len(completions)}, {len(log_probs)}."
-        )  # pragma: no cover
-    tokenizer = tiktoken.encoding_for_model(model)
-    completions = [end_of_prompt + completion for completion in completions]
-    completion_lengths = [len(tokens) for tokens in tokenizer.encode_batch(completions)]
-    return [
-        log_probs_text[-num_completion_tokens:]
-        for num_completion_tokens, log_probs_text in zip(completion_lengths, log_probs)
-    ]
-
-
 @classify._log_probs_conditional
 def log_probs_conditional(
     prompts: str | Sequence[str],
@@ -216,25 +189,17 @@ def log_probs_conditional(
         # [[-11.6],       [[log Pr(z | a, b, c)],
         #  [-0.3, -1.2]]   [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
-    # Flat list of prompts and their completions. Will post-process
-    texts = [
-        prompt + end_of_prompt + completion
-        for prompt in prompts
-        for completion in completions
-    ]
-    log_probs = token_logprobs(
-        texts,
-        model=model,
+    return _no_cache.log_probs_conditional(
+        token_logprobs,
+        tiktoken.encoding_for_model(model).encode_batch,
+        prompts,
+        completions,
+        model,
+        end_of_prompt=end_of_prompt,
         show_progress_bar=show_progress_bar,
         ask_if_ok=ask_if_ok,
         api_key=api_key,
     )
-    # Since log_probs is a flat list, we'll need to batch them by the size and order of
-    # completions to fulfill the spec.
-    return [
-        _slice_completions(completions, end_of_prompt, log_probs_batch, model)
-        for log_probs_batch in _batch.constant(log_probs, size=len(completions))
-    ]
 
 
 @classify._log_probs_conditional_examples
@@ -323,35 +288,15 @@ def log_probs_conditional_examples(
         print(log_probs_completions[1])  # corresponds to examples[1]
         # [[-11.2, -4.7]]  [[log Pr(1 | a, b, c)], log Pr(2 | a, b, c, 1)]]
     """
-    # Little weird. I want my IDE to know that examples is always a Sequence[Example]
-    # b/c of the decorator.
-    examples: Sequence[Example] = examples
-    # Flat list of prompts and their completions. Will post-process
-    texts = [
-        example.prompt + example.end_of_prompt + completion
-        for example in examples
-        for completion in example.completions
-    ]
-    log_probs_all = token_logprobs(
-        texts,
-        model=model,
+    return _no_cache.log_probs_conditional_examples(
+        token_logprobs,
+        tiktoken.encoding_for_model(model).encode_batch,
+        examples,
+        model,
+        should_end_of_prompt_be_empty=False,
         show_progress_bar=show_progress_bar,
         ask_if_ok=ask_if_ok,
         api_key=api_key,
-    )
-    # Flatten completions in same order as examples were flattened
-    completions_all = [
-        example.end_of_prompt + completion
-        for example in examples
-        for completion in example.completions
-    ]
-    log_probs_completions_all = _slice_completions(
-        completions_all, "", log_probs_all, model
-    )
-    # Batch by completions to fulfill the spec
-    num_completions_per_prompt = [len(example.completions) for example in examples]
-    return list(
-        _batch.variable(log_probs_completions_all, sizes=num_completions_per_prompt)
     )
 
 

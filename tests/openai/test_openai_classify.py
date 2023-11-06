@@ -86,15 +86,6 @@ def test_token_logprobs(model):
     assert log_probs == [-1, -2, -3]
 
 
-def test__slice_completions(model):
-    completions = ["A1", "c"]
-    log_probs = [[-1, -2, -3], [-1, -2]]
-    log_probs_completions = classify._slice_completions(
-        completions, end_of_prompt="", log_probs=log_probs, model=model
-    )
-    assert log_probs_completions == [[-2, -3], [-2]]
-
-
 ########################################################################################
 ####################################### Tests ##########################################
 ########################################################################################
