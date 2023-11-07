@@ -1,15 +1,25 @@
 """
-Helpers for interacting with the OpenAI API.
+Helpers functions which are compatible with the Python OpenAI API (before and after
+v1.0.0).
 """
 from __future__ import annotations
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 import logging
 import os
 import time
-from typing import Any, Callable, Literal, Mapping, Sequence
+from typing import Any, Callable, Literal, Mapping, Sequence, Type
 
 import openai
+
+try:
+    from openai import OpenAI
+except ImportError:  # pragma: no cover
+    # openai version < 1.0.0. Many breaking changes need handling
+    OpenAI = type("OpenAI", (object,), {})  # pragma: no cover
+    _ERRORS_MODULE = openai.error  # pragma: no cover
+else:
+    _ERRORS_MODULE = openai
 import tiktoken
 
 from cappr.utils import _batch, _check
@@ -175,19 +185,15 @@ def openai_method_retry(
     max_num_tries: int = 5,
     sleep_sec: float = 10,
     retry_errors: tuple = (
-        openai.error.ServiceUnavailableError,
-        openai.error.RateLimitError,
+        _ERRORS_MODULE.InternalServerError,
+        _ERRORS_MODULE.RateLimitError,
     ),
     **openai_method_kwargs,
-) -> Any:
+):
     """
     Wrapper around OpenAI API calls which automatically retries and sleeps if requests
     fail. Logs at level INFO when requests fail, and level ERROR if an exception is
     raised.
-
-    Note
-    ----
-    For ``openai>=1.0.0`, auto-retry is builtin.
 
     Parameters
     ----------
@@ -200,9 +206,8 @@ def openai_method_retry(
         number of seconds to sleep before re-submitting the request, by default 10
     retry_errors : tuple[Exception], optional
         if one of these exceptions is raised by the request, then retry, else the
-        exception is immediately raised.
-        By default
-        ``(openai.error.ServiceUnavailableError, openai.error.RateLimitError)``
+        exception is immediately raised. By default, these are the
+        ServiceUnavailableError/InternalServerError and RateLimitError.
 
     Returns
     -------
@@ -248,13 +253,14 @@ def _set_openai_api_key(api_key: str | None = None):
 def gpt_complete(
     texts: Sequence[str],
     model: Model,
+    client: OpenAI | None = None,
     show_progress_bar: bool | None = None,
     progress_bar_desc: str = "log-probs",
     ask_if_ok: bool = False,
     api_key: str | None = None,
     max_tokens: int = 0,
     **openai_completion_kwargs,
-) -> list[Mapping[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Wrapper around the OpenAI text completion endpoint which automatically batches
     texts for greater efficiency, retries requests that fail, and displays a progress
@@ -273,6 +279,8 @@ def gpt_complete(
         these are passed as the `prompt` argument in a text completion request
     model : Model
         which text completion model to use
+    client : OpenAI | None, optional
+        an OpenAI client object. By default, the global client instance is used
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
@@ -292,16 +300,20 @@ def gpt_complete(
 
     Returns
     -------
-    list[Mapping[str, Any]]
+    list[dict[str, Any]]
         list with the same length as `texts`. Each element is the ``choices`` mapping
-        which the OpenAI text completion endpoint returns.
     """
     _check.ordered(texts, variable_name="texts")
-    with _set_openai_api_key(api_key):
+    try:
+        openai_method = openai.Completion.create  # pragma: no cover
+    except AttributeError:
+        openai_method = (
+            openai.completions.create if client is None else client.completions.create
+        )
+    with _set_openai_api_key(api_key) if client is None else nullcontext():
         _batch_size = 20  # max that the API can currently handle
-        if isinstance(texts, str):
-            # Passing in a string will silently but majorly fail. Handle it
-            texts = [texts]
+        # Passing in a string will silently but majorly fail. Handle it
+        texts = [texts] if isinstance(texts, str) else texts
         if ask_if_ok:
             _ = _openai_api_call_is_ok(texts, model, max_tokens=max_tokens)
         choices = []
@@ -312,12 +324,16 @@ def gpt_complete(
         ) as progress_bar:
             for texts_batch in _batch.constant(texts, _batch_size):
                 response = openai_method_retry(
-                    openai.Completion.create,
+                    openai_method,
                     prompt=texts_batch,
                     model=model,
                     max_tokens=max_tokens,
                     **openai_completion_kwargs,
                 )
+                if hasattr(response, "model_dump"):
+                    # New version of OpenAI Python API returns a pydantic model
+                    dump_nested_dicts = getattr(response, "model_dump")
+                    response = dump_nested_dicts()
                 choices.extend(response["choices"])
                 progress_bar.update(len(texts_batch))
         return choices
@@ -326,6 +342,7 @@ def gpt_complete(
 def gpt_chat_complete(
     texts: Sequence[str],
     model: str = "gpt-3.5-turbo",
+    client: OpenAI | None = None,
     show_progress_bar: bool | None = None,
     ask_if_ok: bool = False,
     api_key: str | None = None,
@@ -333,7 +350,7 @@ def gpt_chat_complete(
     max_tokens: int = 5,
     temperature: float = 0,
     **openai_chat_kwargs,
-) -> list[Mapping[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Wrapper around the OpenAI chat completion endpoint which sends `texts` 1-by-1 as
     individual chat messages in a chat. It retries requests that fail and displays a
@@ -354,6 +371,8 @@ def gpt_chat_complete(
         ``{"role": "user", "content": text}``
     model : str, optional
         one of the chat model names, by default "gpt-3.5-turbo"
+    client : OpenAI | None, optional
+        an OpenAI client object. By default, the global client instance is used
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
@@ -377,15 +396,22 @@ def gpt_chat_complete(
 
     Returns
     -------
-    list[Mapping[str, Any]]
-        (flat) list of the JSONs which the chat completion endpoint returns. More
-        specifically, it's a list of ``openai.openai_object.OpenAIObject``
+    list[dict[str, Any]]
+        list with the same length as `texts`. Each element is the ``choices`` mapping
     """
     _check.ordered(texts, variable_name="texts")
+    try:
+        openai_method = openai.ChatCompletion.create  # pragma: no cover
+    except AttributeError:
+        openai_method = (
+            openai.chat.completions.create
+            if client is None
+            else client.chat.completions.create
+        )
     # TODO: batch, if possible
-    with _set_openai_api_key(api_key):
-        if isinstance(texts, str):
-            texts = [texts]
+    with _set_openai_api_key(api_key) if client is None else nullcontext():
+        # Passing in a string will silently but majorly fail. Handle it
+        texts = [texts] if isinstance(texts, str) else texts
         if ask_if_ok:
             _ = _openai_api_call_is_ok(texts, model, max_tokens=max_tokens)
         choices = []
@@ -397,12 +423,16 @@ def gpt_chat_complete(
                 {"role": "user", "content": text},
             ]
             response = openai_method_retry(
-                openai.ChatCompletion.create,
+                openai_method,
                 model=model,
                 messages=messages,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 **openai_chat_kwargs,
             )
+            if hasattr(response, "model_dump"):
+                # New version of OpenAI Python API returns a pydantic model
+                dump_nested_dicts = getattr(response, "model_dump")
+                response = dump_nested_dicts()
             choices.extend(response["choices"])
         return choices

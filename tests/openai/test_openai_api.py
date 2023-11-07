@@ -4,10 +4,16 @@ Unit tests `cappr.openai.api`. Currently pretty barebones.
 from __future__ import annotations
 import os
 
+from httpx import Request, Response
 import openai
 import pytest
 
 from cappr.openai import api
+
+
+@pytest.fixture(autouse=True)
+def set_api_key(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-oobydoobydoo")
 
 
 def test_openai_method_retry():
@@ -17,16 +23,20 @@ def test_openai_method_retry():
     assert api.openai_method_retry(openai_method, waddup="nada") == "nada"
 
     def openai_method():
-        raise openai.error.ServiceUnavailableError
+        raise openai.InternalServerError(
+            "ought to be caught",
+            response=Response(500, request=Request("dummy", "dummy")),
+            body=None,
+        )
 
-    with pytest.raises(openai.error.ServiceUnavailableError):
+    with pytest.raises(openai.InternalServerError):
         api.openai_method_retry(openai_method, sleep_sec=0)
 
 
 def test__openai_api_call_is_ok(monkeypatch: pytest.MonkeyPatch):
     # Inputs
     texts = ["cherry", "coke"]  # tokenized: [[331, 5515], [1030, 441]]
-    model = "gpt-3.5-turbo-instruct"  # hard-coded so that tokenization is always same
+    model = "some-bpe-tokenizer"  # will be gpt-2
     max_tokens = 3  # number of completion tokens per prompt
     cost_per_1k_tokens_prompt = 1  # make it somewhat big to avoid numerical issues
     cost_per_1k_tokens_completion = 2
@@ -98,9 +108,20 @@ def test_gpt_chat_complete(monkeypatch: pytest.MonkeyPatch):
     completion_expected = "heyteam howsitgoin"
 
     def mocked(openai_method, messages: list[dict[str, str]], **kwargs):
-        # Technically, we should return a openai.openai_object.OpenAIObject
-        # For now, just gonna return the minimum dict required
-        return {"choices": [{"text": completion_expected}]}
+        return openai.types.completion.Completion(
+            id="dummy",
+            choices=[
+                openai.types.CompletionChoice(
+                    finish_reason="length",
+                    index=0,
+                    logprobs=None,
+                    text=completion_expected,
+                )
+            ],
+            created=0,
+            model="dummy",
+            object="text_completion",
+        )
 
     monkeypatch.setattr("cappr.openai.api.openai_method_retry", mocked)
 

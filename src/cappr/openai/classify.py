@@ -1,6 +1,7 @@
 """
-Perform prompt-completion classification using models from OpenAI's text
-completion API.
+Perform prompt-completion classification using models from OpenAI's text completion API.
+Note that only v1/completions models, excluding ``gpt-3.5-turbo-instruct``, are
+compatible with CAPPr.
 
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 """
@@ -14,12 +15,14 @@ import tiktoken
 from cappr.utils import _no_cache, classify
 from cappr import Example
 from cappr import openai
+from cappr.openai.api import OpenAI
 
 
 @classify._token_logprobs
 def token_logprobs(
     texts: str | Sequence[str],
     model: openai.api.Model,
+    client: OpenAI | None = None,
     end_of_prompt: Literal[" ", ""] = " ",
     show_progress_bar: bool | None = None,
     ask_if_ok: bool = False,
@@ -38,6 +41,8 @@ def token_logprobs(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
+    client : OpenAI | None, optional
+        an OpenAI client object. By default, the global client instance is used
     end_of_prompt : Literal[' ', ''], optional
         This string gets added to the beginning of each text. It's important to set this
         if you're using the discount feature. Otherwise, set it to "". By default " "
@@ -88,6 +93,7 @@ def token_logprobs(
     choices = openai.api.gpt_complete(
         texts=[end_of_prompt + texts[i] for i in idxs_multiple_tokens],
         model=model,
+        client=client,
         show_progress_bar=show_progress_bar,
         ask_if_ok=ask_if_ok,
         api_key=api_key,
@@ -109,6 +115,7 @@ def log_probs_conditional(
     prompts: str | Sequence[str],
     completions: Sequence[str],
     model: openai.api.Model,
+    client: OpenAI | None = None,
     end_of_prompt: Literal[" ", ""] = " ",
     show_progress_bar: bool | None = None,
     ask_if_ok: bool = False,
@@ -130,6 +137,8 @@ def log_probs_conditional(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
+    client : OpenAI | None, optional
+        an OpenAI client object. By default, the global client instance is used
     end_of_prompt : Literal[' ', ''], optional
         whitespace or empty string to join prompt and completion, by default whitespace
     show_progress_bar : bool | None, optional
@@ -196,6 +205,7 @@ def log_probs_conditional(
         completions,
         model,
         end_of_prompt=end_of_prompt,
+        client=client,
         show_progress_bar=show_progress_bar,
         ask_if_ok=ask_if_ok,
         api_key=api_key,
@@ -206,6 +216,7 @@ def log_probs_conditional(
 def log_probs_conditional_examples(
     examples: Example | Sequence[Example],
     model: openai.api.Model,
+    client: OpenAI | None = None,
     show_progress_bar: bool | None = None,
     ask_if_ok: bool = False,
     api_key: str | None = None,
@@ -222,6 +233,8 @@ def log_probs_conditional_examples(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
+    client : OpenAI | None, optional
+        an OpenAI client object. By default, the global client instance is used
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompt-completion combinations
@@ -294,6 +307,7 @@ def log_probs_conditional_examples(
         examples,
         model,
         should_end_of_prompt_be_empty=False,
+        client=client,
         show_progress_bar=show_progress_bar,
         ask_if_ok=ask_if_ok,
         api_key=api_key,
@@ -305,6 +319,7 @@ def predict_proba(
     prompts: str | Sequence[str],
     completions: Sequence[str],
     model: openai.api.Model,
+    client: OpenAI | None = None,
     prior: Sequence[float] | None = None,
     end_of_prompt: Literal[" ", ""] = " ",
     normalize: bool = True,
@@ -328,6 +343,8 @@ def predict_proba(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
+    client : OpenAI | None, optional
+        an OpenAI client object. By default, the global client instance is used
     prior : Sequence[float] | None, optional
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
@@ -438,6 +455,7 @@ def predict_proba(
 def predict_proba_examples(
     examples: Example | Sequence[Example],
     model: openai.api.Model,
+    client: OpenAI | None = None,
     show_progress_bar: bool | None = None,
     ask_if_ok: bool = False,
     api_key: str | None = None,
@@ -454,6 +472,8 @@ def predict_proba_examples(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
+    client : OpenAI | None, optional
+        an OpenAI client object. By default, the global client instance is used
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 prompt-completion combinations
@@ -528,6 +548,7 @@ def predict(
     prompts: str | Sequence[str],
     completions: Sequence[str],
     model: openai.api.Model,
+    client: OpenAI | None = None,
     prior: Sequence[float] | None = None,
     end_of_prompt: Literal[" ", ""] = " ",
     discount_completions: float = 0.0,
@@ -550,6 +571,8 @@ def predict(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
+    client : OpenAI | None, optional
+        an OpenAI client object. By default, the global client instance is used
     prior : Sequence[float] | None, optional
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
@@ -642,6 +665,7 @@ def predict(
 def predict_examples(
     examples: Example | Sequence[Example],
     model: openai.api.Model,
+    client: OpenAI | None = None,
     show_progress_bar: bool | None = None,
     ask_if_ok: bool = False,
     api_key: str | None = None,
@@ -658,6 +682,8 @@ def predict_examples(
         string for the name of an OpenAI text-completion model, specifically one from
         the ``/v1/completions`` endpoint:
         https://platform.openai.com/docs/models/model-endpoint-compatibility
+    client : OpenAI | None, optional
+        an OpenAI client object. By default, the global client instance is used
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts

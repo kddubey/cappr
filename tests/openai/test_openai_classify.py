@@ -7,6 +7,7 @@ import sys
 from typing import Sequence
 
 import numpy as np
+import openai
 import pytest
 import tiktoken
 
@@ -24,6 +25,11 @@ from _base import BaseTestPromptsCompletions, BaseTestExamples
 
 
 @pytest.fixture(autouse=True)
+def set_api_key(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-oobydoobydoo")
+
+
+@pytest.fixture(autouse=True)
 def patch_openai_method_retry(monkeypatch: pytest.MonkeyPatch):
     # During testing, there's never going to be a case where we want to actually hit
     # an OpenAI endpoint!
@@ -38,19 +44,25 @@ def patch_openai_method_retry(monkeypatch: pytest.MonkeyPatch):
             for tokens in tokenizer.encode_batch(texts)
         ]
 
-    # Note that the the text completion endpoint uses a kwarg named prompt, but that's
-    # actually set to prompt + completion in the CAPPr scheme. We input that to get
-    # log-probs of completion tokens given prompt
     def mocked(openai_method, prompt: list[str], **kwargs):
-        # Technically, we should return a openai.openai_object.OpenAIObject
-        # For now, just gonna return the minimum dict required
         token_logprobs_batch = _log_probs(prompt)
-        return {
-            "choices": [
-                {"logprobs": {"token_logprobs": list(token_logprobs)}}
+        return openai.types.completion.Completion(
+            id="dummy",
+            choices=[
+                openai.types.CompletionChoice(
+                    logprobs=openai.types.completion_choice.Logprobs(
+                        token_logprobs=list(token_logprobs)
+                    ),
+                    finish_reason="length",
+                    index=0,
+                    text="",
+                )
                 for token_logprobs in token_logprobs_batch
-            ]
-        }
+            ],
+            created=0,
+            model="dummy",
+            object="text_completion",
+        )
 
     monkeypatch.setattr("cappr.openai.api.openai_method_retry", mocked)
 

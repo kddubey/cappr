@@ -15,7 +15,7 @@ requirements_base = [
 ]
 
 requirements_openai = [
-    "openai<1.0.0",  # TODO: https://github.com/openai/openai-python/discussions/631
+    "openai>=0.26.0",
     "tiktoken>=0.2.0",
 ]
 
