@@ -11,7 +11,7 @@ This module is a mirror of :mod:`cappr.huggingface.classify`. The difference is 
 this module **does not** precompute attention block keys and values for prompts.
 """
 from __future__ import annotations
-from typing import Literal, Mapping, Sequence
+from typing import cast, Literal, Mapping, Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -86,6 +86,11 @@ def token_logprobs(
         if `texts` is empty
     """
     return hf.classify.token_logprobs(**locals())
+
+
+########################################################################################
+######################################## Logits ########################################
+########################################################################################
 
 
 def _prompts_offsets(
@@ -163,6 +168,11 @@ def _logits_completions_given_prompts_examples(
     return logits, encodings
 
 
+########################################################################################
+################################## Logits to log-probs #################################
+########################################################################################
+
+
 def _logits_to_log_probs_completions(
     logits: torch.Tensor, encodings: Mapping[str, torch.Tensor]
 ) -> list[list[float]]:
@@ -177,6 +187,11 @@ def _logits_to_log_probs_completions(
             log_probs, encodings["offsets"] - 1, last_idx_non_pad - 1
         )
     ]
+
+
+########################################################################################
+##################################### Implementation ###################################
+########################################################################################
 
 
 @classify._log_probs_conditional
@@ -377,9 +392,8 @@ def log_probs_conditional_examples(
         print(log_probs_completions[1])  # corresponds to examples[1]
         # [[-5.0, -1.7]]  [[log Pr(1 | a, b, c)], log Pr(2 | a, b, c, 1)]]
     """
-    # Little weird. I want my IDE to know that examples is always a Sequence[Example]
-    # b/c of the decorator.
-    examples: Sequence[Example] = examples
+    # examples is always a Sequence[Example] b/c of the decorator.
+    examples = cast(Sequence[Example], examples)
 
     @_batch.flatten
     @_batch.batchify(

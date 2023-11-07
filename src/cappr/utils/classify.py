@@ -501,7 +501,7 @@ def _predict(predict_proba_func):
     @wraps(predict_proba_func)
     def wrapper(
         prompts: str | Sequence[str], completions: Sequence[str], *args, **kwargs
-    ) -> list[str]:
+    ) -> str | list[str]:
         if len(completions) == 1:
             raise ValueError(
                 "completions only has one completion. predict will trivially return "
@@ -511,9 +511,8 @@ def _predict(predict_proba_func):
         pred_probs: npt.NDArray = predict_proba_func(
             prompts, completions, *args, **kwargs
         )
-        if not isinstance(completions, Sequence):
-            # We need completions to support 0-indexed __getitem__
-            completions = list(completions)
+        # We need completions to support 0-indexed __getitem__
+        completions = list(completions)
         num_dimensions = pred_probs.ndim
         if isinstance(prompts, str):
             # User convenience: prompts was a single string, so pred_probs is 1-D
@@ -535,7 +534,9 @@ def _predict_examples(predict_proba_examples_func):
     from cappr import Example
 
     @wraps(predict_proba_examples_func)
-    def wrapper(examples: Example | Sequence[Example], *args, **kwargs) -> list[str]:
+    def wrapper(
+        examples: Example | Sequence[Example], *args, **kwargs
+    ) -> str | list[str]:
         pred_probs: npt.NDArray[np.floating] | list[
             npt.NDArray[np.floating]
         ] = predict_proba_examples_func(examples, *args, **kwargs)

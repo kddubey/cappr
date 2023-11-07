@@ -32,27 +32,6 @@ class Example:
         probability distribution over completions. Set this to `False` if you'd like the
         raw completion-after-prompt probability, or you're solving a multi-label
         prediction problem. By default, True
-
-    Raises
-    ------
-    TypeError
-        if `prompt` is not a string
-    ValueError
-        if `prompt` is empty
-    TypeError
-        if `completions` is not a sequence
-    ValueError
-        if `completions` is empty, or contains an empty string
-    TypeError
-        if `end_of_prompt` is not a string
-    ValueError
-        if `end_of_prompt` is not a whitespace or empty
-    TypeError
-        if `prior` is not None, or it isn't a sequence or numpy array
-    ValueError
-        if `prior` is not a 1-D probability distribution over `completions`
-    ValueError
-        if `normalize` is True but there's only one completion in `completions`
     """
 
     prompt: str

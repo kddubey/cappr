@@ -170,8 +170,9 @@ def does_tokenizer_need_prepended_space(
         tokens_concat_correct = tokenize("a") + remove_bos(tokenize(" b"))
         if tokens != tokens_concat_correct:
             raise ValueError(
-                "This tokenizer is weird. Please raise this as an issue so that I can "
-                "investigate: https://github.com/kddubey/cappr/issues"
+                "This tokenizer is weird. Perhaps it's adding EOS tokens? Please raise "
+                "this as an issue so that I can investigate: "
+                "https://github.com/kddubey/cappr/issues"
             )  # pragma: no cover
         return True
     return False

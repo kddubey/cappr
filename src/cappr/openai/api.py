@@ -15,7 +15,7 @@ import openai
 try:
     from openai import OpenAI
 except ImportError:  # pragma: no cover
-    # openai version < 1.0.0. Many breaking changes need handling
+    # openai < v1.0.0. Many breaking changes need handling
     OpenAI = type("OpenAI", (object,), {})  # pragma: no cover
     _ERRORS_MODULE = openai.error  # pragma: no cover
 else:
@@ -304,7 +304,7 @@ def gpt_complete(
         list with the same length as `texts`. Each element is the ``choices`` mapping
     """
     _check.ordered(texts, variable_name="texts")
-    try:
+    try:  # openai < v1.0.0
         openai_method = openai.Completion.create  # pragma: no cover
     except AttributeError:
         openai_method = (
@@ -400,7 +400,7 @@ def gpt_chat_complete(
         list with the same length as `texts`. Each element is the ``choices`` mapping
     """
     _check.ordered(texts, variable_name="texts")
-    try:
+    try:  # openai < v1.0.0
         openai_method = openai.ChatCompletion.create  # pragma: no cover
     except AttributeError:
         openai_method = (

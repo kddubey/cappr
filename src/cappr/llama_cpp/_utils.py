@@ -29,9 +29,8 @@ def check_logits(logits) -> np.ndarray:
     logits = np.array(logits)
     if np.any(np.isnan(logits)):
         raise TypeError(
-            "There are nan logits. This can happen if the model is re-loaded too many "
-            "times in the same session. Please raise this as an issue so that I can "
-            "investigate: https://github.com/kddubey/cappr/issues"
+            "There are nan logits. Is there something wrong with the model? This can "
+            "happen if the model is reloaded many times in the same session."
         )  # pragma: no cover
     return logits
 

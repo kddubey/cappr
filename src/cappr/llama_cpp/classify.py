@@ -23,7 +23,7 @@ your current working directory)::
 """
 from __future__ import annotations
 from contextlib import contextmanager
-from typing import Literal, Sequence
+from typing import cast, Literal, Sequence
 
 from llama_cpp import Llama
 import numpy as np
@@ -119,6 +119,11 @@ def token_logprobs(
     return log_probs
 
 
+########################################################################################
+###################################### KV caching ######################################
+########################################################################################
+
+
 @contextmanager
 def cache(model: Llama, prefix: str, reset_model: bool = True):
     """
@@ -191,6 +196,11 @@ def cache(model: Llama, prefix: str, reset_model: bool = True):
         model.n_tokens = n_tokens
 
 
+########################################################################################
+############################## Logprobs from cached model ##############################
+########################################################################################
+
+
 def _log_probs_conditional_prompt(
     prompt: str,
     completions: Sequence[str],
@@ -199,7 +209,7 @@ def _log_probs_conditional_prompt(
 ) -> list[list[float]]:
     _utils.check_model(model)
     # Prepend whitespaces if the tokenizer or context call for it
-    # TODO: put this in the context manager? Little weird.
+    # TODO: put this in the context manager? Little weird
     if not _utils.does_tokenizer_need_prepended_space(model):
         start_of_prompt = ""
         end_of_prompt = ""
@@ -256,6 +266,11 @@ def _log_probs_conditional_prompt(
             # would include this completion's KVs, which is mega wrong
             model.n_tokens = num_tokens_prompt
         return log_probs_completions
+
+
+########################################################################################
+#################################### Implementation ####################################
+########################################################################################
 
 
 @classify._log_probs_conditional
@@ -441,9 +456,8 @@ def log_probs_conditional_examples(
         print(log_probs_completions[1])  # corresponds to examples[1]
         # [[-9.90, -10.0]] [[log Pr(d | a, b, c)], log Pr(e | a, b, c, d)]]
     """
-    # Little weird. I want my IDE to know that examples is always a Sequence[Example]
-    # b/c of the decorator.
-    examples: Sequence[Example] = examples
+    # examples is always a Sequence[Example] b/c of the decorator.
+    examples = cast(Sequence[Example], examples)
     if reset_model:
         model.reset()
     log_probs_completions = [

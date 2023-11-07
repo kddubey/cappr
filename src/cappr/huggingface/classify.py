@@ -483,7 +483,7 @@ def cache(
 
 
 ########################################################################################
-############################## Logits (from cached model) ##############################
+############################### Logits from cached model ###############################
 ########################################################################################
 
 
@@ -534,7 +534,7 @@ def _blessed_helper(
     )
     num_batches = len(completions_input_ids)
 
-    # TODO: put this in the context manager? Little weird.
+    # TODO: put this in the context manager? Little weird
     if not hf._utils.does_tokenizer_need_prepended_space(tokenizer):
         start_of_prompt = ""
     else:
@@ -890,9 +890,8 @@ def log_probs_conditional_examples(
         print(log_probs_completions[1])  # corresponds to examples[1]
         # [[-5.0, -1.7]]  [[log Pr(1 | a, b, c)], log Pr(2 | a, b, c, 1)]]
     """
-    # Little weird. I want my IDE to know that examples is always a Sequence[Example]
-    # b/c of the decorator.
-    examples: Sequence[Example] = examples
+    # examples is always a Sequence[Example] b/c of the decorator.
+    examples = cast(Sequence[Example], examples)
 
     @_batch.flatten
     @_batch.batchify(

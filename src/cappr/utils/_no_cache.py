@@ -2,7 +2,7 @@
 Utilities for implementations which don't cache.
 """
 from __future__ import annotations
-from typing import Callable, Literal, Sequence
+from typing import Callable, cast, Literal, Sequence
 
 from cappr.utils import _batch
 
@@ -72,8 +72,8 @@ def log_probs_conditional_examples(
 ):
     from cappr import Example
 
-    # Little weird. I want my IDE to know that examples is always a Sequence[Example]
-    examples: Sequence[Example] = examples
+    # examples is always a Sequence[Example] b/c of the decorator.
+    examples = cast(Sequence[Example], examples)
 
     texts = [
         example.prompt + example.end_of_prompt + completion
