@@ -71,7 +71,7 @@ def _agg_log_probs_vectorized(
                 )
                 for completion_idx in range(num_completions_per_prompt)
             ]
-        except ValueError:
+        except (np.VisibleDeprecationWarning, ValueError):
             raise ValueError(
                 "log_probs has a constant # of completions, but there are a "
                 "non-constant # of tokens. Vectorization is not possible."
