@@ -106,6 +106,9 @@ sense (according to the model).
 A reasonable hypothesis is that this prompt-completion format is especially well-suited
 to smaller models. See the footnote for a reason for this hypothesis.\ [#]_
 
+.. note:: It's usually a good idea to also mention the choices/completions in the prompt
+          itself.
+
 Examples
 ++++++++
 
@@ -171,8 +174,8 @@ For another example of this prompt-completion format in action, see `this demo
 Multiple Choice
 ~~~~~~~~~~~~~~~
 
-Big instruction-trained models are good at answering multiple choice questions because
-they've been trained to do so. One caveat is that the number of choices ideally
+Highly instruction-trained models are good at answering multiple choice questions
+because they've been trained to do so. One caveat is that the number of choices ideally
 shouldn't be more than five, because multiple choice question formats seen during
 training are usually limited to the letters from school exams: A, B, C, D, E.
 
@@ -218,8 +221,14 @@ Here's a little utility function which automatically writes out the letters and 
    # D. Welcome to the Internet
    # E. Bezos II
 
-Based on a few experiments, multiple choice questions are less appropriate for smaller
-or less instruction-trained models.
+Based on a few experiments, multiple choice questions is less appropriate for less
+instruction-trained models.
+
+Examples
+++++++++
+
+For an example of this prompt-completion format in action, see `this demo
+<https://github.com/kddubey/cappr/blob/main/demos/huggingface/sciq.ipynb>`_.
 
 
 Quirks
