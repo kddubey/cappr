@@ -12,7 +12,6 @@ import numpy.typing as npt
 from cappr.utils import _no_cache, classify
 from cappr import Example
 from cappr.llama_cpp.classify import token_logprobs
-from cappr.llama_cpp import _utils
 
 
 def _tokenize(model: Llama, texts: Sequence[str]) -> list[list[int]]:
@@ -26,18 +25,15 @@ def log_probs_conditional(
     model: Llama,
     end_of_prompt: Literal[" ", ""] = " ",
     **kwargs,
-) -> list[list[list[float]]]:
-    end_of_prompt_for_slicing = (
-        end_of_prompt if _utils.does_tokenizer_need_prepended_space(model) else ""
-    )
+) -> list[list[float]] | list[list[list[float]]]:
     return _no_cache.log_probs_conditional(
-        token_logprobs,
-        partial(_tokenize, model),
         prompts,
         completions,
+        end_of_prompt,
+        token_logprobs,
+        partial(_tokenize, model),
+        model.token_bos(),
         model,
-        end_of_prompt=end_of_prompt,
-        end_of_prompt_for_slicing=end_of_prompt_for_slicing,
         add_bos=True,
     )
 
@@ -47,15 +43,12 @@ def log_probs_conditional_examples(
     examples: Example | Sequence[Example],
     model: Llama,
 ) -> list[list[float]] | list[list[list[float]]]:
-    should_end_of_prompt_be_empty = not _utils.does_tokenizer_need_prepended_space(
-        model
-    )
     return _no_cache.log_probs_conditional_examples(
+        examples,
         token_logprobs,
         partial(_tokenize, model),
-        examples,
+        model.token_bos(),
         model,
-        should_end_of_prompt_be_empty=should_end_of_prompt_be_empty,
         add_bos=True,
     )
 
