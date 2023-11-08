@@ -636,15 +636,17 @@ def _logits_completions_given_prompts_examples(
     should_end_of_prompt_be_empty = not hf._utils.does_tokenizer_need_prepended_space(
         tokenizer
     )
-    prompts: list[str] = []
-    num_completions_per_prompt: list[int] = []
-    completions: list[str] = []
-    for example in examples:
-        prompts.append(example.prompt)
-        num_completions_per_prompt.append(len(example.completions))
-        end_of_prompt = "" if should_end_of_prompt_be_empty else example.end_of_prompt
-        for completion in example.completions:
-            completions.append(end_of_prompt + completion)
+    prompts = [example.prompt for example in examples]
+    end_of_prompts = [
+        "" if should_end_of_prompt_be_empty else example.end_of_prompt
+        for example in examples
+    ]
+    completions = [
+        end_of_prompt + completion
+        for end_of_prompt, example in zip(end_of_prompts, examples)
+        for completion in example.completions
+    ]
+    num_completions_per_prompt = [len(example.completions) for example in examples]
     return _blessed_helper(
         model,
         tokenizer,
