@@ -8,7 +8,8 @@ from dataclasses import dataclass
 import logging
 import os
 import time
-from typing import Any, Callable, Literal, Mapping, Sequence, Type
+from typing import Any, Callable, Literal, Sequence
+import warnings
 
 import openai
 
@@ -250,6 +251,26 @@ def _set_openai_api_key(api_key: str | None = None):
         openai.api_key = api_key_from_module
 
 
+def _to_dict(response) -> dict[str, Any]:
+    if not hasattr(response, "model_dump"):
+        # It's a dict b/c we're on openai < v1.0.0
+        return response  # pragma: no cover
+    else:
+        # It's a pydantic model b/c we're on openai >= v1.0.0
+        dump_nested_dicts = getattr(response, "model_dump")
+        # When the model is dumped, it gives a Pydantic serializer warning for each
+        # token: Expected `int` but got `float`
+        # https://github.com/openai/openai-python/issues/744
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                category=UserWarning,
+                message="Pydantic serializer warnings",
+            )
+            response = dump_nested_dicts()
+        return response
+
+
 def gpt_complete(
     texts: Sequence[str],
     model: Model,
@@ -316,7 +337,7 @@ def gpt_complete(
         texts = [texts] if isinstance(texts, str) else texts
         if ask_if_ok:
             _ = _openai_api_call_is_ok(texts, model, max_tokens=max_tokens)
-        choices = []
+        choices: list[dict[str, Any]] = []
         with _batch.ProgressBar(
             total=len(texts),
             show_progress_bar=show_progress_bar,
@@ -330,10 +351,7 @@ def gpt_complete(
                     max_tokens=max_tokens,
                     **openai_completion_kwargs,
                 )
-                if hasattr(response, "model_dump"):
-                    # New version of OpenAI Python API returns a pydantic model
-                    dump_nested_dicts = getattr(response, "model_dump")
-                    response = dump_nested_dicts()
+                response = _to_dict(response)
                 choices.extend(response["choices"])
                 progress_bar.update(len(texts_batch))
         return choices
@@ -414,7 +432,7 @@ def gpt_chat_complete(
         texts = [texts] if isinstance(texts, str) else texts
         if ask_if_ok:
             _ = _openai_api_call_is_ok(texts, model, max_tokens=max_tokens)
-        choices = []
+        choices: list[dict[str, Any]] = []
         for text in _batch.ProgressBar(
             texts, show_progress_bar=show_progress_bar, desc="Completing chats"
         ):
@@ -430,9 +448,6 @@ def gpt_chat_complete(
                 temperature=temperature,
                 **openai_chat_kwargs,
             )
-            if hasattr(response, "model_dump"):
-                # New version of OpenAI Python API returns a pydantic model
-                dump_nested_dicts = getattr(response, "model_dump")
-                response = dump_nested_dicts()
+            response = _to_dict(response)
             choices.extend(response["choices"])
         return choices
