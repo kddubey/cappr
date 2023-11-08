@@ -142,14 +142,16 @@ No string formatting abstractions
 Many tools in this space includes some type of string formatting abstraction. Some
 abstract the complex process of structuring a completion or a chain of prompts and
 completions. Others format a single prompt to, e.g., abstract the process of writing a
-few-shot prompt. Prompt formatters are not as helpful. Not to be too dismissive, but
-anyone who uses Python knows how to format a string. Prompt formatters replace the
-question of "how do I tell the LM to do what I want?" with "how do I use this string
-formatting interface to tell the LM to do what I want?". The latter question takes more
-time to answer. And while answering that question, you may end up realizing that the
-formatter doesn't let you do what you need to do. Moreover, these formatters can
-obfuscate what the prompt actually looks like, which is a risk. For smaller LMs, there
-are quirks which prompt writers should be aware of.
+few-shot prompt.
+
+Prompt formatters are not as helpful. Not to be too dismissive, but anyone who uses
+Python knows how to format a string. Prompt formatters replace the question of "how do I
+tell the LM to do what I want?" with "how do I use this string formatting interface to
+tell the LM to do what I want?". The latter question takes more time to answer. And
+while answering that question, you may end up realizing that the formatter doesn't let
+you do what you need to do. Moreover, these formatters can obfuscate what the prompt
+actually looks like, which is a risk. For smaller LMs, there are quirks which prompt
+writers should be aware of.
 
 I want this package to do one thing well: pick a completion from a user-created prompt.
 If users want to use a string formatter to write prompts, that's on them.
@@ -215,9 +217,9 @@ It's well known that attention keys and values can be cached whenever substrings
 repeated for inference. Getting this feature to align with the CAPPr scheme took nitty
 gritty work. My first few implementations of caching were suboptimal from both a
 computational and a UI perspective. I got lost in the sauce of making lots and lots of
-incremental improvements. Eventually I `re-did
-<https://github.com/kddubey/cappr/commit/d3b52e975918fa83b52c963116b79d5132ba5277>` the
-whole thing with some success.
+incremental improvements. Eventually, I `re-did
+<https://github.com/kddubey/cappr/commit/d3b52e975918fa83b52c963116b79d5132ba5277>`_ the
+whole thing with some success. It's kinda janky, but I like it.
 
 Marketing matters
 ~~~~~~~~~~~~~~~~~
@@ -232,7 +234,7 @@ for other tools answer, or successfully dodge, these questions much more effecti
 Pleasant surprises
 ------------------
 
-Re the algorithm: see the `Misfit Toys Hypothesis
+See the `Misfit Toys Hypothesis
 <https://cappr.readthedocs.io/en/latest/future_research.html>`_.
 
 Besides the algorithmic stuff, I was pleasantly surprised to find that I loved
@@ -244,4 +246,4 @@ my project feel way more professional lol. I found `ReWrap
 <https://stkb.github.io/Rewrap/>`_ and `autoDocstring
 <https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring>`_ for the
 first time. I'll be using them for every project from now on. Overall, as a result of
-working on this project, I appreciate open source software at a much higher level.
+working on this project, I now appreciate open source software at a higher level.
