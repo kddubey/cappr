@@ -37,4 +37,5 @@ the prompt-completion format, and the prior.
    select_a_prompt_completion_format
    supply_a_prior
    examples
+   why_probability
    a_note_on_workflow
