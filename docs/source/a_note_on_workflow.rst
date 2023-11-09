@@ -54,7 +54,7 @@ Split data into train and test
 ------------------------------
 
 Now that you have a nice dataset, before you do anything else, `randomly partition
-<https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html>`
+<https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html>`_
 the dataset into a "training" dataset and a "test" dataset.\ [#]_ The importance of this
 step cannot be overstated.
 

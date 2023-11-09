@@ -206,9 +206,9 @@ Too many breaking changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 `Releases <https://github.com/kddubey/cappr/releases>`_ were not as backwards compatible
-as they could've been. I've been figuring stuff out on the fly and releasing whenever I
-think something is good enough for the short term. I'm not sure how long I'll be working
-on CAPPr.
+as they could've been. I was tripped up by the OpenAI v1.0 release. I've been figuring
+stuff out on the fly and releasing whenever I think something is good enough for the
+short term. I'm not sure how long I'll be working on CAPPr.
 
 Too many half-measures
 ~~~~~~~~~~~~~~~~~~~~~~
