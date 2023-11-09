@@ -315,6 +315,8 @@ documentation](https://cappr.readthedocs.io/en/latest/motivation.html) for more 
 Statistical performance
 </summary>
 
+For open source models, see
+
 - the 4-bit 4 GB Llama 2 [COPA
   demo](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb)
 - the 4-bit 4 GB Llama 2 [AG News
@@ -334,15 +336,13 @@ Statistical performance
 In general, you should expect similar or identical performance to text generation when
 every completion is 1 token long.
 
-For OpenAI models, see
+For OpenAI models (about to be deprecated), see
 
 [2 SuperGLUE
 datasets](https://github.com/kddubey/cappr/blob/main/demos/openai/superglue)
 
 [RAFT zero-shot training
 sets](https://github.com/kddubey/cappr/blob/main/demos/openai/raft)
-
-TODO: summary tables/spiderwebs
 </details>
 
 
