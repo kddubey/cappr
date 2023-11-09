@@ -315,8 +315,6 @@ documentation](https://cappr.readthedocs.io/en/latest/motivation.html) for more 
 Statistical performance
 </summary>
 
-I'm still evaluating open source models. For now, see
-
 - the 4-bit 4 GB Llama 2 [COPA
   demo](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb)
 - the 4-bit 4 GB Llama 2 [AG News
@@ -324,8 +322,14 @@ I'm still evaluating open source models. For now, see
 - the 4 GB Mistral [Craigslist Bargains
   demo](https://github.com/kddubey/cappr/blob/main/demos/huggingface/craigslist_bargains.ipynb)
 - the 4 GB Mistral [Banking 77
-  demo](https://github.com/kddubey/cappr/blob/main/demos/huggingface/banking_77_classes.ipynb)
-  (with 77 multi-token choices).
+  demo](https://github.com/kddubey/cappr/blob/main/demos/huggingface/banking_77_classes.ipynb),
+  with 77 multi-token choices
+- the 4 GB Mistral [SciQ
+  demo](https://github.com/kddubey/cappr/blob/main/demos/huggingface/sciq.ipynb), with a
+  multiple choice prompt
+- the 4 GB Mistral [Tweet Emotions
+  demo](https://github.com/kddubey/cappr/blob/main/demos/huggingface/tweet_emotion_multilabel.ipynb),
+  which is a multilabel task—each tweet can be tagged with 1-12 emotions.
 
 In general, you should expect similar or identical performance to text generation when
 every completion is 1 token long.
