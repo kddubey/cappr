@@ -19,7 +19,10 @@ seen in:
 - the 4-bit 4 GB Llama 2 `AG News demo
   <https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/ag_news.ipynb>`_
 - the 4 GB Mistral `Craigslist Bargains demo`_
-- the 4 GB Mistral `Banking 77 demo`_ (with 77 multi-token choices).
+- the 4 GB Mistral `Banking 77 demo`_ (with 77 multi-token choices)
+- the 4 GB Mistral `Tweet Emotion demo
+  <https://github.com/kddubey/cappr/blob/main/demos/huggingface/tweet_emotion_multilabel.ipynb>`_
+  (a multilabel problem).
 
 I'll study how replicable this result is across classification tasks, model sizes,
 architectures, and levels of quantization. I'll also study explanations for these
