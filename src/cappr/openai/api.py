@@ -16,12 +16,15 @@ import openai
 try:
     from openai import OpenAI
 except ImportError:  # pragma: no cover
-    _IS_OPENAI_AFTER_V1 = False  # pragma: no cover
     OpenAI = type("OpenAI", (object,), {})  # pragma: no cover
-    _ERRORS_MODULE = openai.error  # pragma: no cover
+    _IS_OPENAI_AFTER_V1 = False  # pragma: no cover
+    _RETRY_ERRORS = (
+        openai.error.ServiceUnavailableError,
+        openai.error.RateLimitError,
+    )  # pragma: no cover
 else:
     _IS_OPENAI_AFTER_V1 = True
-    _ERRORS_MODULE = openai
+    _RETRY_ERRORS = (openai.InternalServerError, openai.RateLimitError)
 import tiktoken
 
 from cappr.utils import _batch, _check
@@ -186,10 +189,7 @@ def openai_method_retry(
     openai_method: Callable,
     max_num_tries: int = 5,
     sleep_sec: float = 10,
-    retry_errors: tuple = (
-        _ERRORS_MODULE.InternalServerError,
-        _ERRORS_MODULE.RateLimitError,
-    ),
+    retry_errors: tuple = _RETRY_ERRORS,
     **openai_method_kwargs,
 ):
     """
