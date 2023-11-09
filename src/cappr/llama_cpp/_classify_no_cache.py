@@ -14,7 +14,7 @@ from cappr import Example
 from cappr.llama_cpp.classify import token_logprobs
 
 
-def _tokenize(model: Llama, texts: Sequence[str]) -> list[list[int]]:
+def _tokenize_completions(model: Llama, texts: Sequence[str]) -> list[list[int]]:
     return [model.tokenize(text.encode("utf-8"), add_bos=False) for text in texts]
 
 
@@ -31,7 +31,7 @@ def log_probs_conditional(
         completions,
         end_of_prompt,
         token_logprobs,
-        partial(_tokenize, model),
+        partial(_tokenize_completions, model),
         model.token_bos(),
         model,
         add_bos=True,
@@ -46,7 +46,7 @@ def log_probs_conditional_examples(
     return _no_cache.log_probs_conditional_examples(
         examples,
         token_logprobs,
-        partial(_tokenize, model),
+        partial(_tokenize_completions, model),
         model.token_bos(),
         model,
         add_bos=True,

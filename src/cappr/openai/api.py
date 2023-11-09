@@ -16,10 +16,11 @@ import openai
 try:
     from openai import OpenAI
 except ImportError:  # pragma: no cover
-    # openai < v1.0.0. Many breaking changes need handling
+    _IS_OPENAI_AFTER_V1 = False  # pragma: no cover
     OpenAI = type("OpenAI", (object,), {})  # pragma: no cover
     _ERRORS_MODULE = openai.error  # pragma: no cover
 else:
+    _IS_OPENAI_AFTER_V1 = True
     _ERRORS_MODULE = openai
 import tiktoken
 
@@ -325,9 +326,9 @@ def gpt_complete(
         list with the same length as `texts`. Each element is the ``choices`` mapping
     """
     _check.ordered(texts, variable_name="texts")
-    try:  # openai < v1.0.0
+    if not _IS_OPENAI_AFTER_V1:
         openai_method = openai.Completion.create  # pragma: no cover
-    except AttributeError:
+    else:
         openai_method = (
             openai.completions.create if client is None else client.completions.create
         )
@@ -418,9 +419,9 @@ def gpt_chat_complete(
         list with the same length as `texts`. Each element is the ``choices`` mapping
     """
     _check.ordered(texts, variable_name="texts")
-    try:  # openai < v1.0.0
+    if not _IS_OPENAI_AFTER_V1:
         openai_method = openai.ChatCompletion.create  # pragma: no cover
-    except AttributeError:
+    else:
         openai_method = (
             openai.chat.completions.create
             if client is None

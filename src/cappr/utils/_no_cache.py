@@ -48,7 +48,7 @@ def log_probs_conditional(
     completions: Sequence[str],
     end_of_prompt: Literal[" ", ""],
     token_logprobs: Callable[[Sequence[str], Any], list[list[float]]],
-    tokenize: Callable[[list[str]], list[list[int]]],
+    tokenize_completions: Callable[[list[str]], list[list[int]]],
     bos_token_id: int | None,
     *token_logprobs_args,
     **token_logprobs_kwargs,
@@ -68,16 +68,16 @@ def log_probs_conditional(
     # the spec
     return [
         _slice_completions(
-            completions, end_of_prompt, log_probs_batch, tokenize, bos_token_id
+            completions, end_of_prompt, batch, tokenize_completions, bos_token_id
         )
-        for log_probs_batch in _batch.constant(log_probs, size=len(completions))
+        for batch in _batch.constant(log_probs, size=len(completions))
     ]
 
 
 def log_probs_conditional_examples(
     examples,
     token_logprobs: Callable[[Sequence[str], Any], list[list[float]]],
-    tokenize: Callable[[Sequence[str]], list[list[int]]],
+    tokenize_completions: Callable[[Sequence[str]], list[list[int]]],
     bos_token_id: int | None,
     *token_logprobs_args,
     **token_logprobs_kwargs,
@@ -96,7 +96,7 @@ def log_probs_conditional_examples(
         texts, *token_logprobs_args, end_of_prompt="", **token_logprobs_kwargs
     )
     should_end_of_prompt_be_empty = not _does_tokenizer_need_prepended_space(
-        tokenize, bos_token_id
+        tokenize_completions, bos_token_id
     )
     end_of_prompts = [
         "" if should_end_of_prompt_be_empty else example.end_of_prompt
@@ -109,7 +109,7 @@ def log_probs_conditional_examples(
     ]
     end_of_prompt = ""  # we already added it in completions
     log_probs_completions = _slice_completions(
-        completions, end_of_prompt, log_probs, tokenize, bos_token_id
+        completions, end_of_prompt, log_probs, tokenize_completions, bos_token_id
     )
     # log_probs is a 2-D list. Batch it by the size and order of completions to fulfill
     # the spec
