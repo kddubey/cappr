@@ -309,11 +309,14 @@ class _ModelWithCache:
 def cache_model(
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
     prefixes: str | Sequence[str],
-    logits_all: bool = False,
+    logits_all: bool = True,
 ) -> tuple[ModelForCausalLM, PreTrainedTokenizerBase]:
     """
     Caches the model so that every future computation with it starts with `prefixes`. As
     a result, computations with this model are faster.
+
+    Use this function instead of the context manager :func:`cache` to keep the cache for
+    future computations.
 
     Parameters
     ----------
@@ -325,7 +328,7 @@ def cache_model(
         instructions and exemplars for few-shot prompting
     logits_all : bool, optional
         whether or not to have the cached model include logits for all tokens (including
-        the past). By default, past token logits are not included
+        the past). By default, past token logits are included
 
     Returns
     -------
