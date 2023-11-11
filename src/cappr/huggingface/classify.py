@@ -216,9 +216,9 @@ class _ModelWithCache:
         if self._cappr._is_cache_cleared:
             raise _CacheClearedError(
                 "This model is no longer usable. It was used in a context where "
-                "clear_cache_on_exit=True. Did you mean to use the model inputted to "
-                "`with cache(...)`? If you instead meant to retain the cache for "
-                "future use, then do: `with cache(..., clear_cache_on_exit=False)`"
+                "clear_cache_on_exit=True. If you instead meant to retain the cache "
+                "for future use, then use: `cached_model_and_tokenizer = "
+                "cache_model(model_and_tokenizer, prefixes)`"
             )
 
         encodings = {"input_ids": input_ids, "attention_mask": attention_mask}
@@ -316,7 +316,7 @@ def cache_model(
     a result, computations with this model are faster.
 
     Use this function instead of the context manager :func:`cache` to keep the cache for
-    future computations.
+    future computations, including those outside of a context.
 
     Parameters
     ----------

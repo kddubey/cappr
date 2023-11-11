@@ -129,6 +129,9 @@ def cache_model(model: Llama, prefix: str) -> Llama:
     Caches the model so that every future computation with it starts with `prefix`. As a
     result, computations with this model are faster.
 
+    Use this function instead of the context manager :func:`cache` to keep the cache for
+    future computations, including those outside of a context.
+
     Parameters
     ----------
     model : Llama
