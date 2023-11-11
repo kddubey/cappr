@@ -114,7 +114,7 @@ def test_set_up_model(model: ModelForCausalLM):
         assert not model.training
         if hasattr(model, "config"):
             # If the model doesn't have these attributes, then we'll see the error loud
-            # and clear later in the code. So default to the expected values
+            # and clear later in the tests. So default to the expected values
             assert getattr(model.config, "return_dict", True)
             assert getattr(model.config, "use_cache", True)
 
@@ -284,7 +284,7 @@ def test_cache_logits(model_and_tokenizer, atol):
 )
 @pytest.mark.parametrize("batch_size", (1, 2, 10))
 class TestCache:
-    def test_cache(
+    def test_prompts(
         self, prompt_prefix, prompts, completions, model_and_tokenizer, batch_size
     ):
         with classify.cache(model_and_tokenizer, prompt_prefix) as cached:
@@ -305,7 +305,28 @@ class TestCache:
             log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
         )
 
-    def test_cache_examples(
+    def test_prompts_cache_model(
+        self, prompt_prefix, prompts, completions, model_and_tokenizer, batch_size
+    ):
+        cached = classify.cache_model(model_and_tokenizer, prompt_prefix)
+        log_probs_completions = classify.log_probs_conditional(
+            prompts, completions, cached, batch_size=batch_size
+        )
+        _test_form._test_log_probs_conditional(
+            log_probs_completions,
+            expected_len=len(prompts),
+            num_completions_per_prompt=[len(completions)] * len(prompts),
+        )
+
+        prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
+        log_probs_completions_wo_cache = classify_no_cache.log_probs_conditional(
+            prompts_full, completions, model_and_tokenizer
+        )
+        _test_content._test_log_probs_conditional(
+            log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
+        )
+
+    def test_examples(
         self, prompt_prefix, prompts, completions, model_and_tokenizer, batch_size
     ):
         examples = [Example(prompt, completions) for prompt in prompts]
@@ -314,6 +335,36 @@ class TestCache:
             log_probs_completions = classify.log_probs_conditional_examples(
                 examples, cached, batch_size=batch_size
             )
+        _test_form._test_log_probs_conditional(
+            log_probs_completions,
+            expected_len=len(examples),
+            num_completions_per_prompt=[
+                len(example.completions) for example in examples
+            ],
+        )
+
+        examples_full = [
+            Example(prompt_prefix + " " + example.prompt, example.completions)
+            for example in examples
+        ]
+        log_probs_completions_wo_cache = (
+            classify_no_cache.log_probs_conditional_examples(
+                examples_full, model_and_tokenizer
+            )
+        )
+        _test_content._test_log_probs_conditional(
+            log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
+        )
+
+    def test_examples_cache_model(
+        self, prompt_prefix, prompts, completions, model_and_tokenizer, batch_size
+    ):
+        examples = [Example(prompt, completions) for prompt in prompts]
+
+        cached = classify.cache_model(model_and_tokenizer, prompt_prefix)
+        log_probs_completions = classify.log_probs_conditional_examples(
+            examples, cached, batch_size=batch_size
+        )
         _test_form._test_log_probs_conditional(
             log_probs_completions,
             expected_len=len(examples),

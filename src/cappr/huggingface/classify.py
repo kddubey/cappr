@@ -306,6 +306,110 @@ class _ModelWithCache:
         return getattr(self._cappr.model, __name)
 
 
+def cache_model(
+    model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
+    prefixes: str | Sequence[str],
+    logits_all: bool = False,
+) -> tuple[ModelForCausalLM, PreTrainedTokenizerBase]:
+    """
+    Caches the model so that every future computation with it starts with `prefixes`. As
+    a result, computations with this model are faster.
+
+    Parameters
+    ----------
+    model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
+        an instantiated model and its corresponding tokenizer
+    prefixes : str | Sequence[str]
+        prefix(es) for all strings that will be processed in this context, e.g., a
+        string containing shared prompt instructions, or a string containing
+        instructions and exemplars for few-shot prompting
+    logits_all : bool, optional
+        whether or not to have the cached model include logits for all tokens (including
+        the past). By default, past token logits are not included
+
+    Returns
+    -------
+    tuple[ModelForCausalLM, PreTrainedTokenizerBase]
+        cached model and the (unmodified) tokenizer
+
+    Note
+    ----
+    You must ensure that any strings that are processed by the tokenizer start
+    correctly. Furthermore, if applicable, set ``tokenizer.add_bos_token = False`` for
+    future computations. Prefixes and future strings are assumed to be separated
+    by a whitespace if you're calling a function in this module, e.g., :func:`predict`.
+
+    Example
+    -------
+    Usage with :func:`predict_proba`::
+
+        import numpy as np
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from cappr.huggingface.classify import cache_model, predict_proba
+
+        # Load model and tokenizer
+        model = AutoModelForCausalLM.from_pretrained("gpt2")
+        tokenizer = AutoTokenizer.from_pretrained("gpt2")
+        model_and_tokenizer = (model, tokenizer)
+
+        # Create data
+        prompt_prefix = '''Instructions: complete the sequence.
+        Here are examples:
+        A, B, C => D
+        1, 2, 3 => 4
+
+        Complete this sequence:'''
+
+        prompts = ["a, b, c =>", "X, Y =>"]
+        completions = ["d", "Z", "Hi"]
+
+        # Cache
+        cached_model_and_tokenizer = cache_model(
+            model_and_tokenizer, prompt_prefix
+        )
+
+        # Compute
+        pred_probs = predict_proba(
+            prompts, completions, cached_model_and_tokenizer
+        )
+
+        # The above computation is equivalent to this one:
+        prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
+        pred_probs_wo_cache = predict_proba(
+            prompts_full, completions, model_and_tokenizer
+        )
+        assert np.allclose(pred_probs, pred_probs_wo_cache, atol=1e-5)
+
+        print(pred_probs.round(1))
+        # [[1. 0. 0.]
+        #  [0. 1. 0.]]
+    """
+    _check.nonempty_and_ordered(prefixes, variable_name="prefixes")
+    prefixes = [prefixes] if isinstance(prefixes, str) else list(prefixes)
+    model, tokenizer = model_and_tokenizer
+    try:
+        past = getattr(getattr(model, "_cappr"), "past")
+    except AttributeError:
+        past = None
+
+    with hf._utils.set_up_tokenizer(tokenizer):
+        with nullcontext() if past is None else hf._utils.dont_add_bos_token(tokenizer):
+            encodings_prefixes: BatchEncodingPT = tokenizer(
+                prefixes, return_tensors="pt", padding=True
+            ).to(model.device)
+
+    model_for_causal_lm = (
+        model._cappr.model if isinstance(model, _ModelWithCache) else model
+    )
+    model_with_cache = _ModelWithCache(
+        model_for_causal_lm,
+        encodings_to_cache=encodings_prefixes,
+        past=past,
+        logits_all=logits_all,
+    )
+    return model_with_cache, tokenizer  # return tokenizer for consistent interface
+
+
 @contextmanager
 def cache(
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
@@ -331,7 +435,7 @@ def cache(
         and makes code more explicit about the model's state. By default, True
     logits_all : bool, optional
         whether or not to have the cached model include logits for all tokens (including
-        the past). By default, past token logits are not included
+        the past). By default, past token logits are included
 
     Note
     ----
@@ -446,31 +550,17 @@ def cache(
         assert torch.allclose(logits3, logits_correct(["a b c 1 2 3"]), atol=atol)
         assert torch.allclose(logits4, logits_correct(["a b c d"]), atol=atol)
     """
-    _check.nonempty_and_ordered(prefixes, variable_name="prefixes")
-    prefixes = [prefixes] if isinstance(prefixes, str) else list(prefixes)
-    model, tokenizer = model_and_tokenizer
     try:
-        past = getattr(getattr(model, "_cappr"), "past")
+        past = getattr(getattr(model_and_tokenizer[0], "_cappr"), "past")
     except AttributeError:
         past = None
-
-    with hf._utils.set_up_tokenizer(tokenizer):
-        with nullcontext() if past is None else hf._utils.dont_add_bos_token(tokenizer):
-            encodings_prefixes: BatchEncodingPT = tokenizer(
-                prefixes, return_tensors="pt", padding=True
-            ).to(model.device)
-        model_for_causal_lm = (
-            model._cappr.model if isinstance(model, _ModelWithCache) else model
-        )
-        model_with_cache = _ModelWithCache(
-            model_for_causal_lm,
-            encodings_to_cache=encodings_prefixes,
-            past=past,
-            logits_all=logits_all,
-        )
-        # Now that model_with_cache has a past, we should never add a BOS token
-        with hf._utils.dont_add_bos_token(tokenizer):
-            yield model_with_cache, tokenizer
+    model_with_cache, tokenizer = cache_model(
+        model_and_tokenizer, prefixes, logits_all=logits_all
+    )
+    model_with_cache = cast(_ModelWithCache, model_with_cache)
+    # Now that model_with_cache has a past, we should never add a BOS token
+    with hf._utils.dont_add_bos_token(tokenizer), hf._utils.set_up_tokenizer(tokenizer):
+        yield model_with_cache, tokenizer
 
     if clear_cache_on_exit:
         # model_with_cache._cappr.past contains a lot of data—logits, past_key_values,

@@ -208,6 +208,34 @@ def test_cache(model: Llama):
     )
 
 
+def test_cache_model(model: Llama):
+    prompt_prefix = "a b c"
+    prompts = ["d", "d e"]
+    completions = ["e f", "f g"]
+
+    n_tokens = model.n_tokens
+    model = classify.cache_model(model, prompt_prefix)
+    log_probs_completions = classify.log_probs_conditional(
+        prompts, completions, model, reset_model=False
+    )
+    assert model.n_tokens > n_tokens
+    _test_form._test_log_probs_conditional(
+        log_probs_completions,
+        expected_len=len(prompts),
+        num_completions_per_prompt=[len(completions)] * len(prompts),
+    )
+
+    prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
+    model.reset()
+    log_probs_completions_wo_cache = _classify_no_cache.log_probs_conditional(
+        prompts_full, completions, model
+    )
+    assert model.n_tokens == 0
+    _test_content._test_log_probs_conditional(
+        log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
+    )
+
+
 def test_cache_examples(model: Llama):
     prompt_prefix = "a b c"
     _prompts = ["d", "d e"]
@@ -220,6 +248,38 @@ def test_cache_examples(model: Llama):
             examples, model, reset_model=False
         )
     assert model.n_tokens == n_tokens
+    _test_form._test_log_probs_conditional(
+        log_probs_completions,
+        expected_len=len(examples),
+        num_completions_per_prompt=[len(example.completions) for example in examples],
+    )
+
+    examples_full = [
+        Example(prompt_prefix + " " + example.prompt, example.completions)
+        for example in examples
+    ]
+    model.reset()
+    log_probs_completions_wo_cache = _classify_no_cache.log_probs_conditional_examples(
+        examples_full, model
+    )
+    assert model.n_tokens == 0
+    _test_content._test_log_probs_conditional(
+        log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
+    )
+
+
+def test_cache_model_examples(model: Llama):
+    prompt_prefix = "a b c"
+    _prompts = ["d", "d e"]
+    completions = ["e f", "f g"]
+    examples = [Example(prompt, completions) for prompt in _prompts]
+
+    n_tokens = model.n_tokens
+    model = classify.cache_model(model, prompt_prefix)
+    log_probs_completions = classify.log_probs_conditional_examples(
+        examples, model, reset_model=False
+    )
+    assert model.n_tokens > n_tokens
     _test_form._test_log_probs_conditional(
         log_probs_completions,
         expected_len=len(examples),

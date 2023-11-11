@@ -124,6 +124,69 @@ def token_logprobs(
 ########################################################################################
 
 
+def cache_model(model: Llama, prefix: str) -> Llama:
+    """
+    Caches the model so that every future computation with it starts with `prefix`. As a
+    result, computations with this model are faster.
+
+    Parameters
+    ----------
+    model : Llama
+        a model instantiated with ``logits_all=True``
+    prefix : str
+        prefix for all strings/prompts that will be processed in this context, e.g., a
+        set of shared instructions, or exemplars for few-shot prompting
+
+    Note
+    ----
+    When inputting this model to a function from this module, set the function's
+    `reset_model=False`.
+
+    Example
+    -------
+    Usage with :func:`predict_proba`::
+
+        import numpy as np
+        from llama_cpp import Llama
+        from cappr.llama_cpp.classify import cache_model, predict_proba
+
+        # Load model
+        # The top of this page has instructions to download this model
+        model_path = "./TinyLLama-v0.Q8_0.gguf"
+        # Always set logits_all=True for CAPPr
+        model = Llama(model_path, logits_all=True, verbose=False)
+
+        # Create data
+        prompt_prefix = "Once upon a time,"
+        prompts = ["there was", "in a land far far, far away,"]
+        completions = [
+            "a llama in pajamas",
+            "an alpaca in Havana",
+        ]
+
+        # Compute
+        model = cache_model(model, prompt_prefix)
+        # Always set reset_model=False
+        pred_probs = predict_proba(
+            prompts, completions, model, reset_model=False
+        )
+
+        # The above computation is equivalent to this one:
+        prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
+        pred_probs_wo_cache = predict_proba(
+            prompts_full, completions, model, reset_model=True
+        )
+        assert np.allclose(pred_probs, pred_probs_wo_cache)
+    """
+    if prefix:
+        # W/o the if condition, we'd eval on <bos> if there's no prefix and no cache
+        input_ids_prefix = model.tokenize(
+            prefix.encode("utf-8"), add_bos=model.n_tokens == 0
+        )
+        model.eval(input_ids_prefix)
+    return model
+
+
 @contextmanager
 def cache(model: Llama, prefix: str, reset_model: bool = True):
     """
@@ -143,7 +206,8 @@ def cache(model: Llama, prefix: str, reset_model: bool = True):
 
     Note
     ----
-    For functions in this context, set their `reset_model=False`.
+    In this context, when using a function from this module, set their
+    `reset_model=False`.
 
     Example
     -------
@@ -177,7 +241,7 @@ def cache(model: Llama, prefix: str, reset_model: bool = True):
         # The above computation is equivalent to this one:
         prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
         pred_probs_wo_cache = predict_proba(
-            prompts_full, completions, model
+            prompts_full, completions, model, reset_model=True
         )
         assert np.allclose(pred_probs, pred_probs_wo_cache)
     """
@@ -185,13 +249,7 @@ def cache(model: Llama, prefix: str, reset_model: bool = True):
         model.reset()
     n_tokens = model.n_tokens
     try:
-        if prefix:
-            # W/o the if condition, we'd eval on <bos> if there's no prefix and no cache
-            input_ids_prefix = model.tokenize(
-                prefix.encode("utf-8"), add_bos=n_tokens == 0
-            )
-            model.eval(input_ids_prefix)
-        yield model
+        yield cache_model(model, prefix)
     finally:
         model.n_tokens = n_tokens
 

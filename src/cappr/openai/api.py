@@ -15,13 +15,13 @@ import openai
 
 try:
     from openai import OpenAI
-except ImportError:  # pragma: no cover
-    OpenAI = type("OpenAI", (object,), {})  # pragma: no cover
-    _IS_OPENAI_AFTER_V1 = False  # pragma: no cover
+except ImportError:
+    OpenAI = type("OpenAI", (object,), {})
+    _IS_OPENAI_AFTER_V1 = False
     _RETRY_ERRORS = (
         openai.error.ServiceUnavailableError,
         openai.error.RateLimitError,
-    )  # pragma: no cover
+    )
 else:
     _IS_OPENAI_AFTER_V1 = True
     _RETRY_ERRORS = (openai.InternalServerError, openai.RateLimitError)
@@ -255,7 +255,7 @@ def _set_openai_api_key(api_key: str | None = None):
 def _to_dict(response) -> dict[str, Any]:
     if not hasattr(response, "model_dump"):
         # It's a dict b/c we're on openai < v1.0.0
-        return response  # pragma: no cover
+        return response
     else:
         # It's a pydantic model b/c we're on openai >= v1.0.0
         dump_nested_dicts = getattr(response, "model_dump")
@@ -327,7 +327,7 @@ def gpt_complete(
     """
     _check.ordered(texts, variable_name="texts")
     if not _IS_OPENAI_AFTER_V1:
-        openai_method = openai.Completion.create  # pragma: no cover
+        openai_method = openai.Completion.create
     else:
         openai_method = (
             openai.completions.create if client is None else client.completions.create
@@ -420,7 +420,7 @@ def gpt_chat_complete(
     """
     _check.ordered(texts, variable_name="texts")
     if not _IS_OPENAI_AFTER_V1:
-        openai_method = openai.ChatCompletion.create  # pragma: no cover
+        openai_method = openai.ChatCompletion.create
     else:
         openai_method = (
             openai.chat.completions.create
