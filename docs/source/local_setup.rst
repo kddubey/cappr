@@ -4,8 +4,8 @@ Local setup
 These instructions work for \*nix systems.
 
 
-Setup
------
+Python environment
+------------------
 
 #. Create a new Python 3.8+ virtual environment. Activate the venv. I use
    `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest/>`_. For this
@@ -40,18 +40,14 @@ Setup
       pre-commit install
 
 
-VS code extensions
-------------------
+IDE settings
+------------
 
-- `autoDocstring
-  <https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring>`_. Use
-  the numpy format, and check "Start On New Line"
+For VS Code, you should be prompted to install a few extensions if you don't already
+have them.
 
-- `Rewrap <https://stkb.github.io/Rewrap/>`_. Enable Auto Wrap
-
-- Set Python formatting to ``black``.
-
-And set the vertical line ruler to 88.
+For other IDEs, set Python formatting to `black <https://github.com/psf/black>`_, and
+set the vertical line ruler to 88.
 
 
 Testing
@@ -61,7 +57,7 @@ From the repo home directory ``cappr``::
 
    pytest
 
-Note that a few small transformers and tokenizers will be downloaded to your computer.
+A few small transformers and tokenizers will be downloaded to your computer.
 
 Sometimes I get worried about bigger code changes. So consider additionally testing
 statistical performance by running an appropriate demo in the repo's `demos
@@ -88,8 +84,9 @@ Release
 
 `Bump the version
 <https://github.com/kddubey/cappr/commit/d1f7dd51fa702c123bdfb0bcb97535995641c224>`_,
-and then create a new release on GitHub. A new version of the package will then be
-automatically published on PyPI.
+and then `create a new release on GitHub
+<https://github.com/kddubey/cappr/releases/new>`_. A new version of the package will
+then be automatically published on PyPI.
 
 Try to follow `semantic versioning <https://semver.org/>`_ guidelines, even though I
 haven't been great at that so far.

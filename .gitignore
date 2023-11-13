@@ -5,7 +5,6 @@ __pycache__/
 docs/_build
 docs/build
 dist/
-.vscode/
 .DS_Store
 demos/COPA-resources
 /tests/llama_cpp/fixtures/models/**
