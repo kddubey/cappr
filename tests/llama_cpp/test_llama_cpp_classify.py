@@ -20,8 +20,7 @@ from cappr.llama_cpp import _utils, classify, _classify_no_cache
 
 # sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
-from _base import BaseTestPromptsCompletions, BaseTestExamples
-import _test_form
+from _base import BaseTestPromptsCompletions, BaseTestExamples, BaseTestCache
 import _test_content
 
 
@@ -180,126 +179,6 @@ def test_token_logprobs(texts: Sequence[str], model: Llama, end_of_prompt=""):
     )
 
 
-def test_cache(model: Llama):
-    prompt_prefix = "a b c"
-    prompts = ["d", "d e"]
-    completions = ["e f", "f g"]
-
-    n_tokens = model.n_tokens
-    with classify.cache(model, prompt_prefix):
-        log_probs_completions = classify.log_probs_conditional(
-            prompts, completions, model, reset_model=False
-        )
-    assert model.n_tokens == n_tokens
-    _test_form._test_log_probs_conditional(
-        log_probs_completions,
-        expected_len=len(prompts),
-        num_completions_per_prompt=[len(completions)] * len(prompts),
-    )
-
-    prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
-    model.reset()
-    log_probs_completions_wo_cache = _classify_no_cache.log_probs_conditional(
-        prompts_full, completions, model
-    )
-    assert model.n_tokens == 0
-    _test_content._test_log_probs_conditional(
-        log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
-    )
-
-
-def test_cache_model(model: Llama):
-    prompt_prefix = "a b c"
-    prompts = ["d", "d e"]
-    completions = ["e f", "f g"]
-
-    n_tokens = model.n_tokens
-    model = classify.cache_model(model, prompt_prefix)
-    log_probs_completions = classify.log_probs_conditional(
-        prompts, completions, model, reset_model=False
-    )
-    assert model.n_tokens > n_tokens
-    _test_form._test_log_probs_conditional(
-        log_probs_completions,
-        expected_len=len(prompts),
-        num_completions_per_prompt=[len(completions)] * len(prompts),
-    )
-
-    prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
-    model.reset()
-    log_probs_completions_wo_cache = _classify_no_cache.log_probs_conditional(
-        prompts_full, completions, model
-    )
-    assert model.n_tokens == 0
-    _test_content._test_log_probs_conditional(
-        log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
-    )
-
-
-def test_cache_examples(model: Llama):
-    prompt_prefix = "a b c"
-    _prompts = ["d", "d e"]
-    completions = ["e f", "f g"]
-    examples = [Example(prompt, completions) for prompt in _prompts]
-
-    n_tokens = model.n_tokens
-    with classify.cache(model, prompt_prefix):
-        log_probs_completions = classify.log_probs_conditional_examples(
-            examples, model, reset_model=False
-        )
-    assert model.n_tokens == n_tokens
-    _test_form._test_log_probs_conditional(
-        log_probs_completions,
-        expected_len=len(examples),
-        num_completions_per_prompt=[len(example.completions) for example in examples],
-    )
-
-    examples_full = [
-        Example(prompt_prefix + " " + example.prompt, example.completions)
-        for example in examples
-    ]
-    model.reset()
-    log_probs_completions_wo_cache = _classify_no_cache.log_probs_conditional_examples(
-        examples_full, model
-    )
-    assert model.n_tokens == 0
-    _test_content._test_log_probs_conditional(
-        log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
-    )
-
-
-def test_cache_model_examples(model: Llama):
-    prompt_prefix = "a b c"
-    _prompts = ["d", "d e"]
-    completions = ["e f", "f g"]
-    examples = [Example(prompt, completions) for prompt in _prompts]
-
-    n_tokens = model.n_tokens
-    model = classify.cache_model(model, prompt_prefix)
-    log_probs_completions = classify.log_probs_conditional_examples(
-        examples, model, reset_model=False
-    )
-    assert model.n_tokens > n_tokens
-    _test_form._test_log_probs_conditional(
-        log_probs_completions,
-        expected_len=len(examples),
-        num_completions_per_prompt=[len(example.completions) for example in examples],
-    )
-
-    examples_full = [
-        Example(prompt_prefix + " " + example.prompt, example.completions)
-        for example in examples
-    ]
-    model.reset()
-    log_probs_completions_wo_cache = _classify_no_cache.log_probs_conditional_examples(
-        examples_full, model
-    )
-    assert model.n_tokens == 0
-    _test_content._test_log_probs_conditional(
-        log_probs_completions, log_probs_completions_wo_cache, is_single_input=False
-    )
-
-
 ########################################################################################
 ####################################### Tests ##########################################
 ########################################################################################
@@ -352,3 +231,29 @@ class TestExamples(Modules, BaseTestExamples):
 
     def test_predict_examples(self, examples: Example | Sequence[Example], model):
         super().test_predict_examples(examples, model)
+
+
+class TestCache(Modules, BaseTestCache):
+    def _test_log_probs_conditional(self, *args, **kwargs):
+        model: Llama = args[-1]
+        model.reset()  # reset cache before evaluating correct module
+        super()._test_log_probs_conditional(*args, **kwargs)
+
+    def _test_log_probs_conditional_examples(self, *args, **kwargs):
+        model: Llama = args[-1]
+        model.reset()  # reset cache before evaluating correct module
+        super()._test_log_probs_conditional_examples(*args, **kwargs)
+
+    def test_cache(
+        self, prompt_prefix: str, prompts: list[str], completions: list[str], model
+    ):
+        super().test_cache(
+            prompt_prefix, prompts, completions, model, reset_model=False
+        )
+
+    def test_cache_model(
+        self, prompt_prefix: str, prompts: list[str], completions: list[str], model
+    ):
+        super().test_cache_model(
+            prompt_prefix, prompts, completions, model, reset_model=False
+        )

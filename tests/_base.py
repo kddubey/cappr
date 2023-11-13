@@ -178,3 +178,126 @@ class BaseTestExamples(_BaseTest):
         self, examples: Example | Sequence[Example], *args, **kwargs
     ):
         self._test("predict_examples", examples, *args, **kwargs)
+
+
+@pytest.mark.parametrize("prompt_prefix", ("a b c",))
+@pytest.mark.parametrize("prompts", (["d", "d e"],))  # TODO: add single prompt
+@pytest.mark.parametrize(
+    "completions",
+    (
+        ["e f", "f g h i j"],  # multiple tokens
+        ["e", "f"],  # single tokens
+    ),
+)
+class BaseTestCache(_BaseTest):
+    def _test_log_probs_conditional(
+        self,
+        log_probs_completions_from_cached: list[list[list[float]]],
+        prompt_prefix: str,
+        prompts: list[str],
+        completions: list[str],
+        *model_args,
+        **kwargs,
+    ):
+        _test_form._test_log_probs_conditional(
+            log_probs_completions_from_cached,
+            expected_len=len(prompts),
+            num_completions_per_prompt=[len(completions)] * len(prompts),
+        )
+        prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
+        log_probs_completions_wo_cache = self.module_correct.log_probs_conditional(
+            prompts_full, completions, *model_args, **kwargs
+        )
+        _test_content._test_log_probs_conditional(
+            log_probs_completions_from_cached,
+            log_probs_completions_wo_cache,
+            is_single_input=False,
+        )
+
+    def _test_log_probs_conditional_examples(
+        self,
+        log_probs_completions_from_cached: list[list[list[float]]],
+        prompt_prefix: str,
+        examples: list[Example],
+        *model_args,
+        **kwargs,
+    ):
+        _test_form._test_log_probs_conditional(
+            log_probs_completions_from_cached,
+            expected_len=len(examples),
+            num_completions_per_prompt=[
+                len(example.completions) for example in examples
+            ],
+        )
+        examples_full = [
+            Example(prompt_prefix + " " + example.prompt, example.completions)
+            for example in examples
+        ]
+        log_probs_completions_wo_cache = (
+            self.module_correct.log_probs_conditional_examples(
+                examples_full, *model_args, **kwargs
+            )
+        )
+        _test_content._test_log_probs_conditional(
+            log_probs_completions_from_cached,
+            log_probs_completions_wo_cache,
+            is_single_input=False,
+        )
+
+    def test_cache(
+        self,
+        prompt_prefix: str,
+        prompts: list[str],
+        completions: list[str],
+        *model_args,
+        **kwargs,
+    ):
+        examples = [Example(prompt, completions) for prompt in prompts]
+        for module in self.modules_to_test:
+            with module.cache(*model_args, prompt_prefix) as cached:
+                log_probs_completions = module.log_probs_conditional(
+                    prompts, completions, cached, **kwargs
+                )
+                log_probs_completions_ex = module.log_probs_conditional_examples(
+                    examples, cached, **kwargs
+                )
+            self._test_log_probs_conditional(
+                log_probs_completions,
+                prompt_prefix,
+                prompts,
+                completions,
+                *model_args,
+                **kwargs,
+            )
+            self._test_log_probs_conditional_examples(
+                log_probs_completions_ex, prompt_prefix, examples, *model_args, **kwargs
+            )
+
+    def test_cache_model(
+        self,
+        prompt_prefix: str,
+        prompts: list[str],
+        completions: list[str],
+        *model_args,
+        **kwargs,
+    ):
+        examples = [Example(prompt, completions) for prompt in prompts]
+        for module in self.modules_to_test:
+            cached = module.cache_model(*model_args, prompt_prefix)
+            log_probs_completions = module.log_probs_conditional(
+                prompts, completions, cached, **kwargs
+            )
+            log_probs_completions_ex = module.log_probs_conditional_examples(
+                examples, cached, **kwargs
+            )
+            self._test_log_probs_conditional(
+                log_probs_completions,
+                prompt_prefix,
+                prompts,
+                completions,
+                *model_args,
+                **kwargs,
+            )
+            self._test_log_probs_conditional_examples(
+                log_probs_completions_ex, prompt_prefix, examples, *model_args, **kwargs
+            )

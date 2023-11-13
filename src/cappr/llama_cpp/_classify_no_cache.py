@@ -42,6 +42,7 @@ def log_probs_conditional(
 def log_probs_conditional_examples(
     examples: Example | Sequence[Example],
     model: Llama,
+    **kwargs,
 ) -> list[list[float]] | list[list[list[float]]]:
     return _no_cache.log_probs_conditional_examples(
         examples,

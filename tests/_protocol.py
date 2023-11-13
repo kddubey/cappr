@@ -1,10 +1,14 @@
 from __future__ import annotations
+from contextlib import _GeneratorContextManager
 from typing import Protocol, Sequence
 
 import numpy as np
 import numpy.typing as npt
 
 from cappr import Example
+
+
+Model = type("Model", (object,), {})
 
 
 class classify_module(Protocol):
@@ -15,6 +19,16 @@ class classify_module(Protocol):
     def token_logprobs(self, texts: str | Sequence[str], Any) -> list[list[float]]:
         """
         For each text, log Pr(token[i] | tokens[:i]) for each token
+        """
+
+    def cache(self, model: Model, prefix: str) -> _GeneratorContextManager[Model]:
+        """
+        Optional: context manager which caches the `model` with `prefix`
+        """
+
+    def cache_model(self, model: Model, prefix: str) -> Model:
+        """
+        Optional: returns a model cached with `prefix`
         """
 
     def log_probs_conditional(
