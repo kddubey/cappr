@@ -28,7 +28,8 @@ def token_logprobs(
     log_probs_texts_from_unbatched: Sequence[Sequence[Sequence[float]]],
     input_ids_from_unbatched: Sequence[Sequence[int]],
 ):
-    # TODO: separate form and content checks so that openai can be tested
+    # TODO: separate form and content checks, test number of tokens
+
     # The first logprob of every text must be None b/c no CausalLM estimates Pr(token)
     for log_probs_text_observed in log_probs_texts_observed:
         assert log_probs_text_observed[0] is None

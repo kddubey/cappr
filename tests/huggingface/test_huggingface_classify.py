@@ -220,7 +220,6 @@ def test_token_logprobs(
 
 
 def test_cache_logits(model_and_tokenizer, atol):
-    # TODO: abstract for llama tests
     delim = " "
     if not hf._utils.does_tokenizer_need_prepended_space(model_and_tokenizer[1]):
         # for SentencePiece tokenizers like Llama's
