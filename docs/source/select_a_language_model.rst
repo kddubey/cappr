@@ -115,7 +115,7 @@ For an example of running Llama 2, see `this notebook
 
 For an example of running an `AutoGPTQ`_ Mistral model, where we cache shared prompt
 instructions to save time and batch completions to save memory, see `this notebook
-<https://github.com/kddubey/cappr/blob/main/demos/huggingface/banking_77_classes.ipynb>`_.
+<https://github.com/kddubey/cappr/blob/main/demos/huggingface/craigslist_bargains.ipynb>`_.
 
 For a minimal example of running an `AutoAWQ`_ Mistral model, see `this notebook
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/autoawq.ipynb>`_.

@@ -59,7 +59,7 @@ def test___post_init__(
         Example(**modify_kwargs(kwargs_valid, prompt=[prompt]))
 
     # end_of_prompt - non-" "/""
-    _msg = 'end_of_prompt must be a whitespace " " or an empty string "".'
+    _msg = 'end_of_prompt must be a whitespace " " or empty string "".'
     with pytest.raises(TypeError, match=_msg):
         Example(**modify_kwargs(kwargs_valid, end_of_prompt=None))
     with pytest.raises(ValueError, match=_msg):

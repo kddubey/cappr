@@ -25,9 +25,8 @@ def _is_reversible(object) -> bool:
     # - str (but other places in this package filter those out before getting here)
     # Returns False for:
     # - set
-    # reversed(object) is often a generator, so checking this is often cheap.
     try:
-        reversed(object)
+        reversed(object)  # often a generator, so checking this is often cheap
     except TypeError:
         return False
     else:
@@ -38,9 +37,8 @@ def ordered(object: Sequence, variable_name: str):
     """
     Raises a `TypeError` is `object` is not a sequence.
     """
-    # This check isn't perfect, but it works well enough.
-    # I just want [x for x in object] to be meaningful and deterministic.
-    # Note: isinstance(object, Sequence) is not what I want. Sequence requires that
+    # Just want [x for x in object] to be meaningful and deterministic.
+    # isinstance(object, Sequence) is too restrictive. Sequence requires that
     # object.__class__ additionally implements index and count. See:
     # https://docs.python.org/3/library/collections.abc.html#collections-abstract-base-classes
     if not _is_reversible(object):
@@ -76,7 +74,7 @@ def completions(completions: Sequence[str]):
         raise TypeError(
             "completions cannot be a string. It must be a sequence of strings. If you "
             "intend on inputting a single completion to estimate its probability, wrap "
-            "it in a list or tuple and set normalize=False."
+            "it in a list or tuple (and set normalize=False in a predict_proba call)."
         )
     idxs_empty_completions = [
         i for i, completion in enumerate(completions) if not completion
@@ -84,7 +82,7 @@ def completions(completions: Sequence[str]):
     if len(idxs_empty_completions) == len(completions):
         raise ValueError(
             "All completions are empty. Expected all completions to be non-empty "
-            "strings. Did you mean to use the token_logprobs function instead?"
+            "strings."
         )
     elif idxs_empty_completions:
         raise ValueError(
@@ -95,9 +93,9 @@ def completions(completions: Sequence[str]):
 
 def end_of_prompt(end_of_prompt: Literal[" ", ""]):
     """
-    Raises an error if `end_of_prompt` is not a whitespace or an empty string.
+    Raises an error if `end_of_prompt` is not a whitespace or empty string.
     """
-    msg = 'end_of_prompt must be a whitespace " " or an empty string "".'
+    msg = 'end_of_prompt must be a whitespace " " or empty string "".'
     if not isinstance(end_of_prompt, str):
         raise TypeError(msg)
     if end_of_prompt not in {" ", ""}:
