@@ -43,8 +43,8 @@ Python environment
 IDE settings
 ------------
 
-For VS Code, you should be prompted to install a few extensions if you don't already
-have them.
+For VS Code, you should be prompted to install a few extensions (if you don't already
+have them) when you first launch this workspace.
 
 For other IDEs, set Python formatting to `black <https://github.com/psf/black>`_, and
 set the vertical line ruler to 88.
