@@ -24,6 +24,9 @@ seen in:
   <https://github.com/kddubey/cappr/blob/main/demos/huggingface/tweet_emotion_multilabel.ipynb>`_
   (a multilabel problem).
 
+.. raw:: html
+   :file: _static/spider_plot.html
+
 I'll study how replicable this result is across classification tasks, model sizes,
 architectures, and levels of quantization. I'll also study explanations for these
 results. The working hypothesis is two-fold:
