@@ -55,8 +55,8 @@ def token_logprobs(
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 texts
     add_bos : bool, optional
-        whether or not to add a beginning-of-sentence token to all `texts`, by default
-        False
+        whether or not to add a beginning-of-sentence token to each text in `texts` if
+        the tokenizer has a beginning-of-sentence token, by default False
     batch_size : int, optional
         the maximum number of `texts` that the model will process in parallel, by
         default 16
