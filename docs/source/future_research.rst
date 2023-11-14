@@ -1,5 +1,11 @@
+Future research
+===============
+
+Ongoing work in understanding CAPPr's statistical performance.
+
+
 The Misfit Toys Hypothesis
-==========================
+--------------------------
 
 Modern language models undergo two training stages: pretraining, and instruction
 training. When solving a classification task, it's tempting to lean on instruction-style
@@ -26,6 +32,9 @@ seen in:
 
 .. raw:: html
    :file: _static/spider_plot.html
+
+.. .. raw:: html
+..    <iframe src="http://127.0.0.1:8050" width="700" height="500"></iframe>
 
 I'll study how replicable this result is across classification tasks, model sizes,
 architectures, and levels of quantization. I'll also study explanations for these
