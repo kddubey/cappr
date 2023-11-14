@@ -6,8 +6,8 @@ Perform prompt-completion classification using a model which can be loaded via
 
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 
-In the implementation, attention block keys and values for prompts are cached and shared
-across completions.
+In the implementation, attention block keys and values for prompts are automatically
+cached and shared across completions.
 """
 from __future__ import annotations
 from contextlib import contextmanager, nullcontext
@@ -148,6 +148,10 @@ Index items:
     key/value hidden dimension = 64 for gpt2
 )
 """
+
+
+# past_key_values must be a tuple for model calls. So we have to do slightly costly
+# transfers from Python to CUDA. I don't think there's anything we can do about that.
 
 
 def _past_key_values_tuple_to_tensor(past_key_values: _PastKeyValues) -> torch.Tensor:
@@ -337,10 +341,11 @@ def cache_model(
 
     Note
     ----
-    You must ensure that any strings that are processed by the tokenizer start
-    correctly. Furthermore, if applicable, set ``tokenizer.add_bos_token = False`` for
-    future computations. Prefixes and future strings are assumed to be separated
-    by a whitespace if you're calling a function in this module, e.g., :func:`predict`.
+    If you're inputting the returned model and tokenizer to a function in this module,
+    e.g., :func:`predict`, `prefixes` and future strings are assumed to be separated by
+    a whitespace. Otherwise, you must ensure that any strings that are processed by the
+    tokenizer start correctly. Furthermore, if applicable, set ``tokenizer.add_bos_token
+    = False`` for future computations.
 
     Example
     -------
@@ -442,28 +447,10 @@ def cache(
 
     Note
     ----
-    In this context, you must ensure that any strings that are processed by the
-    tokenizer start correctly. Prefixes and future strings are assumed to be separated
-    by a whitespace if you're calling a function in this module, e.g., :func:`predict`.
-
-    Warning
-    -------
-    Do **not**::
-
-        with cache(model_and_tokenizer, "string") as model_and_tokenizer:
-            # use model_and_tokenizer
-
-        # The original, uncached model_and_tokenizer object has been
-        # overwritten!
-        # This is almost always not what you want. Name the returned model
-        # and tokenizer something else:
-        with cache(
-            model_and_tokenizer, "string"
-        ) as cached_model_and_tokenizer:
-            # use cached_model_and_tokenizer
-
-        # Now you can use model_and_tokenizer for computations outside of
-        # the context. Its state is completely unchanged.
+    If you're inputting the returned model and tokenizer to a function in this module,
+    e.g., :func:`predict`, `prefixes` and future strings are assumed to be separated by
+    a whitespace. Otherwise, in this context, you must ensure that any strings that are
+    processed by the tokenizer start correctly.
 
     Example
     -------
