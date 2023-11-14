@@ -68,7 +68,7 @@ This model must be able to be loaded using
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from cappr.huggingface.classify import predict
 
-# Load a model and its corresponding tokenizer
+# Load a model and its tokenizer
 model_name = "gpt2"
 model = AutoModelForCausalLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -180,7 +180,7 @@ the class.
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from cappr.huggingface.classify import predict_proba
 
-# Load a model and its corresponding tokenizer
+# Load a model and its tokenizer
 model_name = "gpt2"
 model = AutoModelForCausalLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -236,7 +236,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from cappr.huggingface.classify import predict_proba_examples
 from cappr import Example
 
-# Load a model and its corresponding tokenizer
+# Load a model and its tokenizer
 model_name = "gpt2"
 model = AutoModelForCausalLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)

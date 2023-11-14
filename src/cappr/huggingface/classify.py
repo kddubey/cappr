@@ -47,7 +47,7 @@ def token_logprobs(
     texts : str | Sequence[str]
         input text(s)
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
-        an instantiated model and its corresponding tokenizer
+        a model and its tokenizer
     end_of_prompt : Literal[' ', ''], optional
         This string gets added to the beginning of each text. It's important to set this
         if you're using the discount feature. Otherwise, set it to "". By default " "
@@ -325,7 +325,7 @@ def cache_model(
     Parameters
     ----------
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
-        an instantiated model and its corresponding tokenizer
+        a model and its tokenizer
     prefixes : str | Sequence[str]
         prefix(es) for all strings that will be processed in this context, e.g., a
         string containing shared prompt instructions, or a string containing
@@ -432,7 +432,7 @@ def cache(
     Parameters
     ----------
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
-        an instantiated model and its corresponding tokenizer
+        a model and its tokenizer
     prefixes : str | Sequence[str]
         prefix(es) for all strings that will be processed in this context, e.g., a
         string containing shared prompt instructions, or a string containing
@@ -800,7 +800,7 @@ def log_probs_conditional(
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
-        an instantiated model and its corresponding tokenizer
+        a model and its tokenizer
     end_of_prompt : Literal[' ', ''], optional
         whitespace or empty string to join prompt and completion, by default whitespace
     show_progress_bar : bool | None, optional
@@ -901,7 +901,7 @@ def log_probs_conditional_examples(
         `Example` object(s), where each contains a prompt and its set of possible
         completions
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
-        an instantiated model and its corresponding tokenizer
+        a model and its tokenizer
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 `examples`
@@ -1021,7 +1021,7 @@ def predict_proba(
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
-        an instantiated model and its corresponding tokenizer
+        a model and its tokenizer
     prior : Sequence[float] | None, optional
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
@@ -1132,7 +1132,7 @@ def predict_proba_examples(
         `Example` object(s), where each contains a prompt and its set of possible
         completions
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
-        an instantiated model and its corresponding tokenizer
+        a model and its tokenizer
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 `examples`
@@ -1224,7 +1224,7 @@ def predict(
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
-        an instantiated model and its corresponding tokenizer
+        a model and its tokenizer
     prior : Sequence[float] | None, optional
         a probability distribution over `completions`, representing a belief about their
         likelihoods regardless of the prompt. By default, each completion in
@@ -1315,7 +1315,7 @@ def predict_examples(
         `Example` object(s), where each contains a prompt and its set of possible
         completions
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
-        an instantiated model and its corresponding tokenizer
+        a model and its tokenizer
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 `examples`

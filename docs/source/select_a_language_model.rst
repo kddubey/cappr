@@ -36,7 +36,7 @@ Here's a quick example (which will download a small GPT-2 model to your computer
    from transformers import AutoModelForCausalLM, AutoTokenizer
    from cappr.huggingface.classify import predict
 
-   # Load a model and its corresponding tokenizer
+   # Load a model and its tokenizer
    model_name = "gpt2"
    model = AutoModelForCausalLM.from_pretrained(model_name)
    tokenizer = AutoTokenizer.from_pretrained(model_name)
