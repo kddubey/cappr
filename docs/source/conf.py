@@ -118,3 +118,9 @@ def linkcode_resolve(domain, info):
 
     file = file.lstrip("../")
     return f"{code_url}/{file}#L{start}-L{end}"
+
+
+# ty https://stackoverflow.com/q/67473396/18758987
+autodoc_type_aliases = {
+    "Sequence": "Sequence",
+}
