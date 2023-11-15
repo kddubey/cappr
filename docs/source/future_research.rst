@@ -57,15 +57,27 @@ The `calibration
 of CAPPr estimates has barely been studied. These estimates are slightly different than
 usual next-token probability estimates because:
 
-#. CAPPr hackily takes a mean over next-token probabilities
-
-#. CAPPr can incorporate a prior specific to your classification data.
+- CAPPr hackily takes a mean over next-token probabilities
+- CAPPr can incorporate a prior specific to your classification data.
 
 The `Banking 77 demo`_ contains two low-resolution but interesting calibration curves.
 Here's the nice-looking curve:
 
 .. figure:: _static/calibration/banking_77_classes.png
    :align: center
+
+
+Ideas dump
+----------
+
+#. Given a task which benefits from CoT, collect data like so: prompt -> CoT ->
+   summarize using powerful model -> final answer. Train a model on (prompt, final
+   answer) to see whether CoT can be skipped for that task. Benefit: lower latency.
+
+#. For classification, instead of adding a linear layer, just train using a
+   prompt-completion format. Like a baseline + autoregressive version of PET training.
+   Has probably been done before, but curious why it isn't the standard method.
+
 
 .. _COPA demo: https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb
 
