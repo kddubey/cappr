@@ -28,4 +28,4 @@ strategies and their formats on an independent test set.
 ## Acknowledgements
 
 Thank you to the Refuel [autolabel](https://github.com/refuel-ai/autolabel/) team for
-finding good classification tasks and performant prompts.
+finding good classification tasks and writing performant prompts.
