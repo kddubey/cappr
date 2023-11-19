@@ -45,9 +45,9 @@ succeeds):
    result = model + prompt + select(class_names_prepended)
    print(str(result).removeprefix(prompt + " "))
    # The product is great
-   # Wrong.
-   # Other prompts, including beefier versions of CAPPr's prompt (on the
-   # previous page) also fail
+
+(Other prompts, including beefier versions of CAPPr's prompt on the previous page also
+fail.)
 
 CAPPr doesn't try to be a heavyweight LLM query/programming language. It's aimed at
 solving text classification problems, and is hopefully quite easy to pick up. CAPPr also

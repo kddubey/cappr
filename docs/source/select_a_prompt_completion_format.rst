@@ -120,8 +120,9 @@ system prompt for an instruction-trained model. For example:
    # tennis player
    # scientist
 
-.. warning:: CAPPr hasn't been systematically evaluated on completion strings which are
-             longer than 30 tokens. Consider this domain uncharted and risky for CAPPr.
+.. warning:: CAPPr hasn't been systematically evaluated on ``completions`` where some
+             are longer than 30 tokens. Consider this domain uncharted and risky for
+             CAPPr.
 
 
 Examples
@@ -266,12 +267,9 @@ For models using SentencePiece tokenization, e.g., Llama and Mistral, only
 
    {prompt} {completion}
 
-formats are possible. In other words, ``end_of_prompt`` is always a
-whitespace, regardless of your input.
-
-The placement of whitespaces can also affect performance. Instead of setting
-``end_of_prompt=" "``, consider adding this whitespace to the end of the ``prompt``
-string.
+formats are possible. In other words, ``end_of_prompt`` is always a whitespace,
+regardless of your input. The placement of whitespaces can also affect performance.
+Consider adding the whitespace to the end of the ``prompt`` string.
 
 Another quirk is that when using a Concat-Class style prompt with a less
 instruction-trained model, it's possible to achieve higher accuracy by abandoning the
