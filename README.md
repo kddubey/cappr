@@ -336,6 +336,10 @@ For open source models, see
 In general, you should expect similar or identical performance to text generation when
 every completion is 1 token long.
 
+See [this page of the
+documentation](https://cappr.readthedocs.io/en/latest/computational_performance.html)
+for some discussion.
+
 For OpenAI models (about to be deprecated), see
 
 [2 SuperGLUE
@@ -395,3 +399,5 @@ I'm dumping TODOs here:
 [Code changes](https://github.com/users/kddubey/projects/1/views/1)
 
 [Reseach experiments](https://github.com/users/kddubey/projects/2)
+
+Feel free to raise issues ofc
