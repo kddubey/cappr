@@ -3,7 +3,7 @@ Base classes which are parametrized with a set of test cases which every `classi
 module must pass.
 """
 from __future__ import annotations
-from typing import Collection, Sequence
+from typing import Sequence
 
 import pandas as pd
 import pytest
@@ -32,11 +32,9 @@ class _BaseTest:
         raise NotImplementedError
 
     @property
-    def modules_to_test(self) -> Collection[classify_module]:
+    def module(self) -> classify_module:
         """
-        `classify` modules which need to be tested. Usually just::
-
-            (cappr.your_new_backend.classify,)
+        `classify` module which needs to be tested.
         """
         raise NotImplementedError
 
@@ -47,16 +45,12 @@ class _BaseTest:
         exists a reference implementation to test against.
         """
         test_form = getattr(_test_form, function)
-        for module in self.modules_to_test:
-            test_form(module, *args, **kwargs)
+        test_form(self.module, *args, **kwargs)
         if self.module_correct is None:
-            # We can't test the form or content. Done.
             return
-        # We can test the form of this module and the content of the others.
         test_form(self.module_correct, *args, **kwargs)
         test_content = getattr(_test_content, function)
-        for module in self.modules_to_test:
-            test_content(self.module_correct, module, *args, **kwargs)
+        test_content(self.module_correct, self.module, *args, **kwargs)
 
 
 @pytest.mark.parametrize(
@@ -253,25 +247,24 @@ class BaseTestCache(_BaseTest):
         **kwargs,
     ):
         examples = [Example(prompt, completions) for prompt in prompts]
-        for module in self.modules_to_test:
-            with module.cache(*model_args, prompt_prefix) as cached:
-                log_probs_completions = module.log_probs_conditional(
-                    prompts, completions, cached, **kwargs
-                )
-                log_probs_completions_ex = module.log_probs_conditional_examples(
-                    examples, cached, **kwargs
-                )
-            self._test_log_probs_conditional(
-                log_probs_completions,
-                prompt_prefix,
-                prompts,
-                completions,
-                *model_args,
-                **kwargs,
+        with self.module.cache(*model_args, prompt_prefix) as cached:
+            log_probs_completions = self.module.log_probs_conditional(
+                prompts, completions, cached, **kwargs
             )
-            self._test_log_probs_conditional_examples(
-                log_probs_completions_ex, prompt_prefix, examples, *model_args, **kwargs
+            log_probs_completions_ex = self.module.log_probs_conditional_examples(
+                examples, cached, **kwargs
             )
+        self._test_log_probs_conditional(
+            log_probs_completions,
+            prompt_prefix,
+            prompts,
+            completions,
+            *model_args,
+            **kwargs,
+        )
+        self._test_log_probs_conditional_examples(
+            log_probs_completions_ex, prompt_prefix, examples, *model_args, **kwargs
+        )
 
     def test_cache_model(
         self,
@@ -282,22 +275,21 @@ class BaseTestCache(_BaseTest):
         **kwargs,
     ):
         examples = [Example(prompt, completions) for prompt in prompts]
-        for module in self.modules_to_test:
-            cached = module.cache_model(*model_args, prompt_prefix)
-            log_probs_completions = module.log_probs_conditional(
-                prompts, completions, cached, **kwargs
-            )
-            log_probs_completions_ex = module.log_probs_conditional_examples(
-                examples, cached, **kwargs
-            )
-            self._test_log_probs_conditional(
-                log_probs_completions,
-                prompt_prefix,
-                prompts,
-                completions,
-                *model_args,
-                **kwargs,
-            )
-            self._test_log_probs_conditional_examples(
-                log_probs_completions_ex, prompt_prefix, examples, *model_args, **kwargs
-            )
+        cached = self.module.cache_model(*model_args, prompt_prefix)
+        log_probs_completions = self.module.log_probs_conditional(
+            prompts, completions, cached, **kwargs
+        )
+        log_probs_completions_ex = self.module.log_probs_conditional_examples(
+            examples, cached, **kwargs
+        )
+        self._test_log_probs_conditional(
+            log_probs_completions,
+            prompt_prefix,
+            prompts,
+            completions,
+            *model_args,
+            **kwargs,
+        )
+        self._test_log_probs_conditional_examples(
+            log_probs_completions_ex, prompt_prefix, examples, *model_args, **kwargs
+        )

@@ -355,8 +355,8 @@ class Modules:
         return classify_no_cache
 
     @property
-    def modules_to_test(self):
-        return (classify,)
+    def module(self):
+        return classify
 
 
 class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
