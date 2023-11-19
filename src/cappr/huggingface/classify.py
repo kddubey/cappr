@@ -95,15 +95,10 @@ def token_logprobs(
         end_of_prompt = ""
     texts = [end_of_prompt + text for text in texts]
 
-    # Batch inference
     with hf._utils.dont_add_bos_token(tokenizer) if not add_bos else nullcontext():
         logits, encodings = hf._utils.logits_texts(
             texts, (model, tokenizer), drop_bos_token=not add_bos
         )
-
-    # Convert next-token logits to this-token logprobs
-    # It's still wrong to set input_ids_start_idx=0 for tokenizers which add a bos
-    # token (like SentencePiece for Llama). Pr(token | <s>) is not Pr(token)
     log_probs_texts = hf._utils.logits_to_log_probs(
         logits=logits,
         input_ids=encodings["input_ids"],
