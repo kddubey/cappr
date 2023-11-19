@@ -174,7 +174,7 @@ def log_probs_conditional(
 
     Example
     -------
-    Here we'll use single characters (which are of course single tokens) to more clearly
+    Here we'll use single characters (which are single tokens) to more clearly
     demonstrate what this function does::
 
         from cappr.openai.classify import log_probs_conditional
@@ -277,7 +277,7 @@ def log_probs_conditional_examples(
 
     Example
     -------
-    Here we'll use single characters (which are of course single tokens) to more clearly
+    Here we'll use single characters (which are single tokens) to more clearly
     demonstrate what this function does::
 
         from cappr import Example

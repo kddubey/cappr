@@ -10,13 +10,12 @@ maintaining a simple interface.
 
 Here are some papers which focus on the idea of aggregating token probabilities.
 
-While `benchmarking this method
-<https://github.com/kddubey/cappr/blob/main/demos/openai/superglue/wsc.ipynb>`_ on the
-Winograd Schema Challenge, I found that `this paper
-<https://arxiv.org/abs/1806.02847>`_\ [#]_ presents a transposed version of CAPPr.
+`This paper <https://arxiv.org/abs/1806.02847>`_\ [#]_ presents a transposed version of
+CAPPr. Its method was used in CAPPr's `demo for the Winograd Schema Challenge
+<https://github.com/kddubey/cappr/blob/main/demos/openai/superglue/wsc.ipynb>`_.
 
 `PET with multiple masks <https://arxiv.org/abs/2009.07118>`_\ [#]_ also aggregates
-token probabilities to do prompt-completion classification, but these probabilities are
+token probabilities to do prompt-completion classification. But these probabilities are
 assumed to come from masked language models like BERT.
 
 References

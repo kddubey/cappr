@@ -1,11 +1,5 @@
-Future research
-===============
-
-Ongoing work in understanding CAPPr's statistical performance.
-
-
-The Misfit Toys Hypothesis
---------------------------
+Statistical performance
+=======================
 
 Modern language models undergo two training stages: pretraining, and instruction
 training. When solving a classification task, it's tempting to lean on instruction-style
@@ -14,7 +8,7 @@ multi-GPU, proprietary models. But what about smaller, open source ones? Perhaps
 are smaller or undertrained models which are not good at generating a choice, but are
 good at estimating probabilities.
 
-A handful of experiments suggest that CAPPr squeezes more out of smaller LLMs for text
+A handful of experiments suggests that CAPPr squeezes more out of smaller LLMs for text
 classification tasks. In the `OpenAI COPA demo
 <https://github.com/kddubey/cappr/blob/main/demos/openai/superglue/copa.ipynb>`_, text
 generation using OpenAI's smaller model, ``text-curie-001``, is less than 50% accurate,
@@ -37,16 +31,18 @@ seen in:
 
 ..    <iframe src="http://127.0.0.1:8050" width="700" height="500"></iframe>
 
-I'll study how replicable this result is across classification tasks, model sizes,
-architectures, and levels of quantization. I'll also study explanations for these
-results. The working hypothesis is two-fold:
+I'll study how replicable this result is across classification tasks, model sizes, and
+levels of quantization. I'll also study explanations for these results. The working
+hypothesis is two-fold:
 
 - CAPPr-style `prompt-completion formats
   <https://cappr.readthedocs.io/en/latest/select_a_prompt_completion_format.html>`_ can
-  look more like pretraining data. This is demonstrated in the `COPA demo`_
-- In text generation, the model can generate "I don't know", or make a choice that's
-  difficult to map to the given list of choices. CAPPr instead has the model make its
-  "best" guess among the given choices. This is demonstrated in the `Banking 77 demo`_.
+  look more like pretraining data, which is typically where a lot of learning happens.
+  This is demonstrated in the `COPA demo`_
+- Despite strict instructions not to, models can generate "I don't know", or make a
+  choice that's difficult to map to the given list of choices. CAPPr instead has the
+  model make its "best" guess among the given choices. This is demonstrated in the
+  `Banking 77 demo`_.
 
 
 Calibration
@@ -75,8 +71,8 @@ Ideas dump
    answer) to see whether CoT can be skipped for that task. Benefit: lower latency.
 
 #. For classification, instead of adding a linear layer, just train using a
-   prompt-completion format. Like a baseline + autoregressive version of PET training.
-   Has probably been done before, but curious why it isn't the standard method.
+   prompt-completion format. This method is a simpler, autoregressive version of PET
+   training. Has probably been done before, but I'm curious to see the improvement.
 
 
 .. _COPA demo: https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb

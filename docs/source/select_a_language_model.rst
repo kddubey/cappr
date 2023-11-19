@@ -3,15 +3,15 @@ Select a language model
 
 CAPPr typically works better with larger, instruction-trained models. But it may be able
 to `squeeze more out of smaller models
-<https://cappr.readthedocs.io/en/latest/future_research.html>`_ than other methods. So
-don't sleep on the little Llamas or Mistrals out there, especially if they've been
-trained for your application.
+<https://cappr.readthedocs.io/en/latest/statistical_performance.html>`_ than other
+methods. So don't sleep on the little Llamas or Mistrals out there, especially if
+they've been trained for your application.
 
 Besides that, selecting a language model is almost entirely a process of trial and
 error, balancing statistical performance with computational constraints. It should be
 easy to plug and play though.
 
-For CAPPr, `GPTQd models <https://huggingface.co/models?sort=trending&search=gptq>`_ are
+For CAPPr, `GPTQ models <https://huggingface.co/models?sort=trending&search=gptq>`_ are
 the most computationally performant. `Mistral trained on OpenOrca
 <https://huggingface.co/TheBloke/Mistral-7B-OpenOrca-GPTQ>`_ is statistically
 performant. These models are compatible with :mod:`cappr.huggingface.classify`.
@@ -21,11 +21,10 @@ HuggingFace
 -----------
 
 To work with models which implement the ``transformers`` CausalLM interface, including
-`AutoGPTQ`_ and `AutoAWQ`_ models, CAPPr depends on the `transformers
-<https://github.com/huggingface/transformers>`_ package. You can search the `HuggingFace
-model hub <https://huggingface.co/models>`_ for these models.
+`AutoGPTQ`_ and `AutoAWQ`_ models, CAPPr depends on the ``transformers`` package. Search
+the `HuggingFace model hub <https://huggingface.co/models>`_ for these models.
 
-.. note:: For ``transformers>=4.32.0``, GPTQd models `can be loaded
+.. note:: For ``transformers>=4.32.0``, GPTQ models `can be loaded
           <https://huggingface.co/docs/transformers/main/en/main_classes/quantization#autogptq-integration>`_
           using ``transformers.AutoModelForCausalLM.from_pretrained``.
 
@@ -53,8 +52,7 @@ So far, CAPPr has been tested for code correctness on the following architecture
 - GPT-2
 - GPT-J
 - GPT-NeoX (including StableLM)
-- Llama
-- Llama 2
+- Llama, Llama 2
 - Mistral.
 
 You'll need access to beefier hardware to run models from the HuggingFace hub, as
@@ -81,15 +79,15 @@ arguments, respectively. Decreasing their values decreases peak memory usage but
 runtime. Increasing their values decreases runtime but costs memory.
 
 :mod:`cappr.huggingface.classify` can also cache shared instructions for prompts,
-resulting in a modest speedup. See :func:`cappr.huggingface.classify.cache`.
+resulting in a modest speedup. See :func:`cappr.huggingface.classify.cache_model`.
 
 :mod:`cappr.huggingface.classify_no_cache` may be compatible with a slightly
 broader class of architectures and model interfaces. Here, the model is only assumed to
 input token/input IDs and an attention mask, and then output logits for each input ID.
 
-.. note:: For ``transformers>=4.35.0``, AWQd models `can be loaded
+.. note:: For ``transformers>=4.35.0``, AWQ models `can be loaded
           <https://huggingface.co/docs/transformers/main/en/main_classes/quantization#awq-integration>`_
-          using ``transformers.AutoModelForCausalLM.from_pretrained``. AWQd models
+          using ``transformers.AutoModelForCausalLM.from_pretrained``. AWQ models
           loaded this way are compatible with :mod:`cappr.huggingface.classify`.
 
 In particular, :mod:`cappr.huggingface.classify_no_cache` is compatible with models
@@ -136,8 +134,8 @@ Llama CPP
 ---------
 
 To work with models stored in the GGUF format, CAPPr depends on the `llama-cpp-python
-<https://github.com/abetlen/llama-cpp-python>`_ package. You can search the `HuggingFace
-model hub <https://huggingface.co/models?sort=trending&search=gguf>`_ for these models.
+<https://github.com/abetlen/llama-cpp-python>`_ package. Search the `HuggingFace model
+hub <https://huggingface.co/models?sort=trending&search=gguf>`_ for these models.
 
 .. note:: When instantiating your Llama, set ``logits_all=True``.
 
@@ -208,19 +206,18 @@ Here's a quick example:
    print(pred)
    # too long
 
-CAPPr is currently only compatible with `/v1/completions`_ models (because we can
-request log-probabilities of tokens in an *inputted* string). **OpenAI will deprecate
-all instruct models on January 4, 2024**, leaving only ``davinci-002`` and
-``babbage-002`` (weak, non-instruction-trained models) to be compatible with CAPPr.
-While ``gpt-3.5-turbo-instruct`` is compatible with `/v1/completions`_, this model
-doesn't support `echo=True, logprobs=1` since October 5, 2023. So CAPPr can't support
-this model.
+CAPPr is currently only compatible with `/v1/completions`_ models where
+log-probabilities of *inputted* tokens can be requested, via `echo=True, logprobs=1`. On
+January 4, 2024, OpenAI will deprecate all of these models except ``davinci-002`` and
+``babbage-002``—weak, non-instruction-trained models. While ``gpt-3.5-turbo-instruct``
+is compatible with `/v1/completions`_, this model stopped supporting `echo=True,
+logprobs=1` on October 5, 2023. So CAPPr can't support this model.
 
 .. _/v1/completions: https://platform.openai.com/docs/models/model-endpoint-compatibility
 
 .. warning:: Currently, :mod:`cappr.openai.classify` must repeat the ``prompt`` for
-             however many completions there are. So if your prompt is long and your
-             completions are short, you may end up spending much more with CAPPr.
+             however many completions there are. So if your prompt is long and you have
+             many completions, you may end up spending much more with CAPPr.
              (:mod:`cappr.huggingface.classify` and :mod:`cappr.llama_cpp.classify` do
              not repeat the prompt because they cache its representation.)
 
@@ -228,16 +225,14 @@ this model.
 Examples
 ~~~~~~~~
 
-Great zero-shot COPA performance is achieved in `this notebook
-<https://github.com/kddubey/cappr/blob/main/demos/openai/superglue/copa.ipynb>`_.
+`COPA <https://github.com/kddubey/cappr/blob/main/demos/openai/superglue/copa.ipynb>`_
 
-Great zero-shot WSC performance with ``text-curie-001`` is achieved in `this notebook
-<https://github.com/kddubey/cappr/blob/main/demos/openai/superglue/wsc.ipynb>`_.
+`WSC <https://github.com/kddubey/cappr/blob/main/demos/openai/superglue/wsc.ipynb>`_
 
 Decent performance on RAFT training sets is demonstrated in `these notebooks
 <https://github.com/kddubey/cappr/blob/main/demos/openai/raft>`_.
 
-For minimal examples you can run quickly run, see the **Example** section for each of
+For minimal examples you can quickly run, see the **Example** section for each of
 these functions:
 
 :func:`cappr.openai.classify.predict`

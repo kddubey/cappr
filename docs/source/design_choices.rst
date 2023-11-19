@@ -31,7 +31,7 @@ class which all LM interfaces inherit from / implement.
            cls,
            prompts: str | Sequence[str],
            completions: Sequence[str],
-           model: str,
+           model,
            **kwargs,
        ) -> list[list[float]] | list[list[list[float]]]:
            pass
@@ -42,7 +42,7 @@ class which all LM interfaces inherit from / implement.
            cls,
            prompts: str | Sequence[str],
            completions: Sequence[str],
-           model: str,
+           model,
            **kwargs,
        ) -> npt.NDArray[np.floating]:
            log_probs_completions = cls.log_probs_conditional(
@@ -61,7 +61,7 @@ class which all LM interfaces inherit from / implement.
            cls,
            prompts: str | Sequence[str],
            completions: Sequence[str],
-           model: str,
+           model,
            **kwargs,
        ) -> str | list[str]:
            pred_probs = cls.predict_proba(prompts, completions, model, **kwargs)
@@ -87,7 +87,7 @@ There is a small cost to this design. Enabling the simple import interface—
 
 —would require adding a bit of logic to ``__init__.py`` and Sphinx's
 ``docs/source/conf.py`` for every new interface. I could automate this stuff by
-implementing even more, slightly tricky logic. But more logic is worse than less logic.
+implementing some slightly tricky logic. But more logic is worse than less logic.
 
 Overall, this design doesn't align with my style. Inheritance isn't needed to achieve
 function wrapping. Decorators are sufficient.
@@ -122,13 +122,8 @@ Context managers
 The HuggingFace interface requires that the ``model_and_tokenizer`` input is set up in a
 particular way. It looks like many other tools solve this problem by creating a loading
 function or method which does the required set up. Its returned object is internal to
-the package.
-
-I don't like this solution because it sacrifices some user conveniences. The user can't
-easily use their package-specific initialization method (which usually comes with a
-helpful docstring), or copy-paste initialization code from elsewhere. This design also
-forces the user to potentially re-load the model if they're using it elsewhere and the
-package doesn't internally cache it, which costs a lot of time.
+the package. I don't think this extra abstraction is necessary. And it comes at the
+small cost of requiring the user to learn a new way to load their model.
 
 Instead, ``cappr.huggingface`` lets the user initialize the object however they want. It
 then internally sets it up as required, rolling back these changes when finished. This
@@ -143,8 +138,8 @@ This package will do one thing well: pick a completion from a user-created promp
 users need or want to use a string formatter, that's on them.
 
 
-Repeating docstrings
---------------------
+Repeat docstrings
+-----------------
 
 Lots of text in docstrings are repeated. After all, every LM interface is implementing a
 protocol.
@@ -220,8 +215,8 @@ for other tools answer, or successfully dodge, these questions much more effecti
 Pleasant surprises
 ------------------
 
-See the `Misfit Toys Hypothesis
-<https://cappr.readthedocs.io/en/latest/future_research.html>`_.
+See `this page of the documentation
+<https://cappr.readthedocs.io/en/latest/statistical_performance.html>`_.
 
 Besides the algorithmic stuff, I was pleasantly surprised to find that I enjoyed
 engineering this project from the ground up. Mulling over design decisions and managing

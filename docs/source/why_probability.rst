@@ -8,16 +8,18 @@ it returns a string. You might be wondering why you'd ever use ``predict_proba``
 ``predict`` seemingly gives you what you need: a single choice.
 
 In high stakes applications, probability scores can be thresholded to determine whether
-or not to bypass intermediate systems. For example, if a model is highly confident that
-a social media post contains hate speech, then your system can bypass manual review of
+or not to bypass manual systems. For example, if a model is highly confident that a
+social media post contains hate speech, then your system can bypass manual review of
 that post. If it isn't confident enough, then manual review is needed.
+
+At a higher level, probabilities are useful when making cost-sensitive decisions.\ [#]_
 
 Another application where predicting probabilities turns out to be useful is in
 "multilabel" tasks. In these tasks, a single piece of text can be labeled or tagged with
 multiple categories. For example, a tweet can express multiple emotions at the same
 time. A simple way to have an LLM tag a tweet's emotions is to predict the probability
 of each emotion, and then threshold each probability. All possible emotions can be
-processed in parallel, which saves time.
+processed in parallel to save time.
 
 
 Examples
@@ -32,3 +34,10 @@ predicted probabilities.
 See `this demo
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/tweet_emotion_multilabel.ipynb>`_
 for an example of solving a multilabel classification task.
+
+
+References
+----------
+
+.. [#] Briggs, Rachael A. "Normative theories of rational choice: Expected utility."
+    (2014).

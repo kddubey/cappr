@@ -10,4 +10,4 @@ The CAPPr method is fleshed out in my `question on Cross Validated
 
    related_work
    computational_performance
-   future_research
+   statistical_performance

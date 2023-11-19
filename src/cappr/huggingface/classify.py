@@ -341,11 +341,11 @@ def cache_model(
 
     Note
     ----
-    If you're inputting the returned model and tokenizer to a function in this module,
+    If you're inputting the cached model and tokenizer to a function in this module,
     e.g., :func:`predict`, `prefixes` and future strings are assumed to be separated by
-    a whitespace. Otherwise, you must ensure that any strings that are processed by the
-    tokenizer start correctly. Furthermore, if applicable, set ``tokenizer.add_bos_token
-    = False`` for future computations.
+    a whitespace. Otherwise, ensure that any strings that are processed by the tokenizer
+    start correctly. Furthermore, if applicable, set ``tokenizer.add_bos_token = False``
+    for future computations.
 
     Example
     -------
@@ -447,10 +447,10 @@ def cache(
 
     Note
     ----
-    If you're inputting the returned model and tokenizer to a function in this module,
+    If you're inputting the cached model and tokenizer to a function in this module,
     e.g., :func:`predict`, `prefixes` and future strings are assumed to be separated by
-    a whitespace. Otherwise, in this context, you must ensure that any strings that are
-    processed by the tokenizer start correctly.
+    a whitespace. Otherwise, ensure that any strings that are processed by the tokenizer
+    start correctly.
 
     Example
     -------
@@ -835,7 +835,7 @@ def log_probs_conditional(
 
     Example
     -------
-    Here we'll use single characters (which are of course single tokens) to more clearly
+    Here we'll use single characters (which are single tokens) to more clearly
     demonstrate what this function does::
 
         from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -941,7 +941,7 @@ def log_probs_conditional_examples(
 
     Example
     -------
-    Here we'll use single characters (which are of course single tokens) to more clearly
+    Here we'll use single characters (which are single tokens) to more clearly
     demonstrate what this function does::
 
         from transformers import AutoModelForCausalLM, AutoTokenizer

@@ -10,9 +10,9 @@ class Example:
     """
     Represents a single prompt-completion task.
 
-    This data structure is only useful if:
-    - different prompts correspond to a different set of possible choices/completions
-    - and you want to run the model in batches for greater throughput.
+    This data structure is only useful if different prompts correspond to a different
+    set of possible choices/completions, and you want to run the model in batches for
+    greater throughput.
 
     Parameters
     ----------

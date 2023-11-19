@@ -25,7 +25,6 @@ to classify a product review:
        "The product is too expensive",
        "The product uses low quality materials",
        "The product is difficult to use",
-       "The product isn't working",
        "The product doesn't look good",
        "The product is great",
    )
@@ -50,12 +49,12 @@ to classify a product review:
    completion = api_resp[0]["text"]
    print(repr(completion))
    # '\nThe product is difficult to use'
-   # correct!
+   # Correct!
 
 This usually works well. But if you've ever run text generation on a slightly larger
 scale, then you know that there may be a considerable fraction of cases where the
 ``completion`` is not actually in ``class_names``. For your LLM application to work
-well, you need to handle these cases. So you add:
+well, these cases need to be handled. So you add:
 
 .. code:: python
 
@@ -64,8 +63,8 @@ well, you need to handle these cases. So you add:
 
    assert completion in class_names
 
-Implementing ``post_process`` can be challenging, as the ``completion`` is sampled from
-the space of all possible sequences of tokens. This means you'll likely have to deal
+Properly implementing ``post_process`` can be challenging, as the ``completion`` is
+sampled from all possible sequences of tokens. This means you'll likely have to deal
 with the cases where:
 
 - The ``completion`` includes a bit of fluff
@@ -77,42 +76,17 @@ with the cases where:
 
 - The LM says ``"I'm not sure"`` in three different ways.
 
-The OpenAI community knows that this can be challenging, so `they suggest
-<https://docs.google.com/document/d/1rqj7dkuvl7Byd5KQPUJRxc19BJt8wo0yHNwK84KfU3Q/edit>`_
-that you modify your code in at least 1 of 2 ways:
+When faced with this problem, one solution is to iterate the prompt based on observed
+completions. Another solution is to refer to each choice using a single token, as in a
+multiple choice question. But single-token references can sacrifice performance when you
+have quite a few classes, as it's not a typical instruction format. Other modifications
+include mapping the ``completion`` to one of the ``class_names`` using a similarity
+model. Common to all of these solutions is the need to spend developer time and
+sacrifice simplicity.
 
-#. Point to multi-token class names using a single token—as in a multiple choice
-   question
-
-#. Transform multi-token class names into a single token, and finetune a model so that
-   it learns the mapping to the single tokens.
-
-These can be nontrivial modifications. Single-token references can sacrifice performance
-when you have quite a few classes, as it's not a typical instruction format. On the
-other hand, single-token transformations sacrifice useful semantics. And finetuning
-costs too much time, money, and data.
-
-Other modifications include mapping the ``completion`` to one of the ``class_names``
-using a separate similarity model, which introduces greater complexity.
-
-The fact is: you can endlessley accomodate text generation, but you'll still have to
-write custom code to post-process its arbitrary outputs. Fundamentally, sampling is not
-a clean solution to a classification problem.
-
-
-Recap
------
-
-Let's recap the text generation workflow:
-
-#. Design a prompt which asks the model to output exactly one choice from a given set of
-   choices
-#. Given this prompt, figure out how often the model doesn't output one of the given
-   choices—call this an "invalid" output
-#. Figure out how to post-process invalid outputs, depending on the way they look. Or
-   give up, and figure out how to get your application to gracefully fail on an invalid
-   output
-#. Figure out if you need to tweak the text generation strategy, loop back to step (2).
+The fact is: text generation can be endlessley accomodated, but you'll still have to
+work around its arbitrary outputs. Fundamentally, sampling is not a clean solution to a
+classification problem.
 
 
 Solution
@@ -140,19 +114,17 @@ Let's now run CAPPr on that product review classification task. Also, let's:
        "The product is too expensive",
        "The product uses low quality materials",
        "The product is difficult to use",
-       "The product isn't working",
        "The product doesn't look good",
        "The product is great",
    )
    prior = (
-       2 / 7,
-       1 / 7,
-       1 / 7,
-       1 / 7,
-       1 / 7,
-       1 / 7,
+       2 / 6,
+       1 / 6,
+       1 / 6,
+       1 / 6,
+       1 / 6,
    )  # set to None if you don't have a prior
-   # 2/7 reflects that perhaps we already expect customers to say it's expensive
+   # 2/6 reflects that perhaps we already expect customers to say it's expensive
 
    product_review = "I can't figure out how to integrate it into my setup."
    prompt = f"""
@@ -167,7 +139,7 @@ Let's now run CAPPr on that product review classification task. Also, let's:
    )
 
    print(repr(pred_probs.round(1)))
-   # array([0.1, 0. , 0.7, 0.1, 0. , 0. ])
+   # array([0.1, 0. , 0.8, 0. , 0.1])
 
    pred_class_idx = pred_probs.argmax(axis=-1)
    print(class_names[pred_class_idx])

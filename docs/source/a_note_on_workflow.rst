@@ -2,7 +2,7 @@ A note on workflow
 ==================
 
 You've done the hard part of translating a practical problem into a "make a choice"
-problem that some LLM may be able to solve. Can you deploy this prompt-LLM system now?
+problem that some LLM may be able to solve. Can you deploy this prompt + LLM system now?
 Probably not. Here's what, and how, you need to do.
 
 
@@ -17,7 +17,7 @@ format are going to work well. Instead, gather data like so:
    :header-rows: 1
 
    * - id
-     - raw user input
+     - raw input
      - correct output index
    * - 1
      - "input 1"
@@ -35,19 +35,20 @@ format are going to work well. Instead, gather data like so:
      - "input 200"
      - 1
 
-The prompt is a transformation of the **raw user input**. The **correct output index**
+The prompt is a transformation of the **raw input**. The **correct output index**
 corresponds to the correct output/choice for that input.
 
 In general, you should gather as many of these input-output pairs/examples as is
 feasible. If there are only 2 possible choices (and say accuracy is 90%), then gather at
-least 150 examples.\ [#]_ As the number of possible choices increases, or as accuracy
-gets closer to random guessing, more examples are needed to evaluate the system.
+least 200 examples total.\ [#]_ As the number of possible choices increases, or as
+accuracy gets closer to random guessing, more examples are needed to evaluate the
+system.
 
-If you don't have that many input-output examples immediately within reach, then do the
-hard but important work of making them up.\ [#]_ Think carefully about the types of
-inputs you expect to see in production, and their relative frequencies. Make sure every
-choice is included in the dataset. Consider adding a few tricky inputs to understand the
-limits of your system. But don't evaluate anything just yet!
+If you don't have many input-output examples immediately within reach, then do the hard
+but important work of making them up.\ [#]_ Think carefully about the types of inputs
+you expect to see in production, and their relative frequencies. Make sure every choice
+is included in the dataset. Consider adding a few tricky inputs to understand the limits
+of your system. But don't evaluate anything just yet!
 
 
 Split data into train and test
@@ -63,7 +64,7 @@ step cannot be overstated.
    :header-rows: 1
 
    * - id
-     - raw user input
+     - raw input
      - correct output index
    * - 105
      - "input 105"
@@ -80,7 +81,7 @@ step cannot be overstated.
    :header-rows: 1
 
    * - id
-     - raw user input
+     - raw input
      - correct output index
    * - 174
      - "input 174"
@@ -107,15 +108,15 @@ understand failure cases. Is your prompt specific enough? Does it include enough
 context? Iterate the format, language model, or prior, and evaluate on the training
 dataset again.
 
-Be disciplined and vigilant about not seeing or evaluating on the test dataset until
-you've finalized your selections for a format, langauge model, and prior.
+Be disciplined about not seeing or evaluating on the test dataset until you've finalized
+your selections for a format, langauge model, and prior.
 
 
 If necessary, bring out the big guns
 ------------------------------------
 
-Sometimes, you'll find that your task is too difficult for a smaller model and the CAPPr
-method. In that case, consider upgrading the model. The most OP solution is to get a
+Sometimes, you'll find that your task is too difficult for a smaller model and a static
+prompt-completion format. In that case, consider the most OP solution: get a
 chain-of-thought completion from GPT-4 or Claude 2, and then have a cheap model classify
 the answer from this completion using CAPPr. See `this section of the documentation
 <https://cappr.readthedocs.io/en/latest/select_a_prompt_completion_format.html#wrangle-step-by-step-completions>`_
@@ -134,14 +135,14 @@ the ones from this dataset.
 Footnotes
 ~~~~~~~~~
 
-.. [#] Some quick-and-dirty rationale for this guidance: a Wald 95% confidence interval
-   for the expected accuracy of a binary classifier—which is estimated to be 90%
-   accurate—is (0.84, 0.96) when evaluated on an independent/unseen set of 100 examples.
-   For most applications, that's quite wide.
+.. [#] Some quick-and-dirty rationale: a Wald 95% confidence interval for the expected
+   accuracy of a binary classifier—which is estimated to be 90% accurate—is (0.84, 0.96)
+   when evaluated on an independent/unseen set of 100 examples. For some applications,
+   that level of uncertainty may not be acceptable.
 
-.. [#] You could technically get an LLM to make them up for you. But depending on your
-    application, the inputs it generates may actually look nothing like what you'll see
-    in production. Use your best judgement.
+.. [#] You may use an LLM to make them up for you. But depending on your application,
+    the inputs it generates may not look like what you'll see in production. Use your
+    best judgement.
 
 .. [#] There are some applications where you may not want to *randomly* split the
     dataset. Perhaps your inputs are grouped, or change with time. In these cases,

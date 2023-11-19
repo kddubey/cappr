@@ -252,7 +252,7 @@ def log_probs_conditional(
 
     Example
     -------
-    Here we'll use single characters (which are of course single tokens) to more clearly
+    Here we'll use single characters (which are single tokens) to more clearly
     demonstrate what this function does::
 
         from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -361,7 +361,7 @@ def log_probs_conditional_examples(
 
     Example
     -------
-    Here we'll use single characters (which are of course single tokens) to more clearly
+    Here we'll use single characters (which are single tokens) to more clearly
     demonstrate what this function does::
 
         from transformers import AutoModelForCausalLM, AutoTokenizer

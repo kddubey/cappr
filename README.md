@@ -12,8 +12,8 @@
 CAPPr performs text classification. No training. No post-processing. <br>
 Just have your LLM pick from a list of choices. <br>
 Or compute the probability of a completion given a prompt. <br>
-Squeeze [more](https://cappr.readthedocs.io/en/latest/future_research.html) out of open
-source LLMs.
+Squeeze [more](https://cappr.readthedocs.io/en/latest/statistical_performance.html) out
+of open source LLMs.
 
 
 ## Usage
@@ -97,7 +97,7 @@ See [this
 notebook](https://github.com/kddubey/cappr/blob/main/demos/huggingface/auto_gptq.ipynb)
 for a minimal demo.
 
-Note that for `transformers>=4.32.0`, you can load GPTQd models using
+Note that for `transformers>=4.32.0`, you can load GPTQ models using
 `transformers.AutoModelForCausalLM`.
 
 See [this page of the
@@ -116,8 +116,8 @@ is compatible with models loaded via
 notebook](https://github.com/kddubey/cappr/blob/main/demos/huggingface/autoawq.ipynb)
 for a minimal demo.
 
-Note that for `transformers>=4.35.0`, you can load AWQd models using
-`transformers.AutoModelForCausalLM`. AWQd models loaded this way are compatible with
+Note that for `transformers>=4.35.0`, you can load AWQ models using
+`transformers.AutoModelForCausalLM`. AWQ models loaded this way are compatible with
 [`cappr.huggingface.classify`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html),
 which is usually faster.
 
@@ -283,7 +283,7 @@ print(preds)
 See the [`demos`](https://github.com/kddubey/cappr/blob/main/demos/) for demonstrations
 of slightly harder classification tasks.
 
-For CAPPr, GPTQd models are the most computationally performant. These models are
+For CAPPr, GPTQ models are the most computationally performant. These models are
 compatible with `cappr.huggingface.classify`. See [this page of the
 documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#huggingface)
 for more info on using these models.
@@ -302,7 +302,7 @@ documentation](https://cappr.readthedocs.io/en/latest/installation.html).
 
 ## Motivation
 
-Minimize engineering complexity.
+Reduce engineering complexity.
 
 See [this page of the
 documentation](https://cappr.readthedocs.io/en/latest/motivation.html) for more info.
