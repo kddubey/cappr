@@ -202,7 +202,7 @@ class _ModelWithCache:
         Contains data which controls the cache
         """
         # This data is in one place to minimize pollution of the inputted model's
-        # namespace, which should be treated as a ModelForCausalLM by the user
+        # namespace. This object should be treated like a ModelForCausalLM by the user
         self._cappr.update_cache = True
         _ = self.forward(**encodings_to_cache)
         del _
@@ -302,6 +302,9 @@ class _ModelWithCache:
 
     def __getattr__(self, __name: str):
         return getattr(self._cappr.model, __name)
+
+    def __repr__(self) -> str:
+        return repr(self._cappr.model)
 
 
 def cache_model(
