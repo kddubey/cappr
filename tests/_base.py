@@ -22,6 +22,13 @@ class _BaseTest:
         )
 
     @property
+    def module(self) -> classify_module:
+        """
+        `classify` module which needs to be tested.
+        """
+        raise NotImplementedError
+
+    @property
     def module_correct(self) -> classify_module:
         """
         `classify` module which is correct, and serves as a reference implementation.
@@ -31,18 +38,10 @@ class _BaseTest:
         """
         raise NotImplementedError
 
-    @property
-    def module(self) -> classify_module:
-        """
-        `classify` module which needs to be tested.
-        """
-        raise NotImplementedError
-
     def _test(self, function: str, *args, **kwargs):
         """
-        Format of all tests: test all modules' `function` outputs for form/structure,
-        and then test their content if `self.module_correct is not None`, i.e., there
-        exists a reference implementation to test against.
+        Format of all tests: test `function`'s outputs for form/structure, and then test
+        their content if there exists a reference implementation to test against.
         """
         test_form = getattr(_test_form, function)
         test_form(self.module, *args, **kwargs)

@@ -39,6 +39,7 @@ from _protocol import classify_module
         "hf-internal-testing/tiny-random-GPT2LMHeadModel",
         "HuggingFaceH4/tiny-random-LlamaForCausalLM",
         # These models are reduntant. They're all transformers w/ BPE or SentencePiece
+        # tokenization and a non-None eos_token
         # "hf-internal-testing/tiny-random-GPTJForCausalLM",
         # "hf-internal-testing/tiny-random-GPTNeoXForCausalLM",
         # "hf-internal-testing/tiny-random-MistralForCausalLM",
@@ -60,12 +61,12 @@ def model(model_name: str) -> ModelForCausalLM:
 
 @pytest.fixture(scope="module")
 def tokenizer(model_name: str) -> PreTrainedTokenizerBase:
-    # hf-internal-testing/tiny-random-MistralForCausalLM's tokenizer_config.json has a
-    # field, tokenizer_file, which is hard-coded to some specific machine
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_name)
     except Exception:
-        # tokenizer_file not found. Find it locally
+        # hf-internal-testing/tiny-random-MistralForCausalLM's tokenizer_config.json has
+        # a field, tokenizer_file, which is hard-coded to some specific machine
+        # Find it locally
         local_path = hf_hub.try_to_load_from_cache(model_name, "tokenizer.json")
         tokenizer = AutoTokenizer.from_pretrained(model_name, tokenizer_file=local_path)
     # Set attributes to values that would break CAPPr, if not for the context managers
@@ -130,10 +131,10 @@ def test_set_up_model(model: ModelForCausalLM):
 def test_set_up_tokenizer(tokenizer: PreTrainedTokenizerBase):
     # Grab old attribute values
     attributes = [
-        "pad_token_id",
         "padding_side",
-        "add_eos_token",
         "pad_token",
+        "pad_token_id",
+        "add_eos_token",
         "special_tokens_map",
     ]
     attribute_to_old_value = {
@@ -147,6 +148,7 @@ def test_set_up_tokenizer(tokenizer: PreTrainedTokenizerBase):
         assert tokenizer.padding_side == "right"
         assert tokenizer.pad_token is not None
         assert tokenizer.pad_token_id is not None
+        assert not getattr(tokenizer, "add_eos_token", False)
 
     # Exit the context. No attributes should have changed
     for attribute, old_value in attribute_to_old_value.items():
@@ -219,7 +221,7 @@ def test_token_logprobs(
     )
 
 
-def test_cache_logits(model_and_tokenizer, atol):
+def test_cache_nested(model_and_tokenizer, atol):
     delim = " "
     if not hf._utils.does_tokenizer_need_prepended_space(model_and_tokenizer[1]):
         # for SentencePiece tokenizers like Llama's
@@ -259,7 +261,7 @@ def test_cache_logits(model_and_tokenizer, atol):
         with classify.cache(
             cached_a, delim + "b c", clear_cache_on_exit=False
         ) as cached_a_b_c:
-            logits(["whatever"], cached_a_b_c)
+            _ = logits(["whatever"], cached_a_b_c)
     assert cached_a_b_c[0]._cappr.past is not None
     assert hasattr(cached_a[0]._cappr, "past")
 
@@ -351,12 +353,12 @@ def _test_logits(
 
 class Modules:
     @property
-    def module_correct(self):
-        return classify_no_cache
-
-    @property
     def module(self):
         return classify
+
+    @property
+    def module_correct(self):
+        return classify_no_cache
 
 
 class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):

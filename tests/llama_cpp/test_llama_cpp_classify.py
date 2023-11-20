@@ -186,12 +186,12 @@ def test_token_logprobs(texts: Sequence[str], model: Llama, end_of_prompt=""):
 
 class Modules:
     @property
-    def module_correct(self):
-        return _classify_no_cache
-
-    @property
     def module(self):
         return classify
+
+    @property
+    def module_correct(self):
+        return _classify_no_cache
 
 
 class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):

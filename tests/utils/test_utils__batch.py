@@ -33,7 +33,7 @@ def _test_partition_and_order(batches: list[list], source_lst: list):
     Asserts that `batches` partitions `source_lst` and are in the same order as in
     `source_lst`.
     """
-    lst_from_batches = [x for batch_ in batches for x in batch_]
+    lst_from_batches = [x for batch in batches for x in batch]
     assert lst_from_batches == source_lst
 
 
@@ -49,8 +49,8 @@ def test_constant(lst: list, size: int):
     _test_partition_and_order(batches, lst)
 
     # Test batch sizes
-    for batch_ in batches[:-1]:
-        assert len(batch_) == size
+    for batch in batches[:-1]:
+        assert len(batch) == size
     remaining = len(lst) % size
     expected_size_last = remaining if remaining else size
     assert len(batches[-1]) == expected_size_last
@@ -65,8 +65,8 @@ def test_variable(lst, sizes):
     assert len(batches) == len(sizes)
 
     # Test batch sizes
-    for batch_, expected_size in zip(batches, sizes):
-        assert len(batch_) == expected_size
+    for batch, expected_size in zip(batches, sizes):
+        assert len(batch) == expected_size
 
 
 def test_variable_bad_inputs():

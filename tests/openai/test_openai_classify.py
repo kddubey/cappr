@@ -105,12 +105,12 @@ def test_token_logprobs(model):
 
 class Modules:
     @property
-    def module_correct(self):
-        return None
-
-    @property
     def module(self):
         return classify
+
+    @property
+    def module_correct(self):
+        return None
 
 
 class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
