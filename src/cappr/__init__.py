@@ -3,7 +3,7 @@ Completion After Prompt Probability
 
 https://cappr.readthedocs.io/
 """
-__version__ = "0.8.4"
+__version__ = "0.8.5"
 
 from . import utils
 from ._example import Example
