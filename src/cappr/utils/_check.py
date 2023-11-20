@@ -37,7 +37,7 @@ def ordered(object: Sequence, variable_name: str):
     """
     Raises a `TypeError` is `object` is not a sequence.
     """
-    # Just want [x for x in object] to be meaningful and deterministic.
+    # Just want [x for x in object] to be meaningful and deterministic
     # isinstance(object, Sequence) is too restrictive. Sequence requires that
     # object.__class__ additionally implements index and count. See:
     # https://docs.python.org/3/library/collections.abc.html#collections-abstract-base-classes
@@ -113,7 +113,7 @@ def prior(
     if prior is None:  # it's a uniform prior, no need to check anything
         return None
     # We do the prior * likelihood computation after making expensive model calls. Don't
-    # want that multiplication to fail b/c that'd be a complete waste of model compute.
+    # want that multiplication to fail b/c that'd be a complete waste of model compute
     nonempty_and_ordered(prior, variable_name="prior")
     if len(np.shape(prior)) != 1:
         raise ValueError("prior must be 1-D.")

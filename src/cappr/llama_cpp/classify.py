@@ -99,7 +99,7 @@ def token_logprobs(
     texts = [end_of_prompt + text for text in texts]
     # Loop through completions, b/c llama cpp currently doesn't support batch inference
     # Note: we could instead run logits_to_log_probs over a batch to save a bit of time,
-    # but that'd cost more memory.
+    # but that'd cost more memory
     log_probs = []
     first_token_log_prob = [None]
     for text in ProgressBar(
@@ -284,12 +284,12 @@ def _log_probs_conditional_prompt(
     with cache(model, prompt, reset_model=False):
         num_tokens_prompt = model.n_tokens
         # Tokenize completions to determine whether or not we can do the single-token
-        # optimization.
+        # optimization
         #
         # For Llama (and probably others) we don't want the completions to start w/ a
-        # bos token <s> b/c we need to mimic sending the prompt + completion together.
+        # bos token <s> b/c we need to mimic sending the prompt + completion together
         # For example, if 'a b' is the prompt and 'c' is the completion, the encoding
-        # should correspond to '<s> a b c' not '<s> a b <s> c'.
+        # should correspond to '<s> a b c' not '<s> a b <s> c'
         input_ids_completions = [
             model.tokenize(completion.encode("utf-8"), add_bos=False)
             for completion in completions
@@ -517,7 +517,7 @@ def log_probs_conditional_examples(
         print(log_probs_completions[1])  # corresponds to examples[1]
         # [[-9.90, -10.0]] [[log Pr(d | a, b, c)], log Pr(e | a, b, c, d)]]
     """
-    # examples is always a Sequence[Example] b/c of the decorator.
+    # examples is always a Sequence[Example] b/c of the decorator
     examples = cast(Sequence[Example], examples)
     if reset_model:
         model.reset()

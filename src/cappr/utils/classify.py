@@ -38,7 +38,7 @@ def _agg_log_probs_vectorized(
     # At this point, we've verified that the number of completions is constant. (numpy
     # will automatically check if the number of tokens is constant later. For
     # demonstration purposes, say that the number of tokens is also constant.)
-    # Say, e.g., we have 2 completions, ['a b', 'c d e'], and 2 prompts.
+    # Say, e.g., we have 2 completions, ['a b', 'c d e'], and 2 prompts
     # Then log_probs looks like:
     # [ [ [a1, b1],      (token log-probs for completion 1 | prompt 1)
     #     [c1, d1, e1]], (token log-probs for completion 2 | prompt 1)
@@ -60,7 +60,7 @@ def _agg_log_probs_vectorized(
         )
         # If there are a non-constant # of tokens, vectorization is not possible. In
         # older versions of numpy, this error is just a warning. So catch the warning
-        # and raise it as an error.
+        # and raise it as an error
         try:
             array_list = [
                 np.array(
@@ -161,13 +161,13 @@ def agg_log_probs(
         if `log_probs` is not 2-D or 3-D
     """
     # 1. Determine the dimensionality of log_probs. The aggregation computation assumes
-    #    a 3-D input, so we'll wrap it if it's 2-D.
+    #    a 3-D input, so we'll wrap it if it's 2-D
     ndim = _ndim(log_probs)
     if ndim not in {2, 3}:
         raise ValueError(f"log_probs must be 2-D or 3-D. Got {ndim} dimensions.")
     log_probs = [log_probs] if ndim == 2 else log_probs
 
-    # 2. Run the aggregation computation, vectorizing if possible.
+    # 2. Run the aggregation computation, vectorizing if possible
     try:
         likelihoods = _agg_log_probs_vectorized(log_probs, func)
     except (
@@ -176,7 +176,7 @@ def agg_log_probs(
     ):
         likelihoods = _agg_log_probs(log_probs, func)
 
-    # 3. If we wrapped it, unwrap it for user convenience.
+    # 3. If we wrapped it, unwrap it for user convenience
     return likelihoods[0] if ndim == 2 else likelihoods
 
 

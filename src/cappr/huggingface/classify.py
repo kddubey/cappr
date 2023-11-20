@@ -111,8 +111,7 @@ def token_logprobs(
     log_probs = []
     first_token_log_prob = [None]
     for log_probs_text, n in zip(log_probs_texts, num_non_pad_tokens):
-        # we slice off the right side b/c the tokenizer was set up to do padding on
-        # the right
+        # Slice off the right side b/c the tokenizer was set up to do right-padding
         log_probs.append(first_token_log_prob + log_probs_text[: (n - 1)].tolist())
     return log_probs
 
@@ -132,7 +131,7 @@ Index items:
 (
     # attention blocks = 12 for gpt2,
 
-    2 (attention keys, attention values),
+    2 = (attention keys, attention values),
 
     batch size = # input texts,
 
@@ -146,7 +145,7 @@ Index items:
 
 
 # past_key_values must be a tuple for model calls. So we have to do slightly costly
-# transfers from Python to CUDA. I don't think there's anything we can do about that.
+# transfers from Python to CUDA. I don't think there's anything we can do about that
 
 
 def _past_key_values_tuple_to_tensor(past_key_values: _PastKeyValues) -> torch.Tensor:
@@ -202,10 +201,10 @@ class _ModelWithCache:
         """
         Contains data which controls the cache
         """
-        # This data is in one place to avoid polluting the inputted model's namespace,
-        # which should be treated as a ModelForCausalLM by the user
+        # This data is in one place to minimize pollution of the inputted model's
+        # namespace, which should be treated as a ModelForCausalLM by the user
         self._cappr.update_cache = True
-        _ = self.forward(**encodings_to_cache)  # capture output here instead of stdout
+        _ = self.forward(**encodings_to_cache)
         del _
         self._cappr.update_cache = False
 
@@ -591,7 +590,7 @@ def _blessed_helper(
     # Prepare completions data
     # Completions shouldn't start w/ a bos token <s> b/c we need to mimic sending the
     # prompt + completion together. For example, if 'a b' is the prompt and 'c' is the
-    # completion, the encoding should correspond to '<s> a b c' not '<s> a b <s> c'.
+    # completion, the encoding should correspond to '<s> a b c' not '<s> a b <s> c'
     with hf._utils.set_up_tokenizer(tokenizer), hf._utils.dont_add_bos_token(tokenizer):
         # This computation is repeated for constant completions, but it doesn't matter
         completions_encoding: BatchEncodingPT = tokenizer(
@@ -635,9 +634,9 @@ def _blessed_helper(
             and _are_completions_constant
         ):
             # Single-token optimization: if every completion is a single token, we don't
-            # need to repeat stuff or run the model on any of the completions data.
+            # need to repeat stuff or run the model on any of the completions data
             # Currently, this optimization is only done for constant completions, i.e.,
-            # not _examples.
+            # not _examples
             # Note that completions_encoding["input_ids"].shape[1] == logits.shape[1]
             return prompts_last_nonpad_token_logits, completions_encoding
 
@@ -742,10 +741,9 @@ def _logits_to_log_probs_completions(
     logits: torch.Tensor, encodings: Mapping[str, torch.Tensor], from_examples: bool
 ) -> list[list[float]]:
     if (not from_examples) and logits.shape[1] == 1:
-        # Single-token optimization: all of the completions are always a single token.
-        # So we just need to intelligently slice out their tokens from the prompts' last
-        # non-pad token logits. Currently, this optimization is only done for constant
-        # completions, i.e., not _examples.
+        # Single-token optimization: all of the completions are always a single token
+        # Slice out their tokens from the prompts' last non-pad token logits. Currently,
+        # this optimization is only done for constant completions, i.e., not _examples
         completions_input_ids: torch.Tensor = (
             encodings["input_ids"]
             .repeat_interleave(logits.shape[0], dim=1)  # the number of prompts
@@ -967,7 +965,7 @@ def log_probs_conditional_examples(
         print(log_probs_completions[1])  # corresponds to examples[1]
         # [[-5.0, -1.7]]  [[log Pr(1 | a, b, c)], log Pr(2 | a, b, c, 1)]]
     """
-    # examples is always a Sequence[Example] b/c of the decorator.
+    # examples is always a Sequence[Example] b/c of the decorator
     examples = cast(Sequence[Example], examples)
 
     @_batch.flatten

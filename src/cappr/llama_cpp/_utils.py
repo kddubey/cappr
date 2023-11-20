@@ -18,7 +18,7 @@ def check_model(model: Llama):
         # Need every token's logits, not just the last token
         # TODO: determine if we can instead use a context manager to temporarily reset
         # the attribute like we do in cappr.huggingface. I'm not sure it's sufficient or
-        # sensible for llama_cpp. Will need to read more of their code.
+        # sensible for llama_cpp. Will need to read more of their code
         raise TypeError("model needed to be instantiated with logits_all=True")
 
 
@@ -75,7 +75,7 @@ def logits_to_log_probs(
     log_probs: np.ndarray = log_softmax(logits)
 
     # Only keep the log-prob from the vocab dimension whose index is is the next token's
-    # input ID.
+    # input ID
     # input_ids.shape is (# tokens in text,)
     return np.take_along_axis(
         log_probs[:logits_end_idx, :], input_ids[input_ids_start_idx:, None], axis=1

@@ -392,7 +392,7 @@ def log_probs_conditional_examples(
         print(log_probs_completions[1])  # corresponds to examples[1]
         # [[-5.0, -1.7]]  [[log Pr(1 | a, b, c)], log Pr(2 | a, b, c, 1)]]
     """
-    # examples is always a Sequence[Example] b/c of the decorator.
+    # examples is always a Sequence[Example] b/c of the decorator
     examples = cast(Sequence[Example], examples)
 
     @_batch.flatten

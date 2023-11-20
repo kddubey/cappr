@@ -15,16 +15,16 @@ from cappr.utils import _check
 
 BatchEncodingPT = Mapping[str, torch.Tensor]
 """
-Type of the output of `tokenizer(texts, return_tensors="pt", ...)`.
+Type of the output of `tokenizer(texts, return_tensors="pt", ...)`
 """
 # transformers.BatchEncoding doesn't annotate values as tensors b/c tokenizers can
-# return other objects. In this package, tokenizers will always return PyTorch tensors.
+# return other objects. In this package, tokenizers will always return PyTorch tensors
 
 
 ModelForCausalLM = PreTrainedModel
 """
 A pretrained model with the same inference interface as a model loaded via
-`transformers.AutoModelForCausalLM.from_pretrained`.
+`transformers.AutoModelForCausalLM.from_pretrained`
 """
 
 
@@ -32,7 +32,7 @@ A pretrained model with the same inference interface as a model loaded via
 # Set up the model and tokenizer to enable correct, batched inference. Use context
 # managers, because we shouldn't modify a user's settings when CAPPr is done. It's
 # conceivable that someone uses CAPPr as part of a larger system where the model and
-# tokenizer needs to be configured differently.
+# tokenizer needs to be configured differently
 ########################################################################################
 
 
@@ -52,7 +52,7 @@ def _eval_mode(model: ModelForCausalLM):
 @contextmanager
 def _no_grad(model: ModelForCausalLM):  # model given to keep interface the same
     """
-    In this context, gradients are not computed. This saves memory.
+    In this context, gradients are not computed.
     """
     with torch.no_grad():
         yield
@@ -75,8 +75,7 @@ def _setattr(obj, name: str, value):
 @contextmanager
 def _return_dict(model: ModelForCausalLM):
     """
-    In this context, the model returns a dataclass when it's called. (B/c of previous
-    versions of `transformers`, the attribute is called `return_dict`.)
+    In this context, the model returns a dataclass when it's called.
     """
     with _setattr(model.config, "return_dict", True) if hasattr(
         model, "config"
@@ -204,7 +203,7 @@ def _batched_model_call(
     return CausalLMOutput(logits=logits)
 
 
-def drop_first_token(
+def _drop_first_token(
     logits: torch.Tensor, encodings: BatchEncodingPT
 ) -> tuple[torch.Tensor, BatchEncodingPT]:
     logits = logits[:, 1:, :]
@@ -238,8 +237,8 @@ def logits_texts(
     if drop_bos_token and getattr(tokenizer, "add_bos_token", False):
         # Drop the first bos token after we're done encoding so that the shape is
         # consistent w/ other tokenizers. For CAPPr, we'll never be interested in
-        # Pr(token | <bos>). We're only interested in completion tokens.
-        logits, encodings = drop_first_token(out.logits, encodings)
+        # Pr(token | <bos>). We're only interested in completion tokens
+        logits, encodings = _drop_first_token(out.logits, encodings)
     else:
         logits = out.logits
     return logits, encodings
@@ -258,7 +257,7 @@ def logits_to_log_probs(
     log_probs = logits.log_softmax(dim=-1)
 
     # Only keep the log-prob from the vocab dimension whose index is is the next token's
-    # input ID.
+    # input ID
     # input_ids.shape is (# texts, max # tokens in texts)
     return (
         log_probs[:, :logits_end_idx, :]
