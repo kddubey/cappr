@@ -21,7 +21,7 @@ of open source LLMs.
 <details>
 <summary>Use a GGUF model</summary>
 
-Specifically, this model must be able to be loaded using
+This model must be able to be loaded using
 [`llama_cpp.Llama`](https://llama-cpp-python.readthedocs.io/en/latest/api-reference/#llama_cpp.Llama).
 
 ```python
@@ -130,7 +130,7 @@ for more info on using these models.
 <details>
 <summary>Use a model from the OpenAI API</summary>
 
-Specifically, this model must be compatible with the
+This model must be compatible with the
 [/v1/completions](https://platform.openai.com/docs/models/model-endpoint-compatibility)
 endpoint
 ([excluding](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#openai)
