@@ -58,19 +58,19 @@ def log_probs_conditional(
         for prompt in prompts
         for completion in completions
     ]
-    log_probs = token_logprobs(
+    log_probs_texts = token_logprobs(
         texts,
         *token_logprobs_args,
         end_of_prompt="",
         **token_logprobs_kwargs,
     )
-    # log_probs is a 2-D list. Batch it by the size and order of completions to fulfill
-    # the spec
+    # log_probs_texts is a 2-D list. Batch it by the size and order of completions to
+    # fulfill the spec
     return [
         _slice_completions(
-            completions, end_of_prompt, batch, tokenize_completions, bos_token_id
+            completions, end_of_prompt, log_probs, tokenize_completions, bos_token_id
         )
-        for batch in _batch.constant(log_probs, size=len(completions))
+        for log_probs in _batch.constant(log_probs_texts, size=len(completions))
     ]
 
 
@@ -92,7 +92,7 @@ def log_probs_conditional_examples(
         for example in examples
         for completion in example.completions
     ]
-    log_probs = token_logprobs(
+    log_probs_texts = token_logprobs(
         texts, *token_logprobs_args, end_of_prompt="", **token_logprobs_kwargs
     )
     should_end_of_prompt_be_empty = not _does_tokenizer_need_prepended_space(
@@ -109,7 +109,7 @@ def log_probs_conditional_examples(
     ]
     end_of_prompt = ""  # we already added it in completions
     log_probs_completions = _slice_completions(
-        completions, end_of_prompt, log_probs, tokenize_completions, bos_token_id
+        completions, end_of_prompt, log_probs_texts, tokenize_completions, bos_token_id
     )
     # log_probs is a 2-D list. Batch it by the size and order of completions to fulfill
     # the spec
