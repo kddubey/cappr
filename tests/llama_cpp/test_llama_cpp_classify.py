@@ -164,7 +164,7 @@ def test_token_logprobs(texts: Sequence[str], model: Llama, end_of_prompt=""):
         model.reset()
         model.eval(input_ids)
         log_probs_texts_from_unbatched.append(
-            _utils.log_softmax(_utils.check_logits(model.eval_logits))
+            _utils.log_softmax(np.array(model.eval_logits))
         )
         input_ids_from_unbatched.append(input_ids)
     model.reset()

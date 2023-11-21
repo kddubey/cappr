@@ -22,19 +22,6 @@ def check_model(model: Llama):
         raise TypeError("model needed to be instantiated with logits_all=True")
 
 
-def check_logits(logits) -> np.ndarray:
-    """
-    Returns back `logits` if there are no NaNs. Else raises a `TypeError`.
-    """
-    logits = np.array(logits)
-    if np.any(np.isnan(logits)):
-        raise TypeError(
-            "There are nan logits. Is there something wrong with the model? This can "
-            "happen if the model is reloaded many times in the same session."
-        )  # pragma: no cover
-    return logits
-
-
 @lru_cache()
 def does_tokenizer_need_prepended_space(model: Llama) -> bool:
     def tokenize(text: str) -> list[int]:

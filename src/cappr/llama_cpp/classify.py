@@ -109,7 +109,7 @@ def token_logprobs(
         model.reset()  # clear the model's KV cache and logits
         model.eval(input_ids)
         log_probs_text: list[float] = _utils.logits_to_log_probs(
-            _utils.check_logits(model.eval_logits),
+            np.array(model.eval_logits),
             np.array(input_ids),
             input_ids_start_idx=1,  # this token's log-prob is in the prev token's logit
             logits_end_idx=-1,
@@ -300,7 +300,7 @@ def _log_probs_conditional_prompt(
         ):
             # Single-token optimization
             prompt_next_token_log_probs = _utils.log_softmax(
-                _utils.check_logits(model.eval_logits[-1])
+                np.array(model.eval_logits[-1])
             )
             return [
                 [prompt_next_token_log_probs[input_ids_completion[0]]]
@@ -316,9 +316,7 @@ def _log_probs_conditional_prompt(
             # contains the first completion token's log-prob. But we don't need the last
             # completion token's next-token logits ofc. Also, it's num_tokens_prompt - 1
             # b/c of 0-indexing
-            logits_completion = _utils.check_logits(model.eval_logits)[
-                num_tokens_prompt - 1 : -1
-            ]
+            logits_completion = np.array(model.eval_logits)[num_tokens_prompt - 1 : -1]
             log_probs_completion: list[float] = _utils.logits_to_log_probs(
                 logits_completion, np.array(input_ids_completion)
             ).tolist()

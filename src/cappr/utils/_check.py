@@ -106,9 +106,10 @@ def prior(
     prior: Sequence[float] | None, expected_length: int
 ) -> npt.NDArray[np.floating] | None:
     """
-    Return back `prior` if it's None, or return it as a numpy array if it's not None and
-    valid. Raises an error if `prior is not None` and isn't a probability distribution
-    over `expected_length` categories.
+    Return back `prior` if it's None, or return it as a numpy array if it's not None.
+
+    Raises an error if `prior is not None` and isn't a probability distribution over
+    `expected_length` categories.
     """
     if prior is None:  # it's a uniform prior, no need to check anything
         return None
@@ -151,8 +152,6 @@ def does_tokenizer_need_prepended_space(
     Returns `True` if the `tokenize` function needs to prepend a whitespace for
     subsequent model calls to be correct, else `False`. BPE tokenizers need it, while
     SentencePiece tokenizers do not.
-
-    You should `@functools.cache` the function which calls this to save 12.13891 µs :D
     """
 
     def remove_bos(tokens: list[int]) -> list[int]:
