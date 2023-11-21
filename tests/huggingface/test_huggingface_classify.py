@@ -265,6 +265,9 @@ def test_cache_nested(model_and_tokenizer, atol):
     assert cached_a_b_c[0]._cappr.past is not None
     assert hasattr(cached_a[0]._cappr, "past")
 
+    # Test repr
+    assert repr(cached_a[0]) == repr(cached_a[0]._cappr.model)
+
 
 ########################################################################################
 ################################### Helpers for tests ##################################

@@ -49,6 +49,10 @@ succeeds):
 (Other prompts, including beefier versions of CAPPr's prompt on the previous page also
 fail.)
 
+.. note:: When you're using other tools, if there are choices with multiple tokens and
+          there's some ambiguity in the task, it's necessary to provide the options in
+          the prompt itself.
+
 CAPPr doesn't try to be a heavyweight LLM query/programming language. It's aimed at
 solving text classification problems, and is hopefully quite easy to pick up. CAPPr also
 let's you easily compute probabilities, which `may be useful
