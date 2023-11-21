@@ -179,10 +179,20 @@ def _past_key_values_get(
 class _CAPPr:
     model: ModelForCausalLM
     logits_all: bool = True
-    past: tuple[BatchEncodingPT, CausalLMOutputWithPast] | None = None
+    _past: tuple[BatchEncodingPT, CausalLMOutputWithPast] | None = None
     batch_idxs: torch.Tensor | None = None
     update_cache: bool = False
     _is_cache_cleared: bool = False
+
+    @property
+    def past(self):
+        return self._past
+
+    @past.setter
+    def past(self, new_past: tuple[BatchEncodingPT, CausalLMOutputWithPast] | None):
+        if new_past is None:
+            self._is_cache_cleared = True
+        self._past = new_past
 
 
 class _CacheClearedError(Exception):
@@ -197,7 +207,7 @@ class _ModelWithCache:
         past: tuple[BatchEncodingPT, CausalLMOutputWithPast] | None = None,
         logits_all: bool = True,
     ):
-        self._cappr = _CAPPr(model, logits_all=logits_all, past=past)
+        self._cappr = _CAPPr(model, logits_all, past)
         """
         Contains data which controls the cache
         """
@@ -554,7 +564,6 @@ def cache(
         # hidden_states (usually taking up GPU RAM)—that should be cleared when we exit
         # the context
         model_with_cache._cappr.past = None
-        model_with_cache._cappr._is_cache_cleared = True
     else:
         model_with_cache._cappr.past = past
 

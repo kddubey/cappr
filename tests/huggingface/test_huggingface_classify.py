@@ -250,10 +250,14 @@ def test_cache_nested(model_and_tokenizer, atol):
     assert torch.allclose(logits4, logits_correct(["a b c d"]), atol=atol)
 
     # Test clear_cache_on_exit
+    device = model_and_tokenizer[0].device
     with pytest.raises(
         classify._CacheClearedError, match="This model is no longer usable."
     ):
-        cached_a[0](input_ids=None, attention_mask=None)
+        cached_a[0](
+            input_ids=torch.tensor([[1]], device=device),
+            attention_mask=torch.tensor([[1]], device=device),
+        )
 
     with classify.cache(
         model_and_tokenizer, "a", clear_cache_on_exit=False
