@@ -50,7 +50,7 @@ succeeds):
 fail.)
 
 .. note:: When you're using other tools, if there are choices with multiple tokens and
-          there's some ambiguity in the task, it's necessary to provide the options in
+          there's some ambiguity in the task, it's necessary to mention the choices in
           the prompt itself.
 
 CAPPr doesn't try to be a heavyweight LLM query/programming language. It's aimed at

@@ -72,10 +72,10 @@ class which all LM interfaces inherit from / implement.
            return pred_completions
 
 As far as I can see, there is no benefit to this design. It's tempting to think that it
-reduces writing LM interface modules to writing sublcasses which implement
+reduces writing LM modules to writing sublcasses which implement
 ``log_probs_conditional`` and nothing else. That's not practically true. Because if
-you're writing a new LM interface, it most likely has unique ``kwargs`` which you need
-to supply in the signature and explain in the docstring. So you need to write out the
+you're writing a new LM module, it most likely has unique ``kwargs`` which you need to
+supply in the signature and explain in the docstring. So you need to write out the
 method anyway. Moreover, the amount of repeated code that's saved is insignificant.
 
 There is a small cost to this design. Enabling the simple import interface—
@@ -86,7 +86,7 @@ There is a small cost to this design. Enabling the simple import interface—
 
 
 —would require adding a bit of logic to ``__init__.py`` and Sphinx's
-``docs/source/conf.py`` for every new interface. I could automate this stuff by
+``docs/source/conf.py`` for every new module. I could automate this stuff by
 implementing some slightly tricky logic. But more logic is worse than less logic.
 
 Overall, this design doesn't align with my style. Inheritance isn't needed to achieve
@@ -119,7 +119,7 @@ will work just fine.
 Context managers
 ----------------
 
-The HuggingFace interface requires that the ``model_and_tokenizer`` input is set up in a
+The HuggingFace module requires that the ``model_and_tokenizer`` input is set up in a
 particular way. It looks like many other tools solve this problem by creating a loading
 function or method which does the required set up. Its returned object is internal to
 the package. I don't think this extra abstraction is necessary. And it comes at the
@@ -141,7 +141,7 @@ users need or want to use a string formatter, that's on them.
 Repeat docstrings
 -----------------
 
-Lots of text in docstrings are repeated. After all, every LM interface is implementing a
+Lots of text in docstrings are repeated. After all, every LM module is implementing a
 protocol.
 
 I previously experimented with `an automation
