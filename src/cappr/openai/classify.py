@@ -199,6 +199,12 @@ def log_probs_conditional(
         #  [-0.3, -1.2]]   [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
     """
     bos_token_id = None  # no OpenAI BPE tokenizer adds a BOS token
+    token_logprobs_kwargs = dict(
+        client=client,
+        show_progress_bar=show_progress_bar,
+        ask_if_ok=ask_if_ok,
+        api_key=api_key,
+    )
     return _no_cache.log_probs_conditional(
         prompts,
         completions,
@@ -207,10 +213,7 @@ def log_probs_conditional(
         tiktoken.encoding_for_model(model).encode_batch,
         bos_token_id,
         model,
-        client=client,
-        show_progress_bar=show_progress_bar,
-        ask_if_ok=ask_if_ok,
-        api_key=api_key,
+        **token_logprobs_kwargs,
     )
 
 
@@ -304,16 +307,19 @@ def log_probs_conditional_examples(
         # [[-11.2, -4.7]]  [[log Pr(1 | a, b, c)], log Pr(2 | a, b, c, 1)]]
     """
     bos_token_id = None  # no OpenAI BPE tokenizer adds a BOS token
+    token_logprobs_kwargs = dict(
+        client=client,
+        show_progress_bar=show_progress_bar,
+        ask_if_ok=ask_if_ok,
+        api_key=api_key,
+    )
     return _no_cache.log_probs_conditional_examples(
         examples,
         token_logprobs,
         tiktoken.encoding_for_model(model).encode_batch,
         bos_token_id,
         model,
-        client=client,
-        show_progress_bar=show_progress_bar,
-        ask_if_ok=ask_if_ok,
-        api_key=api_key,
+        **token_logprobs_kwargs,
     )
 
 

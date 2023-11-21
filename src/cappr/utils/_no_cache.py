@@ -111,8 +111,8 @@ def log_probs_conditional_examples(
     log_probs_completions = _slice_completions(
         completions, end_of_prompt, log_probs_texts, tokenize_completions, bos_token_id
     )
-    # log_probs is a 2-D list. Batch it by the size and order of completions to fulfill
-    # the spec
+    # log_probs_completions is a 2-D list. Batch it by the size and order of completions
+    # to fulfill the spec
     num_completions_per_prompt = [len(example.completions) for example in examples]
     return list(
         _batch.variable(log_probs_completions, sizes=num_completions_per_prompt)
