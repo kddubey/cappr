@@ -131,7 +131,7 @@ Index items:
 (
     # attention blocks = 12 for gpt2,
 
-    2 = (attention keys, attention values),
+    2 = (attention keys, attention values), (or 6 for LongLlama)
 
     batch size = # input texts,
 
@@ -158,7 +158,9 @@ def _past_key_values_tuple_to_tensor(past_key_values: _PastKeyValues) -> torch.T
 
 
 def _past_key_values_tensor_to_tuple(past_key_values: torch.Tensor) -> _PastKeyValues:
-    return tuple([(block[0], block[1]) for block in past_key_values])
+    return tuple(
+        tuple(block[i] for i in range(len(block))) for block in past_key_values
+    )
 
 
 def _past_key_values_get(
