@@ -3,16 +3,17 @@ Other LLM structuring tools
 
 There are `other LLM structuring tools
 <https://www.reddit.com/r/LocalLLaMA/comments/17a4zlf/reliable_ways_to_get_structured_output_from_llms/>`_
-which support "just pick one" functionality. You should strongly consider using them.
-`guidance <https://github.com/guidance-ai/guidance>`_, for example, provides a
-``select`` function which almost always returns a valid choice.
+which support "just pick one" functionality. You should strongly consider using them, as
+they scale independently with the number of choices. `guidance
+<https://github.com/guidance-ai/guidance>`_, for example, provides a ``select`` function
+which almost always returns a valid choice.
 
 One potential weakness of algorithms like this is that they don't always look at the
 entire choice: they exit early when the generated choice becomes unambiguous. This
-property makes the algorithm highly scalable wrt the number of choices and tokens. But
-I'm curious to see if there are tasks where looking at all of the choice's tokens—like
-CAPPr does—squeezes more out. Taking the tiny task from the previous page (where CAPPr
-succeeds):
+property makes the algorithm highly scalable wrt the number of tokens in each choice.
+But I'm curious to see if there are tasks where looking at all of the choice's
+tokens—like CAPPr does—squeezes more out. Taking the tiny task from the previous page
+(where CAPPr succeeds):
 
 .. code:: python
 

@@ -85,8 +85,8 @@ model. Common to all of these solutions is the need to spend developer time and
 sacrifice simplicity.
 
 The fact is: text generation can be endlessley accomodated, but you'll still have to
-work around its arbitrary outputs. Fundamentally, sampling is not a clean solution to a
-classification problem.
+work around its arbitrary outputs. Fundamentally, unconstrained sampling is not a clean
+solution to a classification problem.
 
 
 Solution
