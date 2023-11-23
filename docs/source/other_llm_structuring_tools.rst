@@ -3,17 +3,17 @@ Other LLM structuring tools
 
 There are `other LLM structuring tools
 <https://www.reddit.com/r/LocalLLaMA/comments/17a4zlf/reliable_ways_to_get_structured_output_from_llms/>`_
-which support "just pick one" functionality. You should strongly consider using them, as
-they scale independently with the number of choices. `guidance
+which support "just pick one" functionality. `guidance
 <https://github.com/guidance-ai/guidance>`_, for example, provides a ``select`` function
-which almost always returns a valid choice.
+which almost always returns a valid choice. You should strongly consider using these
+tools, as they scale independently of the number of choices.
 
 One potential weakness of algorithms like this is that they don't always look at the
 entire choice: they exit early when the generated choice becomes unambiguous. This
-property makes the algorithm highly scalable wrt the number of tokens in each choice.
-But I'm curious to see if there are tasks where looking at all of the choice's
-tokens—like CAPPr does—squeezes more out. Taking the tiny task from the previous page
-(where CAPPr succeeds):
+property makes the algorithm highly scalable with respect to the number of tokens in
+each choice. But I'm curious to see if there are tasks where looking at all of the
+choice's tokens—like CAPPr does—squeezes more out. Taking the tiny task from the
+previous page (where CAPPr succeeds):
 
 .. code:: python
 
@@ -43,11 +43,11 @@ tokens—like CAPPr does—squeezes more out. Taking the tiny task from the prev
    # GPT-x models use BPE tokenization, so need to do this
    class_names_prepended = [" " + class_name for class_name in class_names]
 
-   result = model + prompt + select(class_names_prepended)
-   print(str(result).removeprefix(prompt + " "))
-   # The product is great
+   result = model + prompt + select(class_names_prepended, name="pred")
+   print(result["pred"])
+   #  The product is great
 
-(Other prompts, including beefier versions of CAPPr's prompt on the previous page also
+(Other prompts, including beefier versions of CAPPr's prompt on the previous page, also
 fail.)
 
 .. note:: When you're using other tools, if there are choices with multiple tokens and

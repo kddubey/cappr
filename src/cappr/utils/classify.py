@@ -1,8 +1,9 @@
 """
 Transform completion token log-probabilites into a probability distribution over
-completions.
+completions
 """
 from __future__ import annotations
+from contextlib import contextmanager
 from functools import wraps
 from inspect import getmodule
 from typing import Callable, Sequence
@@ -12,6 +13,23 @@ import numpy as np
 import numpy.typing as npt
 
 from cappr.utils import _check
+
+
+@contextmanager
+def _setattr(obj, name: str, value):
+    """
+    In this context, `obj.name` is set to `value`.
+    """
+    hasattr_ = hasattr(obj, name)
+    if hasattr_:
+        value_prev = getattr(obj, name)
+    try:
+        if hasattr_:
+            setattr(obj, name, value)
+        yield
+    finally:
+        if hasattr_:
+            setattr(obj, name, value_prev)
 
 
 ########################################################################################

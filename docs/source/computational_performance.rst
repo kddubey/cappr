@@ -5,7 +5,7 @@ One concern is that CAPPr requires as many model calls as there are choices/clas
 in the CAPPr scheme, we can cache each attention block's keys and values for the
 prompts. This feature is already supported by ``AutoModelForCausalLM``\ s. See `this
 module <https://github.com/kddubey/cappr/blob/main/src/cappr/huggingface/classify.py>`_
-for the implementation.
+for the implementation. Here's a somewhat cherry-picked experiment:
 
 .. figure:: _static/scaling_classes/batch_size_16.png
    :align: center

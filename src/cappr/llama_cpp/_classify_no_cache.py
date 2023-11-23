@@ -15,7 +15,7 @@ from cappr.llama_cpp.classify import token_logprobs
 
 
 def _tokenize_completions(model: Llama, texts: Sequence[str]) -> list[list[int]]:
-    return [model.tokenize(text.encode("utf-8"), add_bos=False) for text in texts]
+    return [model.tokenize(text.encode(), add_bos=False) for text in texts]
 
 
 @classify._log_probs_conditional

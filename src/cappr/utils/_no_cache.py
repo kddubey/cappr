@@ -1,5 +1,5 @@
 """
-Utilities for implementations which don't cache.
+Utilities for implementations which don't cache
 """
 from __future__ import annotations
 from functools import lru_cache

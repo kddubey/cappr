@@ -1,6 +1,6 @@
 """
 Helpers functions which are compatible with the Python OpenAI API (before and after
-v1.0.0).
+v1.0.0)
 """
 from __future__ import annotations
 from contextlib import contextmanager, nullcontext

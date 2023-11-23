@@ -2,30 +2,26 @@
 Utilz
 """
 from __future__ import annotations
+from contextlib import contextmanager
 from functools import lru_cache
 
 from llama_cpp import Llama
 import numpy as np
 
 from cappr.utils import _check
+from cappr.utils.classify import _setattr
 
 
-def check_model(model: Llama):
-    """
-    Raises a `TypeError` if `model` was not instantiated correctly.
-    """
-    if not model.context_params.logits_all:
-        # Need every token's logits, not just the last token
-        # TODO: determine if we can instead use a context manager to temporarily reset
-        # the attribute like we do in cappr.huggingface. I'm not sure it's sufficient or
-        # sensible for llama_cpp. Will need to read more of their code
-        raise TypeError("model needed to be instantiated with logits_all=True")
+@contextmanager
+def set_up_model(model: Llama):
+    with _setattr(model.context_params, "logits_all", True):
+        yield
 
 
 @lru_cache()
 def does_tokenizer_need_prepended_space(model: Llama) -> bool:
     def tokenize(text: str) -> list[int]:
-        return model.tokenize(text.encode("utf-8"))
+        return model.tokenize(text.encode())
 
     return _check.does_tokenizer_need_prepended_space(tokenize, model.token_bos())
 

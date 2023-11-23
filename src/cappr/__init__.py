@@ -1,5 +1,5 @@
 """
-Completion After Prompt Probability
+Completion After Prompt Probability. Make your LLM make a choice
 
 https://cappr.readthedocs.io/
 """

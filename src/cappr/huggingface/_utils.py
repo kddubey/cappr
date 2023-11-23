@@ -11,6 +11,7 @@ from transformers import PreTrainedModel, PreTrainedTokenizerBase
 from transformers.modeling_outputs import CausalLMOutput
 
 from cappr.utils import _check
+from cappr.utils.classify import _setattr
 
 
 BatchEncodingPT = Mapping[str, torch.Tensor]
@@ -56,20 +57,6 @@ def _no_grad(model: ModelForCausalLM):  # model given to keep interface the same
     """
     with torch.no_grad():
         yield
-
-
-@contextmanager
-def _setattr(obj, name: str, value):
-    hasattr_ = hasattr(obj, name)
-    if hasattr_:
-        value_prev = getattr(obj, name)
-    try:
-        if hasattr_:
-            setattr(obj, name, value)
-        yield
-    finally:
-        if hasattr_:
-            setattr(obj, name, value_prev)
 
 
 @contextmanager

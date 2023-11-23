@@ -28,8 +28,8 @@ This model must be able to be loaded using
 from llama_cpp import Llama
 from cappr.llama_cpp.classify import predict
 
-# Load model. Always set logits_all=True for CAPPr
-model = Llama("./TinyLLama-v0.Q8_0.gguf", logits_all=True, verbose=False)
+# Load model
+model = Llama("./TinyLLama-v0.Q8_0.gguf", verbose=False)
 
 prompt = """Gary told Spongebob a story:
 There once was a man from Peru; who dreamed he was eating his shoe. He

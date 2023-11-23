@@ -4,8 +4,6 @@ Perform prompt-completion classification using a model which can be loaded via
 
 You probably just want the :func:`predict` function :-)
 
-.. note:: When instantiating your Llama, set ``logits_all=True``.
-
 The examples below use a 6 MB model to quickly demonstrate functionality. To download
 it, first install ``huggingface-hub`` if you don't have it already::
 
@@ -53,7 +51,7 @@ def token_logprobs(
     texts : str | Sequence[str]
         input text(s)
     model : Llama
-        a model instantiated with ``logits_all=True``
+        a Llama CPP model
     end_of_prompt : Literal[' ', ''], optional
         This string gets added to the beginning of each text. It's important to set this
         if you're using the discount feature. Otherwise, set it to "". By default " "
@@ -93,7 +91,6 @@ def token_logprobs(
     ValueError
         if `texts` is empty
     """
-    _utils.check_model(model)
     if not _utils.does_tokenizer_need_prepended_space(model):
         end_of_prompt = ""
     texts = [end_of_prompt + text for text in texts]
@@ -102,20 +99,21 @@ def token_logprobs(
     # but that'd cost more memory
     log_probs = []
     first_token_log_prob = [None]
-    for text in ProgressBar(
-        texts, show_progress_bar=show_progress_bar, desc="marginal log-probs"
-    ):
-        input_ids = model.tokenize(text.encode("utf-8"), add_bos=add_bos)
-        model.reset()  # clear the model's KV cache and logits
-        model.eval(input_ids)
-        log_probs_text: list[float] = _utils.logits_to_log_probs(
-            np.array(model.eval_logits),
-            np.array(input_ids),
-            input_ids_start_idx=1,  # this token's log-prob is in the prev token's logit
-            logits_end_idx=-1,
-        ).tolist()
-        log_probs.append(first_token_log_prob + log_probs_text)
-    model.reset()
+    with _utils.set_up_model(model):
+        for text in ProgressBar(
+            texts, show_progress_bar=show_progress_bar, desc="marginal log-probs"
+        ):
+            input_ids = model.tokenize(text.encode(), add_bos=add_bos)
+            model.reset()  # clear the model's KV cache and logits
+            model.eval(input_ids)
+            log_probs_text: list[float] = _utils.logits_to_log_probs(
+                np.array(model.eval_logits),
+                np.array(input_ids),
+                input_ids_start_idx=1,  # this log-prob is in the prev logit
+                logits_end_idx=-1,
+            ).tolist()
+            log_probs.append(first_token_log_prob + log_probs_text)
+        model.reset()
     return log_probs
 
 
@@ -135,7 +133,7 @@ def cache_model(model: Llama, prefix: str) -> Llama:
     Parameters
     ----------
     model : Llama
-        a model instantiated with ``logits_all=True``
+        a Llama CPP model
     prefix : str
         prefix for all strings/prompts that will be processed in this context, e.g., a
         set of shared instructions, or exemplars for few-shot prompting
@@ -156,8 +154,7 @@ def cache_model(model: Llama, prefix: str) -> Llama:
         # Load model
         # The top of this page has instructions to download this model
         model_path = "./TinyLLama-v0.Q8_0.gguf"
-        # Always set logits_all=True for CAPPr
-        model = Llama(model_path, logits_all=True, verbose=False)
+        model = Llama(model_path, verbose=False)
 
         # Create data
         prompt_prefix = "Once upon a time,"
@@ -183,10 +180,9 @@ def cache_model(model: Llama, prefix: str) -> Llama:
     """
     if prefix:
         # W/o the if condition, we'd eval on <bos> if there's no prefix and no cache
-        input_ids_prefix = model.tokenize(
-            prefix.encode("utf-8"), add_bos=model.n_tokens == 0
-        )
-        model.eval(input_ids_prefix)
+        input_ids_prefix = model.tokenize(prefix.encode(), add_bos=model.n_tokens == 0)
+        with _utils.set_up_model(model):
+            model.eval(input_ids_prefix)
     return model
 
 
@@ -199,7 +195,7 @@ def cache(model: Llama, prefix: str, reset_model: bool = True):
     Parameters
     ----------
     model : Llama
-        a model instantiated with ``logits_all=True``
+        a Llama CPP model
     prefix : str
         prefix for all strings/prompts that will be processed in this context, e.g., a
         set of shared instructions, or exemplars for few-shot prompting
@@ -223,8 +219,7 @@ def cache(model: Llama, prefix: str, reset_model: bool = True):
         # Load model
         # The top of this page has instructions to download this model
         model_path = "./TinyLLama-v0.Q8_0.gguf"
-        # Always set logits_all=True for CAPPr
-        model = Llama(model_path, logits_all=True, verbose=False)
+        model = Llama(model_path, verbose=False)
 
         # Create data
         prompt_prefix = "Once upon a time,"
@@ -268,7 +263,6 @@ def _log_probs_conditional_prompt(
     model: Llama,
     end_of_prompt: Literal[" ", ""],
 ) -> list[list[float]]:
-    _utils.check_model(model)
     # Prepend whitespaces if the tokenizer or context call for it
     # TODO: put this in the context manager? Little weird
     if not _utils.does_tokenizer_need_prepended_space(model):
@@ -291,7 +285,7 @@ def _log_probs_conditional_prompt(
         # For example, if 'a b' is the prompt and 'c' is the completion, the encoding
         # should correspond to '<s> a b c' not '<s> a b <s> c'
         input_ids_completions = [
-            model.tokenize(completion.encode("utf-8"), add_bos=False)
+            model.tokenize(completion.encode(), add_bos=False)
             for completion in completions
         ]
         if all(
@@ -309,21 +303,24 @@ def _log_probs_conditional_prompt(
         # Loop through completions, b/c llama cpp currently doesn't support batch
         # inference
         log_probs_completions: list[list[float]] = []
-        for input_ids_completion in input_ids_completions:
-            # Given the prompt, compute all next-token logits for each completion token
-            model.eval(input_ids_completion)
-            # Logits -> log-probs. We need the prompt's last token's logits b/c it
-            # contains the first completion token's log-prob. But we don't need the last
-            # completion token's next-token logits ofc. Also, it's num_tokens_prompt - 1
-            # b/c of 0-indexing
-            logits_completion = np.array(model.eval_logits)[num_tokens_prompt - 1 : -1]
-            log_probs_completion: list[float] = _utils.logits_to_log_probs(
-                logits_completion, np.array(input_ids_completion)
-            ).tolist()
-            log_probs_completions.append(log_probs_completion)
-            # Reset the model's KV cache to the prompt. Without this line, the cache
-            # would include this completion's KVs, which is mega wrong
-            model.n_tokens = num_tokens_prompt
+        with _utils.set_up_model(model):
+            for input_ids_completion in input_ids_completions:
+                # Given the prompt, compute next-token logits for each completion token
+                model.eval(input_ids_completion)
+                # Logits -> log-probs. We need the prompt's last token's logits b/c it
+                # contains the first completion token's log-prob. But we don't need the
+                # last completion token's next-token logits ofc. Also, it's
+                # num_tokens_prompt - 1 b/c of 0-indexing
+                logits_completion = np.array(model.eval_logits)[
+                    num_tokens_prompt - 1 : -1
+                ]
+                log_probs_completion: list[float] = _utils.logits_to_log_probs(
+                    logits_completion, np.array(input_ids_completion)
+                ).tolist()
+                log_probs_completions.append(log_probs_completion)
+                # Reset the model's KV cache to the prompt. Without this line, the cache
+                # would include this completion's KVs, which is mega wrong
+                model.n_tokens = num_tokens_prompt
         return log_probs_completions
 
 
@@ -354,7 +351,7 @@ def log_probs_conditional(
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
     model : Llama
-        a model instantiated with ``logits_all=True``
+        a Llama CPP model
     end_of_prompt : Literal[' ', ''], optional
         whitespace or empty string to join prompt and completion, by default whitespace
     show_progress_bar : bool | None, optional
@@ -394,8 +391,7 @@ def log_probs_conditional(
         # Load model
         # The top of this page has instructions to download this model
         model_path = "./TinyLLama-v0.Q8_0.gguf"
-        # Always set logits_all=True for CAPPr
-        model = Llama(model_path, logits_all=True, verbose=False)
+        model = Llama(model_path, verbose=False)
 
         # Create data
         prompts = ["x y", "a b c"]
@@ -446,7 +442,7 @@ def log_probs_conditional_examples(
         `Example` object(s), where each contains a prompt and its set of possible
         completions
     model : Llama
-        a model instantiated with ``logits_all=True``
+        a Llama CPP model
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 `examples`
@@ -492,8 +488,7 @@ def log_probs_conditional_examples(
         # Load model
         # The top of this page has instructions to download this model
         model_path = "./TinyLLama-v0.Q8_0.gguf"
-        # Always set logits_all=True for CAPPr
-        model = Llama(model_path, logits_all=True, verbose=False)
+        model = Llama(model_path, verbose=False)
 
         # Create examples
         examples = [
@@ -556,7 +551,7 @@ def predict_proba(
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
     model : Llama
-        a model instantiated with ``logits_all=True``
+        a Llama CPP model
     end_of_prompt : Literal[' ', ''], optional
         whitespace or empty string to join prompt and completion, by default whitespace
     prior : Sequence[float] | None, optional
@@ -616,8 +611,7 @@ def predict_proba(
         # Load model
         # The top of this page has instructions to download this model
         model_path = "./TinyLLama-v0.Q8_0.gguf"
-        # Always set logits_all=True for CAPPr
-        model = Llama(model_path, logits_all=True, verbose=False)
+        model = Llama(model_path, verbose=False)
 
         # Define a classification task
         prompts = ["In a hole in", "Once upon"]
@@ -655,7 +649,7 @@ def predict_proba_examples(
         `Example` object(s), where each contains a prompt and its set of possible
         completions
     model : Llama
-        a model instantiated with ``logits_all=True``
+        a Llama CPP model
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 `examples`
@@ -691,8 +685,7 @@ def predict_proba_examples(
         # Load model
         # The top of this page has instructions to download this model
         model_path = "./TinyLLama-v0.Q8_0.gguf"
-        # Always set logits_all=True for CAPPr
-        model = Llama(model_path, logits_all=True, verbose=False)
+        model = Llama(model_path, verbose=False)
 
         # Create examples
         examples = [
@@ -744,7 +737,7 @@ def predict(
         strings, where, e.g., each one is the name of a class which could come after a
         prompt
     model : Llama
-        a model instantiated with ``logits_all=True``
+        a Llama CPP model
     end_of_prompt : Literal[' ', ''], optional
         whitespace or empty string to join prompt and completion, by default whitespace
     prior : Sequence[float] | None, optional
@@ -796,8 +789,7 @@ def predict(
         # Load model
         # The top of this page has instructions to download this model
         model_path = "./TinyLLama-v0.Q8_0.gguf"
-        # Always set logits_all=True for CAPPr
-        model = Llama(model_path, logits_all=True, verbose=False)
+        model = Llama(model_path, verbose=False)
 
         # Define a classification task
         prompts = ["In a hole in", "Once upon"]
@@ -833,7 +825,7 @@ def predict_examples(
         `Example` object(s), where each contains a prompt and its set of possible
         completions
     model : Llama
-        a model instantiated with ``logits_all=True``
+        a Llama CPP model
     show_progress_bar : bool | None, optional
         whether or not to show a progress bar. By default, it will be shown only if
         there are at least 5 `examples`
@@ -865,8 +857,7 @@ def predict_examples(
         # Load model
         # The top of this page has instructions to download this model
         model_path = "./TinyLLama-v0.Q8_0.gguf"
-        # Always set logits_all=True for CAPPr
-        model = Llama(model_path, logits_all=True, verbose=False)
+        model = Llama(model_path, verbose=False)
 
         # Create examples
         examples = [

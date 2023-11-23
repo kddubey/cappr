@@ -66,7 +66,7 @@ def model_and_does_tokenizer_need_prepended_space(
         local_dir=_MODELS_DIR,
         local_dir_use_symlinks=False,
     )
-    model = Llama(model_path, logits_all=True, verbose=False)
+    model = Llama(model_path, verbose=False)
     return model, hf_hub_model.does_tokenizer_need_prepended_space
 
 
@@ -74,7 +74,7 @@ def model_and_does_tokenizer_need_prepended_space(
 def model(model_and_does_tokenizer_need_prepended_space: tuple[Llama, bool]) -> Llama:
     model, _ = model_and_does_tokenizer_need_prepended_space
     # Correctness should not be affected by a user's previous actions, which get cached
-    model.eval(model.tokenize("a b c".encode("utf-8")))
+    model.eval(model.tokenize("a b c".encode()))
     return model
 
 
@@ -112,16 +112,11 @@ def test__does_tokenizer_need_prepended_space(
     )
 
 
-def test__check_model(model: Llama):
-    try:
-        model.context_params.logits_all = False
-        error_msg = "model needed to be instantiated with logits_all=True"
-        with pytest.raises(TypeError, match=error_msg):
-            classify.token_logprobs(["not used"], model)
-        with pytest.raises(TypeError, match=error_msg):
-            classify.predict_proba("not used", ["not used"], model, normalize=False)
-    finally:
-        model.context_params.logits_all = True
+def test_set_up_model(model: Llama):
+    assert not model.context_params.logits_all
+    with _utils.set_up_model(model):
+        assert model.context_params.logits_all
+    assert not model.context_params.logits_all
 
 
 @pytest.mark.parametrize("shape_and_dim", [((10,), 0), ((3, 10), 1)])
@@ -159,14 +154,15 @@ def test_token_logprobs(texts: Sequence[str], model: Llama, end_of_prompt=""):
         end_of_prompt = ""
     log_probs_texts_from_unbatched = []
     input_ids_from_unbatched = []
-    for text in texts:
-        input_ids = model.tokenize((end_of_prompt + text).encode("utf-8"), add_bos=True)
-        model.reset()
-        model.eval(input_ids)
-        log_probs_texts_from_unbatched.append(
-            _utils.log_softmax(np.array(model.eval_logits))
-        )
-        input_ids_from_unbatched.append(input_ids)
+    with _utils.set_up_model(model):
+        for text in texts:
+            input_ids = model.tokenize((end_of_prompt + text).encode(), add_bos=True)
+            model.reset()
+            model.eval(input_ids)
+            log_probs_texts_from_unbatched.append(
+                _utils.log_softmax(np.array(model.eval_logits))
+            )
+            input_ids_from_unbatched.append(input_ids)
     model.reset()
 
     log_probs_texts_observed = (

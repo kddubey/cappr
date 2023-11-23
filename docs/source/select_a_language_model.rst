@@ -137,8 +137,6 @@ To work with models stored in the GGUF format, CAPPr depends on the `llama-cpp-p
 <https://github.com/abetlen/llama-cpp-python>`_ package. Search the `HuggingFace model
 hub <https://huggingface.co/models?sort=trending&search=gguf>`_ for these models.
 
-.. note:: When instantiating your Llama, set ``logits_all=True``.
-
 Here's a quick example (which assumes you've downloaded `this 6 MB model
 <https://huggingface.co/aladar/TinyLLama-v0-GGUF>`_):
 
@@ -147,8 +145,8 @@ Here's a quick example (which assumes you've downloaded `this 6 MB model
    from llama_cpp import Llama
    from cappr.llama_cpp.classify import predict
 
-   # Load model. Always set logits_all=True for CAPPr
-   model = Llama("./TinyLLama-v0.Q8_0.gguf", logits_all=True, verbose=False)
+   # Load model
+   model = Llama("./TinyLLama-v0.Q8_0.gguf", verbose=False)
 
    prompt = """Gary told Spongebob a story:
    There once was a man from Peru; who dreamed he was eating his shoe. He
