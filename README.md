@@ -394,7 +394,7 @@ See [this page of the documentation](https://cappr.readthedocs.io/en/latest/loca
 
 ## Todo
 
-I'm dumping TODOs here:
+I'm dumping todos here:
 
 [Code changes](https://github.com/users/kddubey/projects/1/views/1)
 
