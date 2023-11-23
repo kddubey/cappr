@@ -74,7 +74,7 @@ class _BaseTest:
         pd.Series(["completions is", "a", "Series"], index=[8, 10, 8]),
     ),
 )
-class BaseTestPromptsCompletions(_BaseTest):
+class TestPromptsCompletions(_BaseTest):
     """
     Test non-`_examples` functions with a basic set of combinations of `prompts` and
     `completions`.
@@ -86,9 +86,10 @@ class BaseTestPromptsCompletions(_BaseTest):
         self._test("log_probs_conditional", prompts, completions, *args, **kwargs)
 
     # Fixtures for predict_proba
-    # TODO: this is a bit dirty. Figure out how to make it simpler.
-    @pytest.fixture(scope="class", params=[True, False])
-    def _use_prior(self, request: pytest.FixtureRequest) -> bool:
+    # They're not predict_proba parametrizations b/c that raises an error indicating,
+    # IIUC, that they're not in scope for this class' subclasses
+    @pytest.fixture(scope="class", params=[None, 1])
+    def prior(self, request: pytest.FixtureRequest):
         return request.param
 
     @pytest.fixture(scope="class", params=[True, False])
@@ -104,20 +105,17 @@ class BaseTestPromptsCompletions(_BaseTest):
         prompts: str | Sequence,
         completions: Sequence[str],
         *args,
-        _use_prior: bool,
+        prior,
         discount_completions: float,
         normalize: bool,
         **kwargs,
     ):
-        if _use_prior:
-            kwargs["prior"] = [1 / len(completions)] * len(completions)
-        else:
-            kwargs["prior"] = None
         self._test(
             "predict_proba",
             prompts,
             completions,
             *args,
+            prior=prior if prior is None else [1 / len(completions)] * len(completions),
             discount_completions=discount_completions,
             normalize=normalize,
             **kwargs,
@@ -152,7 +150,7 @@ class BaseTestPromptsCompletions(_BaseTest):
         Example("lonely", ["loner"], normalize=False),
     ),
 )
-class BaseTestExamples(_BaseTest):
+class TestExamples(_BaseTest):
     """
     Test `_examples` functions with a basic set of :class:`cappr.Example`(s).
     """
@@ -182,7 +180,7 @@ class BaseTestExamples(_BaseTest):
         ["e", "f"],  # single tokens
     ),
 )
-class BaseTestCache(_BaseTest):
+class TestCache(_BaseTest):
     def _test_log_probs_conditional(
         self,
         log_probs_completions_from_cached: list[list[list[float]]],

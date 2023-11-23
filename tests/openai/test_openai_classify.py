@@ -16,7 +16,7 @@ from cappr.openai import classify
 
 # sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
-from _base import BaseTestPromptsCompletions, BaseTestExamples
+import _base
 
 
 ########################################################################################
@@ -113,7 +113,7 @@ class Modules:
         return None
 
 
-class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
+class TestPromptsCompletions(Modules, _base.TestPromptsCompletions):
     def test_log_probs_conditional(self, prompts, completions, model):
         super().test_log_probs_conditional(prompts, completions, model)
 
@@ -122,7 +122,7 @@ class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
         prompts,
         completions,
         model,
-        _use_prior,
+        prior,
         discount_completions,
         normalize,
     ):
@@ -130,7 +130,7 @@ class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
             prompts,
             completions,
             model,
-            _use_prior=_use_prior,
+            prior=prior,
             discount_completions=discount_completions,
             normalize=normalize,
         )
@@ -139,7 +139,7 @@ class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
         super().test_predict(prompts, completions, model)
 
 
-class TestExamples(Modules, BaseTestExamples):
+class TestExamples(Modules, _base.TestExamples):
     def test_log_probs_conditional_examples(
         self, examples: Example | Sequence[Example], model
     ):

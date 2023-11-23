@@ -23,7 +23,7 @@ from cappr.huggingface._utils import BatchEncodingPT, ModelForCausalLM
 
 # sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
-from _base import BaseTestPromptsCompletions, BaseTestExamples, BaseTestCache
+import _base
 import _test_content
 from _protocol import classify_module
 
@@ -368,11 +368,12 @@ class Modules:
         return classify_no_cache
 
 
-class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
+class TestPromptsCompletions(Modules, _base.TestPromptsCompletions):
     def test__logits_completions_given_prompts(
         self, model, tokenizer, prompts, completions, atol
     ):
-        # for this function, prompts can't be a single string
+        # Test logits for better debuggability
+        # For this helper function, prompts can't be a single string
         if isinstance(prompts, str):
             return
         slow_out = classify_no_cache._logits_completions_given_prompts(
@@ -407,7 +408,7 @@ class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
         prompts,
         completions,
         model_and_tokenizer,
-        _use_prior,
+        prior,
         discount_completions,
         normalize,
     ):
@@ -415,7 +416,7 @@ class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
             prompts,
             completions,
             model_and_tokenizer,
-            _use_prior=_use_prior,
+            prior=prior,
             discount_completions=discount_completions,
             normalize=normalize,
         )
@@ -424,11 +425,12 @@ class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
         super().test_predict(prompts, completions, model_and_tokenizer)
 
 
-class TestExamples(Modules, BaseTestExamples):
+class TestExamples(Modules, _base.TestExamples):
     def test__logits_completions_given_prompts_examples(
         self, model, tokenizer, examples, atol
     ):
-        # for this helper function, examples can't be an Example
+        # Test logits for better debuggability
+        # For this helper function, examples can't be an Example
         if isinstance(examples, Example):
             return
         slow_out = classify_no_cache._logits_completions_given_prompts_examples(
@@ -460,7 +462,7 @@ class TestExamples(Modules, BaseTestExamples):
 
 
 @pytest.mark.parametrize("batch_size", (1, 2))
-class TestCache(Modules, BaseTestCache):
+class TestCache(Modules, _base.TestCache):
     def test_cache(
         self,
         prompt_prefix: str,

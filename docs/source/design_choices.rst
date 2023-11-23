@@ -165,8 +165,8 @@ This package's tests are designed in a sophisticated (complicated) way. It took 
 while to think about what they should look like. The goal was to allow for 2 things:
 
 #. shared test cases universal to all ``classify`` modules—these are the
-   parametrizations in ``BaseTestPromptsCompletions`` and ``BaseTestExamples`` (see this
-   `module <https://github.com/kddubey/cappr/blob/main/tests/_base.py>`_)
+   parametrizations in ``_base.TestPromptsCompletions`` and ``_base.TestExamples`` (see
+   this `module <https://github.com/kddubey/cappr/blob/main/tests/_base.py>`_)
 #. LM-interface-specific fixtures and parametrizations to test LM-interface-specific
    setups and arguments, e.g., ``batch_size`` in ``cappr.huggingface``.
 

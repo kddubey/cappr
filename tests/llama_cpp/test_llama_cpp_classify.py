@@ -20,7 +20,7 @@ from cappr.llama_cpp import _utils, classify, _classify_no_cache
 
 # sys hack to import from parent. If someone has a cleaner solution, lmk
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
-from _base import BaseTestPromptsCompletions, BaseTestExamples, BaseTestCache
+import _base
 import _test_content
 
 
@@ -190,7 +190,7 @@ class Modules:
         return _classify_no_cache
 
 
-class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
+class TestPromptsCompletions(Modules, _base.TestPromptsCompletions):
     def test_log_probs_conditional(self, prompts, completions, model):
         super().test_log_probs_conditional(prompts, completions, model)
 
@@ -199,7 +199,7 @@ class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
         prompts,
         completions,
         model,
-        _use_prior,
+        prior,
         discount_completions,
         normalize,
     ):
@@ -207,7 +207,7 @@ class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
             prompts,
             completions,
             model,
-            _use_prior=_use_prior,
+            prior=prior,
             discount_completions=discount_completions,
             normalize=normalize,
         )
@@ -216,7 +216,7 @@ class TestPromptsCompletions(Modules, BaseTestPromptsCompletions):
         super().test_predict(prompts, completions, model)
 
 
-class TestExamples(Modules, BaseTestExamples):
+class TestExamples(Modules, _base.TestExamples):
     def test_log_probs_conditional_examples(
         self, examples: Example | Sequence[Example], model
     ):
@@ -229,7 +229,7 @@ class TestExamples(Modules, BaseTestExamples):
         super().test_predict_examples(examples, model)
 
 
-class TestCache(Modules, BaseTestCache):
+class TestCache(Modules, _base.TestCache):
     def _test_log_probs_conditional(self, *args, **kwargs):
         model: Llama = args[-1]
         model.reset()  # reset cache before evaluating correct module
