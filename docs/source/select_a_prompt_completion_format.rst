@@ -362,10 +362,10 @@ Here's an example:
 A note on few-shot prompts
 --------------------------
 
-While all of the examples in the documentation are "zero-shot" prompts (they don't
-include examples of inputs and expected outputs) nothing about CAPPr prevents you from
-using few-shot prompts / in-context learning. Just make sure you're not paying too much
-money, latency, or data for a small benefit. Use
+While almost all of the examples in the documentation are "zero-shot" prompts (they
+don't include examples of inputs and expected outputs), nothing about CAPPr prevents you
+from using few-shot prompts / in-context learning. Just make sure you're not paying too
+much money, latency, or data for a small benefit. Use
 :func:`cappr.llama_cpp.classify.cache_model` or
 :func:`cappr.huggingface.classify.cache_model` if applicable. And consider that you may
 not need to label many (or any!) examples for few-shot prompting to work well.\ [6]_
