@@ -200,7 +200,7 @@ def agg_log_probs(
 
 def posterior_prob(
     likelihoods: npt.ArrayLike[float],
-    axis: int,
+    axis: int = -1,
     prior: Sequence[float] | None = None,
     normalize: bool | Sequence[bool] = True,
     check_prior: bool = True,
@@ -212,9 +212,9 @@ def posterior_prob(
     ----------
     likelihoods : npt.ArrayLike[float]
         1-D or 2-D array of probabilities of data given a hypothesis
-    axis : int
-        the axis along which the probability distribution should be defined, e.g.,
-        `axis=0` if `likelihoods` is 1-D
+    axis : int, optional
+        the axis/dimension along which the probability distribution is defined. By
+        default, the last axis
     prior : Sequence[float] | None, optional
         a probability distribution over the `axis` of `likelihoods`. By default, a
         uniform prior is used
