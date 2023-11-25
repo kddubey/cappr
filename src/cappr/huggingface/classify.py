@@ -278,7 +278,8 @@ class _ModelWithCache:
             [attention_mask_past, encodings["attention_mask"]], dim=1
         )
         # Set position_ids to what they'd be had we fed prompt + completion together
-        # Some model implementations don't do this, so gotta do it manually
+        # Model implementations currently don't do this, so gotta do it manually
+        # Bug: https://github.com/huggingface/transformers/issues/18104
         offsets = attention_mask_past.sum(dim=1)  # numbers of nonpad tokens in past
         position_ids_present = (
             torch.arange(input_ids.shape[1], device=self._cappr.model.device)
@@ -303,7 +304,6 @@ class _ModelWithCache:
                 "input_ids": torch.cat([input_ids_past, input_ids], dim=1),
                 "attention_mask": attention_mask_past_cat_present,
             }
-            encodings = cast(BatchEncodingPT, encodings)
             self._cappr.past = encodings, out
         return out
 
@@ -336,9 +336,9 @@ def cache_model(
     model_and_tokenizer : tuple[ModelForCausalLM, PreTrainedTokenizerBase]
         a model and its tokenizer
     prefixes : str | Sequence[str]
-        prefix(es) for all strings that will be processed in this context, e.g., a
-        string containing shared prompt instructions, or a string containing
-        instructions and exemplars for few-shot prompting
+        prefix(es) for all future strings that will be processed, e.g., a string
+        containing shared prompt instructions, or a string containing instructions and
+        exemplars for few-shot prompting
     logits_all : bool, optional
         whether or not to have the cached model include logits for all tokens (including
         the past). By default, past token logits are included
@@ -670,7 +670,7 @@ def _blessed_helper(
     # Drop the next-token logits for the last completion token. They're not useful for
     # CAPPr. Moreover, dropping ensures completions_logits.shape[:2] ==
     # completions_encoding["input_ids"].shape, as one expects. Just keep in mind that
-    # `logits` are shifted behind
+    # logits are shifted behind
     completions_logits = torch.cat(completions_logits, dim=0)[:, :-1, :]
     prompts_last_nonpad_token_logits = (
         prompts_last_nonpad_token_logits.repeat_interleave(

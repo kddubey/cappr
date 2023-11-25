@@ -1,12 +1,12 @@
 Statistical performance
 =======================
 
-Modern language models undergo two training stages: pretraining, and instruction
-training. When solving a classification task, it's tempting to lean on instruction-style
-prompts in combination with text generation. This combination works incredibly well for
-multi-GPU, proprietary models. But what about smaller, open source ones? Perhaps there
-are smaller or undertrained models which are not good at generating a choice, but are
-good at estimating probabilities.
+Modern language models undergo at least two training stages: pretraining, and
+instruction training. When solving a classification task, it's tempting to lean on
+instruction-style prompts in combination with text generation. This combination works
+incredibly well for multi-GPU, proprietary models. But what about smaller, open source
+ones? Perhaps there are smaller or undertrained models which are not good at generating
+a choice, but are good at estimating probabilities.
 
 A handful of experiments suggests that CAPPr squeezes more out of smaller LLMs for text
 classification tasks. In the `OpenAI COPA demo

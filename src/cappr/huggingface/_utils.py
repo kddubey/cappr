@@ -31,7 +31,7 @@ A pretrained model with the same inference interface as a model loaded via
 
 ########################################################################################
 # Set up the model and tokenizer to enable correct, batched inference. Use context
-# managers, because we shouldn't modify a user's settings when CAPPr is done. It's
+# managers b/c a user's settings shouldn't be modified when CAPPr is done. It's
 # conceivable that someone uses CAPPr as part of a larger system where the model and
 # tokenizer needs to be configured differently
 ########################################################################################
@@ -190,14 +190,6 @@ def _batched_model_call(
     return CausalLMOutput(logits=logits)
 
 
-def _drop_first_token(
-    logits: torch.Tensor, encodings: BatchEncodingPT
-) -> tuple[torch.Tensor, BatchEncodingPT]:
-    logits = logits[:, 1:, :]
-    encodings = {key: value[:, 1:] for key, value in encodings.items()}
-    return logits, encodings
-
-
 def logits_texts(
     texts: Sequence[str],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
@@ -222,10 +214,11 @@ def logits_texts(
         with set_up_model(model):
             out: CausalLMOutput = model(**encodings)
     if drop_bos_token and getattr(tokenizer, "add_bos_token", False):
-        # Drop the first bos token after we're done encoding so that the shape is
+        # Drop the first/bos token after we're done encoding so that the shape is
         # consistent w/ other tokenizers. For CAPPr, we'll never be interested in
         # Pr(token | <bos>). We're only interested in completion tokens
-        logits, encodings = _drop_first_token(out.logits, encodings)
+        logits = out.logits[:, 1:, :]
+        encodings = {key: value[:, 1:] for key, value in encodings.items()}
     else:
         logits = out.logits
     return logits, encodings

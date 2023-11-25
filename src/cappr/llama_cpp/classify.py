@@ -135,8 +135,9 @@ def cache_model(model: Llama, prefix: str) -> Llama:
     model : Llama
         a Llama CPP model
     prefix : str
-        prefix for all strings/prompts that will be processed in this context, e.g., a
-        set of shared instructions, or exemplars for few-shot prompting
+        prefix for all future strings that will be processed, e.g., a string containing
+        shared prompt instructions, or a string containing instructions and exemplars
+        for few-shot prompting
 
     Note
     ----
@@ -197,8 +198,9 @@ def cache(model: Llama, prefix: str, reset_model: bool = True):
     model : Llama
         a Llama CPP model
     prefix : str
-        prefix for all strings/prompts that will be processed in this context, e.g., a
-        set of shared instructions, or exemplars for few-shot prompting
+        prefix for all strings that will be processed in this context, e.g., a string
+        containing shared prompt instructions, or a string containing instructions and
+        exemplars for few-shot prompting
     reset_model : bool, optional
         whether or not to reset the model's KV cache and logits. Set this to False when
         you're in a :func:`cache` context. By default, True
