@@ -6,7 +6,7 @@ There are `other LLM structuring tools
 which support "just pick one" functionality. `guidance
 <https://github.com/guidance-ai/guidance>`_, for example, provides a ``select`` function
 which almost always returns a valid choice. You should strongly consider using these
-tools, as they scale independently of the number of choices.
+tools, as they scale well with respect to the number of choices.
 
 One potential weakness of algorithms like this is that they don't always look at the
 entire choice: they exit early when the generated choice becomes unambiguous. This

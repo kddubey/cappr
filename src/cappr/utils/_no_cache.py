@@ -1,5 +1,5 @@
 """
-Utilities for implementations which don't cache
+Generic implementation for non-cached LM interfaces
 """
 from __future__ import annotations
 from functools import lru_cache
