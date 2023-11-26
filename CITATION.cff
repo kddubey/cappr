@@ -1,0 +1,22 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: CAPPr
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Kush
+    family-names: Dubey
+    email: kushdubey63@gmail.com
+repository-code: 'https://github.com/kddubey/cappr'
+url: 'https://cappr.readthedocs.io/'
+abstract: >-
+  Completion After Prompt Probability. Make your LLM make a
+  choice
+license: Apache-2.0
+commit: 63d49d4
+version: 0.8.7
+date-released: '2023-11-23'
