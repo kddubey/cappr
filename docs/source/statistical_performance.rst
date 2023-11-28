@@ -51,9 +51,9 @@ Calibration
 The `calibration
 <https://en.wikipedia.org/wiki/Probabilistic_classification#Probability_calibration>`_
 of CAPPr estimates has barely been studied. These estimates are slightly different than
-usual next-token probability estimates because:
+usual next-token log probability estimates because:
 
-- CAPPr hackily takes a mean over next-token probabilities
+- CAPPr hackily takes a mean over next-token log probabilities
 - CAPPr can incorporate a prior specific to your classification data.
 
 The `Banking 77 demo`_ contains two low-resolution but interesting calibration curves.

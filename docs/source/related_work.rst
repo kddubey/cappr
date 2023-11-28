@@ -1,22 +1,22 @@
 Related work
 ============
 
-The idea of aggregating token probabilities is well known. You'll find it as a
+The idea of aggregating token log-probabilities is well known. You'll find it as a
 subroutine in papers from `GPT-2
 <https://paperswithcode.com/paper/language-models-are-unsupervised-multitask>`_\ [#]_ to
 `Self-Consistency <https://arxiv.org/abs/2203.11171>`_\ [#]_. The ``cappr``
 implementation includes a few computational and statistical optimizations, while
 maintaining a simple interface.
 
-Here are some papers which focus on the idea of aggregating token probabilities.
+Here are some papers which focus on the idea of aggregating token log-probabilities.
 
 `This paper <https://arxiv.org/abs/1806.02847>`_\ [#]_ presents a transposed version of
 CAPPr. Its method was used in CAPPr's `demo for the Winograd Schema Challenge
 <https://github.com/kddubey/cappr/blob/main/demos/openai/superglue/wsc.ipynb>`_.
 
 `PET with multiple masks <https://arxiv.org/abs/2009.07118>`_\ [#]_ also aggregates
-token probabilities to do prompt-completion classification. But these probabilities are
-assumed to come from masked language models like BERT.
+token log-probabilities to do prompt-completion classification. But these
+log-probabilities are assumed to come from masked language models like BERT.
 
 References
 ----------
