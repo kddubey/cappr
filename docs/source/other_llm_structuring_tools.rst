@@ -40,12 +40,9 @@ previous page (where CAPPr succeeds):
    Pick exactly one category which the product review belongs to.
    """
 
-   # GPT-x models use BPE tokenization, so need to do this
-   class_names_prepended = [" " + class_name for class_name in class_names]
-
-   result = model + prompt + select(class_names_prepended, name="pred")
+   result = model + prompt + select(class_names, name="pred")
    print(result["pred"])
-   #  The product is great
+   # The product is great
 
 (Other prompts, including beefier versions of CAPPr's prompt on the previous page, also
 fail.)
