@@ -63,18 +63,6 @@ Here's the nice-looking curve:
    :align: center
 
 
-Ideas dump
-----------
-
-#. Given a task which benefits from CoT, collect data like so: prompt -> CoT ->
-   summarize using powerful model -> final answer. Train a model on (prompt, final
-   answer) to see whether CoT can be skipped for that task. Benefit: lower latency.
-
-#. For classification, instead of adding a linear layer, just train using a
-   prompt-completion format. This method is a simpler, autoregressive version of PET
-   training. Has probably been done before, but I'm curious to see the improvement.
-
-
 .. _COPA demo: https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb
 
 .. _Craigslist Bargains demo: https://github.com/kddubey/cappr/blob/main/demos/huggingface/craigslist_bargains.ipynb
