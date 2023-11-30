@@ -6,6 +6,7 @@ Measure computational and statistical performance.
 pip install "cappr[demos]"
 ```
 
+
 ## Methodology for evaluating statistical performance
 
 The workflow described
@@ -22,7 +23,11 @@ what would be done in a real application. The demos follow a slightly lazier met
 though: tune the text generation format based on a training set. If it seems performant,
 use that same format for CAPPr. If CAPPr is at least as performant as text generation on
 the training set, stop. Else, tune CAPPr's format as well, and then evaluate both
-strategies and their formats on an independent test set. 
+strategies and their formats on an independent test set.
+
+I still need to investigate how much train-test leakage there is between [this HF
+model](https://huggingface.co/TheBloke/Mistral-7B-OpenOrca-GPTQ) and the HF datasets.
+It'd be cool if there were an easy way to find this info.
 
 
 ## Acknowledgements
