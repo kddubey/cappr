@@ -337,7 +337,7 @@ In general, you should expect similar or identical performance to text generatio
 every completion is 1 token long.
 
 See [this page of the
-documentation](https://cappr.readthedocs.io/en/latest/computational_performance.html)
+documentation](https://cappr.readthedocs.io/en/latest/statistical_performance.html)
 for some discussion.
 
 For OpenAI models (about to be deprecated), see
