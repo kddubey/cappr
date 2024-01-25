@@ -340,7 +340,7 @@ See [this page of the
 documentation](https://cappr.readthedocs.io/en/latest/statistical_performance.html)
 for some discussion.
 
-For OpenAI models (about to be deprecated), see
+For OpenAI models (some deprecated), see
 
 [2 SuperGLUE
 datasets](https://github.com/kddubey/cappr/blob/main/demos/openai/superglue)

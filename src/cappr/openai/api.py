@@ -36,13 +36,6 @@ logger = logging.getLogger(__name__)
 Model = Literal[  # Literal so that docs and IDEs easily parse it
     "babbage-002",
     "davinci-002",
-    # TODO: deprecate all of these on 01/04/2024
-    # https://platform.openai.com/docs/deprecations/instructgpt-models
-    "text-ada-001",
-    "text-babbage-001",
-    "text-curie-001",
-    "text-davinci-002",
-    "text-davinci-003",
 ]
 """
 These are /v1/completions models where `echo=True, logprobs=1` can be passed. On
@@ -85,12 +78,6 @@ _MODEL_TO_COST_PER_1K_TOKENS = {
     "davinci-002": _DollarCostPer1kTokens(prompt=0.002, completion=0.002),
     # Deprecated echo=True, logprobs=1 on 10/05/2023
     "gpt-3.5-turbo-instruct": _DollarCostPer1kTokens(prompt=0.0015, completion=0.002),
-    # Will be deprecated completely on 01/04/2024
-    "text-ada-001": _DollarCostPer1kTokens(prompt=0.0004, completion=0.0004),
-    "text-babbage-001": _DollarCostPer1kTokens(prompt=0.0005, completion=0.0005),
-    "text-curie-001": _DollarCostPer1kTokens(prompt=0.002, completion=0.002),
-    "text-davinci-002": _DollarCostPer1kTokens(prompt=0.02, completion=0.02),
-    "text-davinci-003": _DollarCostPer1kTokens(prompt=0.02, completion=0.02),
 }
 
 
