@@ -50,5 +50,5 @@ choices in the prompt improves accuracy.
 
 From an engineering standpoint, another weakness of CAPPr is that computational
 optimizations require the ability to control the cache and batch inputs. The model must
-implement the HuggingFace transformers interface—including accepting and returning
+implement the Hugging Face transformers interface—including accepting and returning
 ``past_key_values``. With sampling, caching is simpler, and batching isn't required.

@@ -17,12 +17,12 @@ the most computationally performant. `Mistral trained on OpenOrca
 performant. These models are compatible with :mod:`cappr.huggingface.classify`.
 
 
-HuggingFace
------------
+Hugging Face
+------------
 
 To work with models which implement the ``transformers`` CausalLM interface, including
 `AutoGPTQ`_ and `AutoAWQ`_ models, CAPPr depends on the ``transformers`` package. Search
-the `HuggingFace model hub <https://huggingface.co/models>`_ for these models.
+the `Hugging Face model hub <https://huggingface.co/models>`_ for these models.
 
 .. note:: For ``transformers>=4.32.0``, GPTQ models `can be loaded
           <https://huggingface.co/docs/transformers/main/en/main_classes/quantization#autogptq-integration>`_
@@ -55,8 +55,8 @@ So far, CAPPr has been tested for code correctness on the following architecture
 - Llama, Llama 2
 - Mistral.
 
-You'll need access to beefier hardware to run models from the HuggingFace hub, as
-:mod:`cappr.huggingface` currently assumes you've locally loaded the model. HuggingFace
+You'll need access to beefier hardware to run models from the Hugging Face hub, as
+:mod:`cappr.huggingface` currently assumes you've locally loaded the model. Hugging Face
 Inference Endpoints are not yet supported by this package.
 
 ``ctransformers`` model objects are not yet supported. (I think I'm just waiting on
@@ -65,10 +65,10 @@ Inference Endpoints are not yet supported by this package.
 ``vllm`` model objects are not yet supported.
 
 
-Which CAPPr HuggingFace module should I use?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Which CAPPr Hugging Face module should I use?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are two CAPPr HuggingFace modules. In general, stick to
+There are two CAPPr Hugging Face modules. In general, stick to
 :mod:`cappr.huggingface.classify`.
 
 :mod:`cappr.huggingface.classify` has the greatest `throughput
@@ -134,7 +134,7 @@ Llama CPP
 ---------
 
 To work with models stored in the GGUF format, CAPPr depends on the `llama-cpp-python
-<https://github.com/abetlen/llama-cpp-python>`_ package. Search the `HuggingFace model
+<https://github.com/abetlen/llama-cpp-python>`_ package. Search the `Hugging Face model
 hub <https://huggingface.co/models?sort=trending&search=gguf>`_ for these models.
 
 Here's a quick example (which assumes you've downloaded `this 6 MB model

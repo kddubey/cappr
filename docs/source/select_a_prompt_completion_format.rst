@@ -128,7 +128,7 @@ system prompt for an instruction-trained model. For example:
 Examples
 ++++++++
 
-For examples of this prompt-completion format in action, see any of the `HuggingFace
+For examples of this prompt-completion format in action, see any of the `Hugging Face
 demos <https://github.com/kddubey/cappr/blob/main/demos/huggingface>`_ excluding
 ``sciq.ipynb``, or any of the `Llama CPP demos
 <https://github.com/kddubey/cappr/blob/main/demos/llama_cpp>`_.

@@ -119,7 +119,7 @@ will work just fine.
 Context managers
 ----------------
 
-The HuggingFace module requires that the ``model_and_tokenizer`` input is set up in a
+The Hugging Face module requires that the ``model_and_tokenizer`` input is set up in a
 particular way. It looks like many other tools solve this problem by creating a loading
 function or method which does the required set up. Its returned object is internal to
 the package. I don't think this extra abstraction is necessary. And it comes at the
@@ -146,7 +146,7 @@ protocol.
 
 I previously experimented with `an automation
 <https://github.com/kddubey/dumpy/tree/main/wrap>`_ that dynamically writes the
-docstring via decorators. This pattern is used throughout HuggingFace ``transformers``,
+docstring via decorators. This pattern is used throughout Hugging Face ``transformers``,
 for example. I decided against this pattern because it sacrifices an important
 convenience: hovering over a function to see what it does. Code analyzers like Pylance
 won't show the ``__doc__`` attribute that was dynamically constructed.

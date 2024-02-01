@@ -1,7 +1,7 @@
 Installation
 ============
 
-To use HuggingFace models (including `AutoGPTQ <https://github.com/PanQiWei/AutoGPTQ>`_
+To use Hugging Face models (including `AutoGPTQ <https://github.com/PanQiWei/AutoGPTQ>`_
 and `AutoAWQ <https://github.com/casper-hansen/AutoAWQ>`_)::
 
    pip install "cappr[hf]"

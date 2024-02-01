@@ -59,7 +59,7 @@ for more info on using GGUF models.
 
 
 <details>
-<summary>Use a HuggingFace AutoModelForCausalLM</summary>
+<summary>Use a Hugging Face AutoModelForCausalLM</summary>
 
 This model must be able to be loaded using
 [`transformers.AutoModelForCausalLM.from_pretrained`](https://huggingface.co/docs/transformers/model_doc/auto#transformers.AutoModelForCausalLM).
@@ -82,7 +82,7 @@ print(pred)
 ```
 
 See [this page of the
-documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#huggingface)
+documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#hugging-face)
 for more info on using ``transformers`` models.
 </details>
 
@@ -101,7 +101,7 @@ Note that for `transformers>=4.32.0`, you can load GPTQ models using
 `transformers.AutoModelForCausalLM`.
 
 See [this page of the
-documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#huggingface)
+documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#hugging-face)
 for more info on using these models.
 </details>
 
@@ -122,7 +122,7 @@ Note that for `transformers>=4.35.0`, you can load AWQ models using
 which is usually faster.
 
 See [this page of the
-documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#huggingface)
+documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#hugging-face)
 for more info on using these models.
 </details>
 
@@ -285,7 +285,7 @@ of slightly harder classification tasks.
 
 For CAPPr, GPTQ models are the most computationally performant. These models are
 compatible with `cappr.huggingface.classify`. See [this page of the
-documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#huggingface)
+documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#hugging-face)
 for more info on using these models.
 
 
