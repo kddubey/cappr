@@ -45,7 +45,7 @@ requirements_demos = [
 ]
 
 requirements_dev = [
-    "black>=23.1.0",
+    "black>=24.1.1",
     "docutils<0.19",
     "pre-commit>=3.5.0",
     "pydata-sphinx-theme>=0.13.1",
@@ -72,18 +72,21 @@ setup(
     url="https://github.com/kddubey/cappr/",
     license="Apache License 2.0",
     python_requires=">=3.8.0",
-    install_requires=requirements_base + requirements_openai,
+    install_requires=requirements_base,
     extras_require={
+        "openai": requirements_openai,
         "hf": requirements_huggingface,
         "llama-cpp": requirements_llama_cpp,
-        "all": requirements_huggingface + requirements_llama_cpp,
+        "all": requirements_openai + requirements_huggingface + requirements_llama_cpp,
         "demos": (
-            requirements_huggingface_dev
+            requirements_openai
+            + requirements_huggingface_dev
             + requirements_llama_cpp_dev
             + requirements_demos
         ),
         "dev": (
-            requirements_huggingface_dev
+            requirements_openai
+            + requirements_huggingface_dev
             + requirements_llama_cpp_dev
             + requirements_demos
             + requirements_dev

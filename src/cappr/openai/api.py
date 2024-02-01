@@ -2,6 +2,7 @@
 Helpers functions which are compatible with the Python OpenAI API (before and after
 v1.0.0)
 """
+
 from __future__ import annotations
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
@@ -66,18 +67,11 @@ class _DollarCostPer1kTokens:
 _MODEL_TO_COST_PER_1K_TOKENS = {
     # /v1/chat/completions
     "gpt-4": _DollarCostPer1kTokens(prompt=0.03, completion=0.06),
-    "gpt-4-0613": _DollarCostPer1kTokens(prompt=0.03, completion=0.06),
-    "gpt-4-32k": _DollarCostPer1kTokens(prompt=0.06, completion=0.12),
-    "gpt-4-32k-0613": _DollarCostPer1kTokens(prompt=0.06, completion=0.12),
-    "gpt-3.5-turbo": _DollarCostPer1kTokens(prompt=0.0015, completion=0.002),
-    "gpt-3.5-turbo-0613": _DollarCostPer1kTokens(prompt=0.0015, completion=0.002),
-    "gpt-3.5-turbo-16k": _DollarCostPer1kTokens(prompt=0.003, completion=0.004),
-    "gpt-3.5-turbo-16k-0613": _DollarCostPer1kTokens(prompt=0.003, completion=0.004),
     # /v1/completions
     "babbage-002": _DollarCostPer1kTokens(prompt=0.0004, completion=0.0004),
     "davinci-002": _DollarCostPer1kTokens(prompt=0.002, completion=0.002),
     # Deprecated echo=True, logprobs=1 on 10/05/2023
-    "gpt-3.5-turbo-instruct": _DollarCostPer1kTokens(prompt=0.0015, completion=0.002),
+    "gpt-3.5-turbo-instruct": _DollarCostPer1kTokens(prompt=0.0005, completion=0.0015),
 }
 
 
