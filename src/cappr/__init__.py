@@ -10,16 +10,16 @@ from . import utils
 from ._example import Example
 
 try:
-    from . import openai  # can be optional if cappr is installed with --no-deps
+    from . import openai
 except ModuleNotFoundError:  # pragma: no cover
     pass
 
 try:
-    from . import huggingface  # optional
+    from . import huggingface
 except ModuleNotFoundError:  # pragma: no cover
     pass
 
 try:
-    from . import llama_cpp  # optional
+    from . import llama_cpp
 except ModuleNotFoundError:  # pragma: no cover
     pass
