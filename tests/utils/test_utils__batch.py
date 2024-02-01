@@ -1,6 +1,7 @@
 """
 Unit tests `cappr.utils._batch`.
 """
+
 from __future__ import annotations
 import re
 

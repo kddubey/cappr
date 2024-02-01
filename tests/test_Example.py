@@ -1,6 +1,7 @@
 """
 Unit tests `cappr.Example` input checks.
 """
+
 from __future__ import annotations
 import re
 from typing import Any, Sequence

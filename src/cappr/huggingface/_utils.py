@@ -1,6 +1,7 @@
 """
 YouTils
 """
+
 from __future__ import annotations
 from contextlib import contextmanager, ExitStack, nullcontext
 from functools import lru_cache
@@ -59,14 +60,21 @@ def _no_grad(model: ModelForCausalLM):  # model given to keep interface the same
         yield
 
 
+# Some models don't perfectly implement the HF model call interface. In particular,
+# they're missing the return_dict and use_cache kwargs. They're instead in the model
+# config. I see that as a more extensible design anyway.
+
+
 @contextmanager
 def _return_dict(model: ModelForCausalLM):
     """
     In this context, the model returns a dataclass when it's called.
     """
-    with _setattr(model.config, "return_dict", True) if hasattr(
-        model, "config"
-    ) else nullcontext():  # null b/c just try model(...).logits when needed
+    with (
+        _setattr(model.config, "return_dict", True)
+        if hasattr(model, "config")
+        else nullcontext()
+    ):  # null b/c just try model(...).logits when needed
         yield
 
 
@@ -75,9 +83,11 @@ def _use_cache(model: ModelForCausalLM):
     """
     In this context, the model output includes a `past_key_values` attribute.
     """
-    with _setattr(model.config, "use_cache", True) if hasattr(
-        model, "config"
-    ) else nullcontext():  # null b/c just try model(...).past_key_values when needed
+    with (
+        _setattr(model.config, "use_cache", True)
+        if hasattr(model, "config")
+        else nullcontext()
+    ):  # null b/c just try model(...).past_key_values when needed
         yield
 
 

@@ -22,13 +22,13 @@ requirements_openai = [
 requirements_huggingface = [
     "sentencepiece>=0.1.99",  # for Llama tokenizers. cappr should work out-of-the-box
     "torch>=1.12.1",
-    "transformers>=4.31.0",  # high version b/c Llama
+    "transformers>=4.31.0",
 ]
 
 requirements_huggingface_dev = [
     req if not req.startswith("transformers>=") else "transformers>=4.35.0"
-    # To test Mistral in our testing workflow, we need >=4.34.0. To demo AutoGPTQ on CPU
-    # and AutoAWQ with caching, need >=4.35.0
+    # To test Mistral in our testing workflow, we need >=4.34.0.
+    # To demo AutoGPTQ on CPU and AutoAWQ with caching, need >=4.35.0.
     for req in requirements_huggingface
 ] + ["huggingface-hub>=0.16.4"]
 

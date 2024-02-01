@@ -10,6 +10,7 @@ For example:
     - inputting an incorrectly structured prior will cause all of the model's compute to
       be a waste.
 """
+
 from __future__ import annotations
 from typing import Callable, Literal, Sequence
 

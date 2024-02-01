@@ -1,6 +1,7 @@
 """
 Mirror. For testing purposes only. Is strictly slower
 """
+
 from __future__ import annotations
 from functools import partial
 from typing import Literal, Sequence

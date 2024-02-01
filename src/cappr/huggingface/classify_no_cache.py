@@ -10,6 +10,7 @@ You probably just want the :func:`predict` or :func:`predict_examples` functions
 This module is a mirror of :mod:`cappr.huggingface.classify`. The difference is that
 this module **does not** cache attention keys and values.
 """
+
 from __future__ import annotations
 from typing import cast, Literal, Mapping, Sequence
 

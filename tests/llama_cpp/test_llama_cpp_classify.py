@@ -3,6 +3,7 @@ Unit and integration tests for `cappr.llama_cpp.classify`. Works by checking tha
 functions' outputs are numerically close to those from
 `cappr.llama_cpp._classify_no_cache`.
 """
+
 from __future__ import annotations
 from dataclasses import dataclass
 import os

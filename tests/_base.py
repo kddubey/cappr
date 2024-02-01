@@ -2,6 +2,7 @@
 Base classes which are parametrized with a set of test cases which every `classify`
 module must pass.
 """
+
 from __future__ import annotations
 from typing import Sequence
 

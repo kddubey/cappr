@@ -1,6 +1,7 @@
 """
 Unit tests `cappr.openai.api`. Currently pretty barebones.
 """
+
 from __future__ import annotations
 import os
 

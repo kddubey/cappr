@@ -9,6 +9,7 @@ You probably just want the :func:`predict` or :func:`predict_examples` functions
 In the implementation, attention block keys and values for prompts are automatically
 cached and shared across completions.
 """
+
 from __future__ import annotations
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass

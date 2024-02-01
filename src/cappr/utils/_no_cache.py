@@ -1,6 +1,7 @@
 """
 Generic implementation for non-cached LM interfaces
 """
+
 from __future__ import annotations
 from functools import lru_cache
 from typing import Any, Callable, cast, Literal, Sequence

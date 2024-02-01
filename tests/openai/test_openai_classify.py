@@ -1,6 +1,7 @@
 """
 Unit and integration tests for tests `cappr.openai.classify`.
 """
+
 from __future__ import annotations
 import os
 import sys

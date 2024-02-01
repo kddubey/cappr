@@ -1,6 +1,7 @@
 """
 Batch lists into sublists of constant or variable sizes, and batchify functions
 """
+
 from __future__ import annotations
 from functools import wraps
 import inspect

@@ -3,6 +3,7 @@ Helper functions to test that a `classify` module's:
   - outputs have the correct shape and form (content is NOT checked)
   - inputs are correctly checked.
 """
+
 from __future__ import annotations
 import re
 from typing import Sequence

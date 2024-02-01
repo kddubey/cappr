@@ -3,6 +3,7 @@ Unit and integration tests for `cappr.huggingface.classify`. Works by checking t
 functions' outputs are numerically close to those from
 `cappr.huggingface.classify_no_cache`.
 """
+
 from __future__ import annotations
 from contextlib import nullcontext
 import os

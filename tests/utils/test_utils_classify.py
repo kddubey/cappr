@@ -1,6 +1,7 @@
 """
 Unit tests `cappr.utils.classify`.
 """
+
 from __future__ import annotations
 from typing import Any
 

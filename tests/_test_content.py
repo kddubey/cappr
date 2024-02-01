@@ -2,6 +2,7 @@
 Helper functions to test that outputs of `classify` modules have the correct content,
 assuming a reference/correct implementation exists.
 """
+
 from __future__ import annotations
 from typing import Sequence
 

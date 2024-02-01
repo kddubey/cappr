@@ -5,6 +5,7 @@ compatible with CAPPr.
 
 You probably just want the :func:`predict` or :func:`predict_examples` functions :-)
 """
+
 from __future__ import annotations
 from typing import Literal, Sequence
 

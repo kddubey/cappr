@@ -2,6 +2,7 @@
 Transform completion token log-probabilites into a probability distribution over
 completions
 """
+
 from __future__ import annotations
 from contextlib import contextmanager
 from functools import wraps
@@ -555,9 +556,9 @@ def _predict_examples(predict_proba_examples_func):
     def wrapper(
         examples: Example | Sequence[Example], *args, **kwargs
     ) -> str | list[str]:
-        pred_probs: npt.NDArray[np.floating] | list[
-            npt.NDArray[np.floating]
-        ] = predict_proba_examples_func(examples, *args, **kwargs)
+        pred_probs: npt.NDArray[np.floating] | list[npt.NDArray[np.floating]] = (
+            predict_proba_examples_func(examples, *args, **kwargs)
+        )
         if isinstance(examples, Example):
             # User convenience: examples is a singleton
             assert pred_probs.ndim == 1  # double check
