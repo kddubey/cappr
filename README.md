@@ -158,6 +158,53 @@ for more info on using OpenAI models.
 
 
 <details>
+<summary>Cache instructions to save time</summary>
+
+Many prompts start with the same set of instructions, e.g., a system prompt and a
+handful of example input-output pairs. Instead of repeatedley running the model on
+common instructions, cache them so that future computations are faster.
+
+Here's an
+example using
+[`cappr.huggingface.classify.cache_model`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.classify.html#cappr.huggingface.classify.cache_model).
+
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from cappr.huggingface.classify import cache_model, predict_proba
+
+# Load model and tokenizer
+model = AutoModelForCausalLM.from_pretrained("gpt2")
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
+model_and_tokenizer = (model, tokenizer)
+
+# Create data
+prompt_prefix = '''Instructions: complete the sequence.
+Here are examples:
+A, B, C => D
+1, 2, 3 => 4
+
+Complete this sequence:'''
+
+prompts = ["a, b, c =>", "X, Y =>"]
+completions = ["d", "Z", "Hi"]
+
+# Cache
+cached_model_and_tokenizer = cache_model(
+    model_and_tokenizer, prompt_prefix
+)
+
+# Compute
+pred_probs = predict_proba(
+    prompts, completions, cached_model_and_tokenizer
+)
+print(pred_probs.round(2))
+# [[1.   0.   0.  ]
+#  [0.01 0.99 0.  ]]
+```
+</details>
+
+
+<details>
 <summary>Extract the final answer from a step-by-step completion</summary>
 
 Step-by-step and chain-of-thought prompts are highly effective ways to get an LLM to
