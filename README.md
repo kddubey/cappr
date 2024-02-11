@@ -90,9 +90,9 @@ for more info on using ``transformers`` models.
 <details>
 <summary>Cache instructions to save time</summary>
 
-Many prompts start with the same set of instructions, e.g., a system prompt and a
-handful of example input-output pairs. Instead of repeatedley running the model on
-common instructions, cache them so that future computations are faster.
+Many prompts start with the same set of instructions, e.g., a system prompt plus a
+handful of example input-output pairs. Instead of repeatedly running the model on common
+instructions, cache them so that future computations are faster.
 
 Here's an
 example using
