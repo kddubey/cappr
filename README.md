@@ -100,7 +100,7 @@ example using
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from cappr.huggingface.classify import cache_model, predict_proba
+from cappr.huggingface.classify import cache_model, predict
 
 # Load model and tokenizer
 model = AutoModelForCausalLM.from_pretrained("gpt2")
@@ -118,18 +118,17 @@ Complete this sequence:'''
 prompts = ["a, b, c =>", "X, Y =>"]
 completions = ["d", "Z", "Hi"]
 
-# Cache
+# Cache prompt_prefix because it's used for all prompts
 cached_model_and_tokenizer = cache_model(
     model_and_tokenizer, prompt_prefix
 )
 
 # Compute
-pred_probs = predict_proba(
+preds = predict(
     prompts, completions, cached_model_and_tokenizer
 )
-print(pred_probs.round(2))
-# [[1.   0.   0.  ]
-#  [0.01 0.99 0.  ]]
+print(preds)
+# ['d', 'Z']
 ```
 </details>
 

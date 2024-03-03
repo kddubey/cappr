@@ -17,9 +17,9 @@ At a higher level, probabilities are useful when making cost-sensitive decisions
 Another application where predicting probabilities turns out to be useful is in
 "multilabel" tasks. In these tasks, a single piece of text can be labeled or tagged with
 multiple categories. For example, a tweet can express multiple emotions at the same
-time. A simple way to have an LLM tag a tweet's emotions is to predict the probability
-of each emotion, and then threshold each probability. All possible emotions can be
-processed in parallel to save time.
+time. A simple way to have an LLM tag a tweet's negative emotions is to predict the
+probability of each one, and then threshold each probability. All negative emotions are
+processed in parallel to save time, which is also how I power through most days.
 
 
 Examples
