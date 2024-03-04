@@ -40,12 +40,12 @@ is so long that only one or two fit in memory during processing. For a demonstra
 this weakness, see the `Banking 77 demo
 <https://github.com/kddubey/cappr/blob/main/demos/huggingface/banking_77_classes.ipynb>`_.
 
-This weakness isn't apparent in the COPA demo above because CAPPr's prompt can be short
-without sacrificing accuracy. Are there more classification tasks where classes don't
-need to be provided in context (and instead provided as a completion) for CAPPr to
-statistically perform well? If so, CAPPr's computational issues can be worked around
-through better prompt engineering. And the model's context window can be reduced. Based
-on a few experiments, it seems like the answer to this question is no; mentioning
+This weakness isn't apparent in the COPA demo above because the prompt can be short (and
+the completions long) without sacrificing accuracy. Are there more classification tasks
+where classes don't need to be provided in context, and instead provided as a completion
+for CAPPr to statistically perform well? If so, CAPPr's computational issues can be
+worked around through prompt engineering. And the model's context window can be reduced.
+Based on a few experiments, it seems like the answer to this question is no; mentioning
 choices in the prompt improves accuracy.
 
 From an engineering standpoint, another weakness of CAPPr is that computational

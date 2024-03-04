@@ -151,11 +151,11 @@ for example. I decided against this pattern because it sacrifices an important
 convenience: hovering over a function to see what it does. Code analyzers like Pylance
 won't show the ``__doc__`` attribute that was dynamically constructed.
 
-I personally am annoyed when I have to open up a function's documentation in my browser,
-and look back and forth at my browser and IDE. I like the convenience of hovering over
-the function in my IDE itself. So I opted to do what numpy, scipy, and scikit-learn do
-in their docstrings: repeat text. It's definitely tedious to make modifications. But
-that tediousness is outweighed by the benefits to the user.
+I personally am slightly annoyed when I have to open up a function's documentation in my
+browser, and look back and forth at my browser and IDE. I like the convenience of
+hovering over the function in my IDE itself. So I opted to do what numpy, scipy, and
+scikit-learn do in their docstrings: repeat text. It's definitely tedious to make
+modifications. But that tediousness is outweighed by the benefits to the user.
 
 
 Testing
@@ -200,7 +200,8 @@ gritty work. My first few implementations of caching were suboptimal from both a
 computational and a UI perspective. I got lost in the sauce of making lots and lots of
 incremental improvements. Eventually, I `re-did
 <https://github.com/kddubey/cappr/commit/d3b52e975918fa83b52c963116b79d5132ba5277>`_ the
-whole thing with some success. It's kinda janky, but I think it'll do.
+whole thing with some success. There are still probably important optimizations I left
+on the table, but it'll do for now.
 
 Marketing matters
 ~~~~~~~~~~~~~~~~~
@@ -220,5 +221,5 @@ See `this page of the documentation
 
 Besides the algorithmic stuff, I was pleasantly surprised to find that I enjoyed
 engineering this project from the ground up. Mulling over design decisions and managing
-myself was fun. I also became much more aware of open source tools and practices. I now
-appreciate open source at a higher level.
+myself was fun. I also became much more aware of open source tools and practices. I
+appreciate open source software at a higher level.

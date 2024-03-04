@@ -140,9 +140,12 @@ Footnotes
    when evaluated on an independent/unseen set of 100 examples. For some applications,
    that level of uncertainty may not be acceptable.
 
-.. [#] You may use an LLM to make them up for you. But depending on your application,
-    the inputs it generates may not look like what you'll see in production. Use your
-    best judgement.
+.. [#] If you're careful, you may use a powerful LLM to make them up for you. Give it a
+    handful of (handcrafted) high quality input-output pairs, and ask it to vary them
+    and generate new pairs according to some requirements. Depending on your
+    application, the examples it generates may not look like what you'll see in
+    production. Iterate carefully and use your best judgement. Prefer quality over
+    quantity to some degree.
 
 .. [#] There are some applications where you may not want to *randomly* split the
     dataset. Perhaps your inputs are grouped, or change with time. In these cases,

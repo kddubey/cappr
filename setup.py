@@ -9,33 +9,24 @@ with open(os.path.join("src", "cappr", "__init__.py")) as f:
             break
 
 
-requirements_base = [
+requirements = [
     "numpy>=1.21.0",
     "tqdm>=4.27.0",
 ]
-
 requirements_openai = [
     "openai>=0.26.0",
     "tiktoken>=0.2.0",
 ]
-
 requirements_huggingface = [
-    "sentencepiece>=0.1.99",  # for Llama tokenizers. cappr should work out-of-the-box
-    "torch>=1.12.1",
-    "transformers>=4.31.0",
+    "transformers[torch]>=4.31.0",
 ]
-
 requirements_huggingface_dev = [
-    req if not req.startswith("transformers>=") else "transformers>=4.35.0"
-    # To test Mistral in our testing workflow, we need >=4.34.0.
-    # To demo AutoGPTQ on CPU and AutoAWQ with caching, need >=4.35.0.
-    for req in requirements_huggingface
-] + ["huggingface-hub>=0.16.4"]
-
+    "transformers[torch]>=4.35.0",  # to test AutoGPTQ on CPU and AutoAWQ with caching
+    "huggingface-hub>=0.16.4",
+    "sentencepiece>=0.1.99",
+]
 requirements_llama_cpp = ["llama-cpp-python>=0.2.11"]
-# To test Bloom in our testing workflow, we need this update
-requirements_llama_cpp_dev = ["llama-cpp-python>=0.2.13"]
-
+requirements_llama_cpp_dev = ["llama-cpp-python>=0.2.13"]  # to test Bloom
 requirements_demos = [
     "datasets>=2.10.0",
     "jupyter>=1.0.0",
@@ -43,14 +34,13 @@ requirements_demos = [
     "pandas>=1.5.3",
     "scikit-learn>=1.2.2",
 ]
-
 requirements_dev = [
-    "black>=24.1.1",
     "docutils<0.19",
     "pre-commit>=3.5.0",
     "pydata-sphinx-theme>=0.13.1",
     "pytest>=7.2.1",
     "pytest-cov>=4.0.0",
+    "ruff>=0.3.0",
     "sphinx>=6.1.3",
     "sphinx-copybutton>=0.5.2",
     "sphinx-togglebutton>=0.3.2",
@@ -72,7 +62,7 @@ setup(
     url="https://github.com/kddubey/cappr/",
     license="Apache License 2.0",
     python_requires=">=3.8.0",
-    install_requires=requirements_base,
+    install_requires=requirements,
     extras_require={
         "openai": requirements_openai,
         "hf": requirements_huggingface,

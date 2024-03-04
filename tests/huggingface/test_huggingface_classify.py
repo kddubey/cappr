@@ -22,7 +22,7 @@ from cappr.huggingface import classify, classify_no_cache
 from cappr import huggingface as hf
 from cappr.huggingface._utils import BatchEncodingPT, ModelForCausalLM
 
-# sys hack to import from parent. If someone has a cleaner solution, lmk
+# sys hack to import from parent
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
 import _base
 import _test_content

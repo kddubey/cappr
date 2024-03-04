@@ -19,7 +19,7 @@ import torch
 from cappr import Example
 from cappr.llama_cpp import _utils, classify, _classify_no_cache
 
-# sys hack to import from parent. If someone has a cleaner solution, lmk
+# sys hack to import from parent
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
 import _base
 import _test_content

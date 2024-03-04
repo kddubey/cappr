@@ -1,6 +1,6 @@
 {
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter"
+        "editor.defaultFormatter": "charliermarsh.ruff"
     },
     "autoDocstring.docstringFormat": "numpy",
     "autoDocstring.startOnNewLine": true,
@@ -9,4 +9,5 @@
         88
     ],
     "editor.formatOnSave": true,
+    "editor.defaultFormatter": "charliermarsh.ruff",
 }

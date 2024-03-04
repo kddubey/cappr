@@ -82,7 +82,7 @@ class TestPromptsCompletions(_BaseTest):
     """
 
     def test_log_probs_conditional(
-        self, prompts: str | Sequence, completions: Sequence[str], *args, **kwargs
+        self, prompts: str | Sequence[str], completions: Sequence[str], *args, **kwargs
     ):
         self._test("log_probs_conditional", prompts, completions, *args, **kwargs)
 
@@ -103,7 +103,7 @@ class TestPromptsCompletions(_BaseTest):
 
     def test_predict_proba(
         self,
-        prompts: str | Sequence,
+        prompts: str | Sequence[str],
         completions: Sequence[str],
         *args,
         prior,
@@ -123,7 +123,7 @@ class TestPromptsCompletions(_BaseTest):
         )
 
     def test_predict(
-        self, prompts: str | Sequence, completions: Sequence[str], *args, **kwargs
+        self, prompts: str | Sequence[str], completions: Sequence[str], *args, **kwargs
     ):
         self._test("predict", prompts, completions, *args, **kwargs)
 

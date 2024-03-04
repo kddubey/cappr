@@ -46,8 +46,9 @@ IDE settings
 For VS Code, you should be prompted to install a few extensions (if you don't already
 have them) when you first launch this workspace.
 
-For other IDEs, set Python formatting to `black <https://github.com/psf/black>`_, and
-set the vertical line ruler to 88.
+For other IDEs, set Python formatting to `ruff <https://github.com/astral-sh/ruff>`_,
+and set the vertical line ruler to 88. Docstrings use the numpy format and start on a
+new line.
 
 
 Testing

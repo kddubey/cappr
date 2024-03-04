@@ -15,7 +15,7 @@ import tiktoken
 from cappr import Example
 from cappr.openai import classify
 
-# sys hack to import from parent. If someone has a cleaner solution, lmk
+# sys hack to import from parent
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
 import _base
 
