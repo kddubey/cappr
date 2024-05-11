@@ -27,7 +27,7 @@ def _is_reversible(object) -> bool:
     # Returns False for:
     # - set
     try:
-        reversed(object)  # often a generator, so checking this is often cheap
+        reversed(object)  # often a generator, so checking this is often free
     except TypeError:
         return False
     else:

@@ -90,11 +90,11 @@ def _agg_log_probs_vectorized(
                 )
                 for completion_idx in range(num_completions_per_prompt)
             ]
-        except (np.VisibleDeprecationWarning, ValueError):
+        except (np.VisibleDeprecationWarning, ValueError) as exception:
             raise ValueError(
                 "log_probs has a constant # of completions, but there are a "
                 "non-constant # of tokens. Vectorization is not possible."
-            )
+            ) from exception
     # Now apply the vectorized function to each array in the list
     likelihoods: npt.NDArray[np.floating] = np.exp(
         [func(array, axis=1) for array in array_list]
@@ -189,10 +189,7 @@ def agg_log_probs(
     # 2. Run the aggregation computation, vectorizing if possible
     try:
         likelihoods = _agg_log_probs_vectorized(log_probs, func)
-    except (
-        ValueError,  # log_probs is jagged
-        TypeError,  # func doesn't take an axis argument
-    ):
+    except ValueError:  # log_probs is doubly jagged
         likelihoods = _agg_log_probs(log_probs, func)
 
     # 3. If we wrapped it, unwrap it for user convenience
@@ -239,7 +236,8 @@ def posterior_prob(
         `likelihoods`
     """
     # Input checks and preprocessing
-    likelihoods = np.array(likelihoods)  # it should not be jagged/inhomogenous
+    if not isinstance(likelihoods, np.ndarray):
+        likelihoods = np.array(likelihoods)  # it cannot be jagged/inhomogenous
     if not isinstance(normalize, (Sequence, np.ndarray)):
         # For code simplicity, just repeat it
         # If likelihoods is 1-D, there's only a single probability distr to normalize
@@ -260,7 +258,7 @@ def posterior_prob(
     else:
         posteriors_unnorm = likelihoods * prior
     marginals = posteriors_unnorm.sum(axis=axis, keepdims=True)
-    marginals[~normalize] = 1  # denominator of 1 <=> no normalization
+    marginals[~normalize] = 1  # denominator of 1 means no normalization
     return posteriors_unnorm / marginals
 
 
@@ -399,7 +397,8 @@ def _predict_proba(log_probs_conditional):
     def wrapper(
         prompts: str | Sequence[str], completions: Sequence[str], *args, **kwargs
     ) -> npt.NDArray[np.floating]:
-        # Check inputs before making expensive model calls
+        # 1. Check inputs before making expensive model calls
+
         # Check the prior
         prior = kwargs.get("prior", None)
         prior = _check.prior(prior, expected_length=len(completions))
@@ -417,7 +416,7 @@ def _predict_proba(log_probs_conditional):
                 "because discount_completions was not set."
             )
 
-        # Do the expensive model calls
+        # 2. Do the expensive model calls
         log_probs_completions = log_probs_conditional(
             prompts, completions, *args, **kwargs
         )
@@ -435,7 +434,7 @@ def _predict_proba(log_probs_conditional):
                 **kwargs,
             )
 
-        # Aggregate probs
+        # 3. Aggregate probs
         likelihoods = agg_log_probs(log_probs_completions)
         axis = 0 if is_single_input else 1
         return posterior_prob(likelihoods, axis=axis, prior=prior, normalize=normalize)

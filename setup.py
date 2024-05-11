@@ -2,6 +2,7 @@ import os
 from setuptools import setup, find_packages
 
 
+# lol
 with open(os.path.join("src", "cappr", "__init__.py")) as f:
     for line in f:
         if line.startswith("__version__ = "):
@@ -40,6 +41,7 @@ requirements_dev = [
     "pydata-sphinx-theme>=0.13.1",
     "pytest>=7.2.1",
     "pytest-cov>=4.0.0",
+    "pytest-sugar>=1.0.0",
     "ruff>=0.3.0",
     "sphinx>=6.1.3",
     "sphinx-copybutton>=0.5.2",

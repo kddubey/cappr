@@ -175,7 +175,10 @@ is incredibly powerful with inheritance. For an example, see the `tests
 <https://github.com/kddubey/cappr/blob/main/tests/llama_cpp/test_llama_cpp_classify.py>`_
 for llama-cpp models.
 
-There are still a few testing todos.
+There are still a few testing todos. One problem is that there are dependencies in the
+tests; if ``test_log_probs_conditional`` fails, the rest of the tests will fail.
+Ideally, for example, ``test_predict_proba`` assumes ``log_probs_conditional`` is
+correct.
 
 
 Mistakes were made
