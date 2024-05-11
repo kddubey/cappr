@@ -6,7 +6,7 @@ CAPPr
    | **P**\rompt
    | **Pr**\obability
 
-| CAPPr performs text classification. No training. No post-processing.
+| CAPPr performs text classification. No training or post-processing needed.
 | Just have your LLM pick from a list of choices.
 | Or compute the probability of a completion given a prompt.
 | Squeeze `more <https://cappr.readthedocs.io/en/latest/statistical_performance.html>`_

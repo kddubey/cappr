@@ -9,7 +9,7 @@
 <!-- [![Documentation Status](https://readthedocs.org/projects/cappr/badge/?version=latest&style=for-the-badge)](https://cappr.readthedocs.io/en/latest/?badge=latest) -->
 
 
-CAPPr performs text classification. No training. No post-processing. <br>
+CAPPr performs text classification. No training or post-processing needed. <br>
 Just have your LLM pick from a list of choices. <br>
 Or compute the probability of a completion given a prompt. <br>
 Squeeze [more](https://cappr.readthedocs.io/en/latest/statistical_performance.html) out
@@ -20,9 +20,6 @@ of open source LLMs.
 
 <details>
 <summary>Use a GGUF model</summary>
-
-This model must be able to be loaded using
-[`llama_cpp.Llama`](https://llama-cpp-python.readthedocs.io/en/latest/api-reference/#llama_cpp.Llama).
 
 ```python
 from llama_cpp import Llama
@@ -49,9 +46,6 @@ print(pred)
 # use your imagination
 ```
 
-Notice that a completion can contain many tokens. CAPPr is **100% guaranteed** to return
-an output from the list of possible answers.
-
 See [this page of the
 documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#llama-cpp)
 for more info on using GGUF models.
@@ -60,9 +54,6 @@ for more info on using GGUF models.
 
 <details>
 <summary>Use a Hugging Face AutoModelForCausalLM</summary>
-
-This model must be able to be loaded using
-[`transformers.AutoModelForCausalLM.from_pretrained`](https://huggingface.co/docs/transformers/model_doc/auto#transformers.AutoModelForCausalLM).
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -134,46 +125,6 @@ print(preds)
 
 
 <details>
-<summary>Use an AutoGPTQ model</summary>
-
-[`cappr.huggingface`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html) is
-compatible with models loaded via
-[`auto_gptq.AutoGPTQForCausalLM.from_quantized`](https://github.com/PanQiWei/AutoGPTQ).
-See [this
-notebook](https://github.com/kddubey/cappr/blob/main/demos/huggingface/auto_gptq.ipynb)
-for a minimal demo.
-
-Note that for `transformers>=4.32.0`, you can load GPTQ models using
-`transformers.AutoModelForCausalLM`.
-
-See [this page of the
-documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#hugging-face)
-for more info on using these models.
-</details>
-
-
-<details>
-<summary>Use an AutoAWQ model</summary>
-
-[`cappr.huggingface.classify_no_cache`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html)
-is compatible with models loaded via
-[`awq.AutoAWQForCausalLM.from_quantized`](https://github.com/casper-hansen/AutoAWQ). See
-[this
-notebook](https://github.com/kddubey/cappr/blob/main/demos/huggingface/autoawq.ipynb)
-for a minimal demo.
-
-Note that for `transformers>=4.35.0`, you can load AWQ models using
-`transformers.AutoModelForCausalLM`. AWQ models loaded this way are compatible with
-[`cappr.huggingface.classify`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.html),
-which is usually faster.
-
-See [this page of the
-documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#hugging-face)
-for more info on using these models.
-</details>
-
-
-<details>
 <summary>Use a model from the OpenAI API</summary>
 
 This model must be compatible with the
@@ -219,8 +170,7 @@ documentation](https://cappr.readthedocs.io/en/latest/select_a_prompt_completion
 <details>
 <summary>Run in batches</summary>
 
-Let's use a PyTorch ``transformers`` model. Also, let's predict probabilities instead of
-the class.
+Also, let's predict probabilities instead of the class.
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -275,7 +225,7 @@ print(preds)
 <summary>Run in batches, where each prompt has a different set of possible completions
 </summary>
 
-Again, let's use a PyTorch ``transformers`` model to predict probabilities.
+Again, let's predict probabilities.
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
