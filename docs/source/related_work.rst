@@ -4,9 +4,9 @@ Related work
 The idea of aggregating token log-probabilities is well known. You'll find it as a
 subroutine in papers from `GPT-2
 <https://paperswithcode.com/paper/language-models-are-unsupervised-multitask>`_\ [#]_ to
-`Self-Consistency <https://arxiv.org/abs/2203.11171>`_\ [#]_. The ``cappr``
-implementation includes a few computational and statistical optimizations, while
-maintaining a simple interface.
+`Self-Consistency <https://arxiv.org/abs/2203.11171>`_\ [#]_ to `InPars
+<https://arxiv.org/abs/2202.05144>`_\ [#]_. The ``cappr`` implementation includes a few
+computational and statistical optimizations, while maintaining a simple interface.
 
 Here are some papers which focus on the idea of aggregating token log-probabilities.
 
@@ -26,6 +26,9 @@ References
 
 .. [#] Wang, Xuezhi, et al. "Self-consistency improves chain of thought reasoning in
     language models." arXiv preprint arXiv:2203.11171 (2022).
+
+.. [#] Bonifacio, Luiz, et al. "Inpars: Data augmentation for information retrieval
+    using large language models." arXiv preprint arXiv:2202.05144 (2022).
 
 .. [#] Trinh, Trieu H., and Quoc V. Le. "A simple method for commonsense reasoning."
     arXiv preprint arXiv:1806.02847 (2018).

@@ -30,8 +30,8 @@ sentence, you can write a prompt. It's mostly a matter of trial and error. Here'
 
 Empirically, the impact of the prompt-completion format on accuracy depends on the
 quality of the language model. For larger, instruction-trained models, the format is not
-as consequential. For smaller, less instruction-trained models, it can be critical to
-get the format right.
+as important. For smaller, less instruction-trained models, it can be critical to get
+the format right.
 
 .. _external guide: https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/
 

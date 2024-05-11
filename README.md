@@ -53,7 +53,7 @@ for more info on using GGUF models.
 
 
 <details>
-<summary>Use a Hugging Face AutoModelForCausalLM</summary>
+<summary>Use a Hugging Face model</summary>
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -306,54 +306,9 @@ documentation](https://cappr.readthedocs.io/en/latest/motivation.html) for more 
 
 ## Performance
 
-<details>
-<summary>
-Statistical performance
-</summary>
+[Statistical performance](https://cappr.readthedocs.io/en/latest/statistical_performance.html)
 
-For open source models, see
-
-- the 4-bit 4 GB Llama 2 [COPA
-  demo](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/superglue/copa.ipynb)
-- the 4-bit 4 GB Llama 2 [AG News
-  demo](https://github.com/kddubey/cappr/blob/main/demos/llama_cpp/ag_news.ipynb)
-- the 4 GB Mistral [Craigslist Bargains
-  demo](https://github.com/kddubey/cappr/blob/main/demos/huggingface/craigslist_bargains.ipynb)
-- the 4 GB Mistral [Banking 77
-  demo](https://github.com/kddubey/cappr/blob/main/demos/huggingface/banking_77_classes.ipynb),
-  with 77 multi-token choices
-- the 4 GB Mistral [SciQ
-  demo](https://github.com/kddubey/cappr/blob/main/demos/huggingface/sciq.ipynb), with a
-  multiple choice prompt
-- the 4 GB Mistral [Tweet Emotions
-  demo](https://github.com/kddubey/cappr/blob/main/demos/huggingface/tweet_emotion_multilabel.ipynb),
-  which is a multilabel task—each tweet can be tagged with 1-12 emotions.
-
-In general, you should expect similar or identical performance to text generation when
-every completion is 1 token long.
-
-See [this page of the
-documentation](https://cappr.readthedocs.io/en/latest/statistical_performance.html)
-for some discussion.
-
-For OpenAI models (some deprecated), see
-
-[2 SuperGLUE
-datasets](https://github.com/kddubey/cappr/blob/main/demos/openai/superglue)
-
-[RAFT zero-shot training
-sets](https://github.com/kddubey/cappr/blob/main/demos/openai/raft)
-</details>
-
-
-<details>
-<summary>
-Computational performance
-</summary>
-
-See [this page of the
-documentation](https://cappr.readthedocs.io/en/latest/computational_performance.html).
-</details>
+[Computational performance](https://cappr.readthedocs.io/en/latest/computational_performance.html)
 
 
 ## How it works
