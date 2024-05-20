@@ -53,7 +53,7 @@ for more info on using GGUF models.
 
 
 <details>
-<summary>Use a Hugging Face model</summary>
+<summary>Use a Hugging Face transformers model</summary>
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -321,14 +321,14 @@ of candidate `completion` strings such that the string—
 ```
 
 —is a naturally flowing thought. CAPPr picks the `completion` which is mostly likely to
-follow `prompt` by computing the:
+follow `prompt` by computing the—
 
 > **C**ompletion<br>
   **A**fter<br>
   **P**rompt<br>
   **Pr**obability<br>
 
-The method is fleshed out in my [question on Cross
+—as fleshed out in my [question on Cross
 Validated](https://stats.stackexchange.com/q/601159/337906).
 
 
