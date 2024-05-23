@@ -25,7 +25,6 @@ of open source LLMs.
 from llama_cpp import Llama
 from cappr.llama_cpp.classify import predict
 
-# Load model
 model = Llama("./TinyLLama-v0.Q8_0.gguf", verbose=False)
 
 prompt = """Gary told Spongebob a story:
@@ -59,7 +58,6 @@ for more info on using GGUF models.
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from cappr.huggingface.classify import predict
 
-# Load a model and its tokenizer
 model_name = "gpt2"
 model = AutoModelForCausalLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)

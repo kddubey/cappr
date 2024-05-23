@@ -49,7 +49,6 @@ to classify a product review:
    completion = api_resp[0]["text"]
    print(repr(completion))
    # '\nThe product is difficult to use'
-   # Correct!
 
 This usually works well. But if you've ever run text generation on a slightly larger
 scale, then you know that there may be a considerable fraction of cases where the
