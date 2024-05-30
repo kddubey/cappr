@@ -166,9 +166,7 @@ documentation](https://cappr.readthedocs.io/en/latest/select_a_prompt_completion
 
 
 <details>
-<summary>Run in batches</summary>
-
-Also, let's predict probabilities instead of the class.
+<summary>Run in batches, predict probabilities</summary>
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -294,6 +292,12 @@ See [this page of the
 documentation](https://cappr.readthedocs.io/en/latest/installation.html).
 
 
+## Related work
+
+See [this page of the
+documentation](https://cappr.readthedocs.io/en/latest/related_work.html).
+
+
 ## Motivation
 
 Reduce engineering complexity.
@@ -328,12 +332,6 @@ follow `prompt` by computing the—
 
 —as fleshed out in my [question on Cross
 Validated](https://stats.stackexchange.com/q/601159/337906).
-
-
-## Related work
-
-See [this page of the
-documentation](https://cappr.readthedocs.io/en/latest/related_work.html).
 
 
 ## Local development

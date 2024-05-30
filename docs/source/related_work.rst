@@ -5,7 +5,8 @@ The idea of aggregating token log-probabilities is well known. You'll find it as
 subroutine in papers from `GPT-2
 <https://paperswithcode.com/paper/language-models-are-unsupervised-multitask>`_\ [#]_ to
 `Self-Consistency <https://arxiv.org/abs/2203.11171>`_\ [#]_ to `InPars
-<https://arxiv.org/abs/2202.05144>`_\ [#]_ to `SimPO
+<https://arxiv.org/abs/2202.05144>`_\ [#]_ to `hallucination detection
+<https://arxiv.org/abs/2208.05309>`_\ [#]_ to `SimPO
 <https://arxiv.org/abs/2405.14734>`_\ [#]_. The ``cappr`` implementation includes a few
 computational and statistical optimizations, while maintaining a simple interface.
 
@@ -30,6 +31,10 @@ References
 
 .. [#] Bonifacio, Luiz, et al. "Inpars: Data augmentation for information retrieval
     using large language models." arXiv preprint arXiv:2202.05144 (2022).
+
+.. [#] Guerreiro, Nuno M., Elena Voita, and André FT Martins. "Looking for a needle in a
+    haystack: A comprehensive study of hallucinations in neural machine translation."
+    arXiv preprint arXiv:2208.05309 (2022).
 
 .. [#] Meng, Yu, Mengzhou Xia, and Danqi Chen. "SimPO: Simple Preference Optimization
     with a Reference-Free Reward." arXiv preprint arXiv:2405.14734 (2024).
