@@ -4,6 +4,9 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
+  jobs:
+    post_install:
+      - pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 sphinx:
   builder: html
@@ -11,8 +14,6 @@ sphinx:
 
 python:
   install:
-    - method: pip
-      path: torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
     - method: pip
       path: .
       extra_requirements:
