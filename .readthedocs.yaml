@@ -5,8 +5,8 @@ build:
   tools:
     python: "3.11"
   jobs:
-    post_install:
-      - pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+    post_create_environment:
+      - python -m pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 sphinx:
   builder: html
