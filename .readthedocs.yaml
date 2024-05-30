@@ -14,4 +14,8 @@ python:
     - method: pip
       path: .
       extra_requirements:
+        - torch
+        - torchvision
+        - torchaudio
+        - --extra-index-url https://download.pytorch.org/whl/cpu
         - dev
