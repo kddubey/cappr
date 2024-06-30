@@ -62,10 +62,7 @@ def model_and_does_tokenizer_need_prepended_space(
 ) -> tuple[Llama, bool]:
     hf_hub_model: _HFHubModel = request.param
     model_path = hf_hub_download(
-        hf_hub_model.repo_id,
-        hf_hub_model.filename,
-        local_dir=_MODELS_DIR,
-        local_dir_use_symlinks=False,
+        hf_hub_model.repo_id, hf_hub_model.filename, local_dir=_MODELS_DIR
     )
     model = Llama(model_path, verbose=False)
     return model, hf_hub_model.does_tokenizer_need_prepended_space
