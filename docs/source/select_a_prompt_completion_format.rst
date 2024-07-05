@@ -22,7 +22,8 @@ any string processing for you; it just concatenates the three strings and sends 
 **It's on you to format the prompt according to the model's instruction/chat format**,
 assuming that's applicable and beneficial. Before calling any CAPPr functions, consider
 printing ``{prompt}{end_of_prompt}{completion}`` for each completion in your list of
-possible completions/choices, and ensure that each passes the eye test.
+possible completions/choices, and ensure that each passes the eye test. If you had to
+apply a chat format, ensure that the ``prompt`` doesn't end with the EOS token.
 
 And yes, you'll likely need to do a bit of prompt engineering. But if you can write a
 sentence, you can write a prompt. It's mostly a matter of trial and error. Here's an
