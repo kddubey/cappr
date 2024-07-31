@@ -12,9 +12,23 @@ from cappr.utils import classify
 
 
 def test___agg_log_probs_vectorized():
-    log_probs = [[[2, 2], [1]], [[1 / 2, 1 / 2], [4]]]
+    # There are 2 prompts, each associated with 3 completions. The completions have 2,
+    # 1, and 2 tokens, respectively
+    log_probs = [
+        [[2, 2], [1], [3, 2]],
+        [[1 / 2, 1 / 2], [4], [3, 0]],
+    ]
+    log_probs_agg_expected = [
+        [2 + 2, 1, 3 + 2],
+        [1 / 2 + 1 / 2, 4, 3 + 0],
+    ]
     log_probs_agg = classify._agg_log_probs_vectorized(log_probs, func=np.sum)
-    assert np.allclose(log_probs_agg, np.exp([[4, 1], [1, 4]]))
+    assert np.allclose(log_probs_agg, log_probs_agg_expected)
+
+    # Test the default _avg_then_exp func
+    log_probs_agg = classify._agg_log_probs_vectorized(log_probs)
+    log_probs_agg_expected = classify._agg_log_probs(log_probs)
+    assert np.allclose(log_probs_agg, log_probs_agg_expected)
 
 
 @pytest.mark.parametrize(
@@ -34,14 +48,23 @@ def test__ndim(sequence_and_depth_expected: tuple[Any, int]):
 
 
 def test_agg_log_probs():
+    # There are 2 prompts. The first prompt is associated with 2 completions, with 2 and
+    # 3 tokens each. The second prompt is associated with 3 completions, with 1, 3, and
+    # 2 tokens each
     log_probs = [
         [[0, 1], [2, 3, 4]],
         [[5], [6, 7, 8], [9, 10]],
     ]
+    log_probs_agg_expected = [
+        [0 + 1, 2 + 3 + 4],
+        [5, 6 + 7 + 8, 9 + 10],
+    ]
     log_probs_agg = classify.agg_log_probs(log_probs, func=sum)
     assert len(log_probs_agg) == len(log_probs)
-    assert np.allclose(log_probs_agg[0], np.exp([0 + 1, 2 + 3 + 4]))
-    assert np.allclose(log_probs_agg[1], np.exp([5, 6 + 7 + 8, 9 + 10]))
+    for prompt_idx in range(len(log_probs)):
+        assert np.allclose(
+            log_probs_agg[prompt_idx], log_probs_agg_expected[prompt_idx]
+        )
 
     # Test bad input
     with pytest.raises(

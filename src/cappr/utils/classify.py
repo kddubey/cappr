@@ -38,9 +38,16 @@ def _setattr(obj, name: str, value):
 ########################################################################################
 
 
+def _avg_then_exp(
+    log_probs: Sequence[Sequence[float]] | Sequence[Sequence[Sequence[float]]],
+    axis: int | None = None,
+) -> npt.NDArray[np.floating]:
+    return np.exp(np.mean(log_probs, axis=axis))
+
+
 def _agg_log_probs_vectorized(
     log_probs: Sequence[Sequence[Sequence[float]]],
-    func: Callable[[Sequence[Sequence[float]]], Sequence[float]] = np.mean,
+    func: Callable[[Sequence[Sequence[float]]], Sequence[float]] = _avg_then_exp,
 ) -> npt.NDArray[np.floating]:
     """
     Aggregate using a vectorized numpy function `func`.
@@ -96,28 +103,25 @@ def _agg_log_probs_vectorized(
                 "non-constant # of tokens. Vectorization is not possible."
             ) from exception
     # Now apply the vectorized function to each array in the list
-    likelihoods: npt.NDArray[np.floating] = np.exp(
+    likelihoods: npt.NDArray[np.floating] = np.array(
         [func(array, axis=1) for array in array_list]
     )
     # likelihoods looks like:
     # array([[likelihood_a1b1,   likelihood_a2b2  ],
     #        [likelihood_c1d1e1, likelihood_c2d2e2]])
-    # Transpose it to satisfy likelihoods[i][j] = exp(func(log_probs[i][j]))
+    # Transpose it to satisfy likelihoods[i][j] = func(log_probs[i][j])
     return likelihoods.T
 
 
 def _agg_log_probs(
     log_probs: Sequence[Sequence[Sequence[float]]],
-    func: Callable[[Sequence[float]], float] = np.mean,
+    func: Callable[[Sequence[float]], float] = _avg_then_exp,
 ) -> list[list[float]]:
     """
     Aggregate using a slow, nested list comprehension.
     """
     return [
-        [
-            np.exp(func(log_probs_completion))
-            for log_probs_completion in log_probs_completions
-        ]
+        [func(log_probs_completion) for log_probs_completion in log_probs_completions]
         for log_probs_completions in log_probs
     ]
 
@@ -145,34 +149,37 @@ def _ndim(sequence) -> int:
 
 def agg_log_probs(
     log_probs: Sequence[Sequence[float]] | Sequence[Sequence[Sequence[float]]],
-    func: Callable[[Sequence[float]], float] = np.mean,
+    func: Callable[[Sequence[float]], float] = _avg_then_exp,
 ) -> npt.NDArray[np.floating] | list[float] | list[list[float]]:
     """
-    Aggregate token log-probabilities along the last dimension into probabilities.
+    Aggregate token log-probabilities along the last dimension.
 
     Parameters
     ----------
     log_probs : Sequence[Sequence[float]] | Sequence[Sequence[Sequence[float]]]
         nested sequences where token log-probabilities are in the last dimension. A 2-D
         sequence corresponds to inputting a single prompt string or
-        :class:`cappr.Example` object. A 3-D sequence corresponds to inputting multiple
-        prompt strings or :class:`cappr.Example` objects
+        :class:`cappr.Example` object with completions. A 3-D sequence corresponds to
+        inputting multiple prompt strings or :class:`cappr.Example` objects with
+        completions
     func : Callable[[Sequence[float]], float], optional
-        function which aggregates a sequence of token log-probabilities into a single
-        log-probability. If the function is vectorized, it must take an ``axis``
-        argument. By default, `numpy.mean`
+        a function which aggregates a sequence of token log-probabilities into a single
+        number, by default a probability. If the function is vectorized, it must take an
+        ``axis`` argument, e.g., ``np.mean`` will efficiently average the token
+        log-probabilities. By default, token log-probabilities are averaged and then
+        exponentiated.
 
     Returns
     -------
-    probs: npt.NDArray[np.floating] | list[float] | list[list[float]]
-        If `log_probs` is 2-D, then `probs` is an array or list of probabilities where::
+    agg: npt.NDArray[np.floating] | list[float] | list[list[float]]
+        If `log_probs` is 2-D, then `agg` is an array or list where::
 
-            probs[j] = exp(func(log_probs[j]))
+            agg[j] = func(log_probs[j])
 
-        If `log_probs` is 3-D, then `probs` is an array or a list of list of
-        probabilities where::
+        If `log_probs` is 3-D, then `agg` is an array or a list of list of probabilities
+        where::
 
-            probs[i][j] = exp(func(log_probs[i][j]))
+            agg[i][j] = func(log_probs[i][j])
 
     Raises
     ------
