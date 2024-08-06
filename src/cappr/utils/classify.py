@@ -41,7 +41,7 @@ def _setattr(obj, name: str, value):
 def _avg_then_exp(
     log_probs: Sequence[Sequence[float]] | Sequence[Sequence[Sequence[float]]],
     axis: int | None = None,
-) -> npt.NDArray[np.floating]:
+) -> np.floating | npt.NDArray[np.floating]:
     return np.exp(np.mean(log_probs, axis=axis))
 
 
@@ -176,12 +176,12 @@ def agg_log_probs(
     Returns
     -------
     agg: npt.NDArray[np.floating] | list[float] | list[list[float]]
-        If `log_probs` is 2-D, then `agg` is a numpy array or list where::
+        If `log_probs` is 2-D, then `agg` is a numpy array or a list where::
 
             agg[j] = func(log_probs[j])
 
-        If `log_probs` is 3-D, then `agg` is an array or a list of list of probabilities
-        where::
+        If `log_probs` is 3-D, then `agg` is a numpy array or a list of list of
+        probabilities where::
 
             agg[i][j] = func(log_probs[i][j])
 
