@@ -28,6 +28,8 @@ def test___agg_log_probs_vectorized():
     # Test the default _avg_then_exp func
     log_probs_agg = classify._agg_log_probs_vectorized(log_probs)
     log_probs_agg_expected = classify._agg_log_probs(log_probs)
+    # There are a constant number of completions, so the output should be an array
+    assert log_probs_agg.shape == log_probs_agg_expected.shape
     assert np.allclose(log_probs_agg, log_probs_agg_expected)
 
 
@@ -65,6 +67,18 @@ def test_agg_log_probs():
         assert np.allclose(
             log_probs_agg[prompt_idx], log_probs_agg_expected[prompt_idx]
         )
+
+    # There's 1 prompt with 2 completions, with 2 and 3 tokens each.
+    log_probs_2d = [
+        [0, 1],
+        [2, 3, 4],
+    ]
+    log_probs_2d_agg_expected = np.array([0 + 1, 2 + 3 + 4])
+    log_probs_2d_agg = classify.agg_log_probs(log_probs_2d, func=sum)
+    assert len(log_probs_2d_agg) == len(log_probs_2d)
+    # There are a constant number of completions, so the output should be an array
+    assert log_probs_2d_agg.shape == log_probs_2d_agg_expected.shape
+    assert np.allclose(log_probs_2d_agg, log_probs_2d_agg_expected)
 
     # Test bad input
     with pytest.raises(

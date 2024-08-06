@@ -116,14 +116,18 @@ def _agg_log_probs_vectorized(
 def _agg_log_probs(
     log_probs: Sequence[Sequence[Sequence[float]]],
     func: Callable[[Sequence[float]], float] = _avg_then_exp,
-) -> list[list[float]]:
+) -> npt.NDArray[np.floating] | list[list[float]]:
     """
     Aggregate using a slow, nested list comprehension.
     """
-    return [
+    likelihoods = [
         [func(log_probs_completion) for log_probs_completion in log_probs_completions]
         for log_probs_completions in log_probs
     ]
+    try:
+        return np.array(likelihoods)
+    except ValueError:  # jagged/inhomogenous b/c non-constant number of completions
+        return likelihoods
 
 
 def _ndim(sequence) -> int:
@@ -172,7 +176,7 @@ def agg_log_probs(
     Returns
     -------
     agg: npt.NDArray[np.floating] | list[float] | list[list[float]]
-        If `log_probs` is 2-D, then `agg` is an array or list where::
+        If `log_probs` is 2-D, then `agg` is a numpy array or list where::
 
             agg[j] = func(log_probs[j])
 
@@ -180,6 +184,9 @@ def agg_log_probs(
         where::
 
             agg[i][j] = func(log_probs[i][j])
+
+        `agg` is a numpy array when there are constant number of completions, else it's
+        a list.
 
     Raises
     ------
@@ -196,7 +203,10 @@ def agg_log_probs(
     # 2. Run the aggregation computation, vectorizing if possible
     try:
         likelihoods = _agg_log_probs_vectorized(log_probs, func)
-    except ValueError:  # log_probs is doubly jagged
+    except (
+        ValueError,  # log_probs is doubly jagged
+        TypeError,  # func has no axis kwarg
+    ):
         likelihoods = _agg_log_probs(log_probs, func)
 
     # 3. If we wrapped it, unwrap it for user convenience
@@ -474,30 +484,24 @@ def _predict_proba_examples(log_probs_conditional_examples):
                 check_prior=False,  # already checked during example construction
             )
 
-        # Determine whether vectorization is possible for the posterior probability calc
-        num_completions_per_prompt = [len(example.completions) for example in examples]
-        normalize = [example.normalize for example in examples]
-        num_completions_per_prompt_set = set(num_completions_per_prompt)
-        if len(num_completions_per_prompt_set) != 1:
-            # Can't be easily vectorized :-(
+        if not isinstance(likelihoods, np.ndarray):
+            # Non-constant number of completions, can't be easily vectorized :-(
             return [
                 posterior_prob(
                     likelihoods_ex,
                     axis=0,
                     prior=example.prior,
-                    normalize=normalize_ex,
+                    normalize=example.normalize,
                     check_prior=False,  # already checked during example construction
                 )
-                for likelihoods_ex, example, normalize_ex in zip(
-                    likelihoods, examples, normalize
-                )
+                for likelihoods_ex, example in zip(likelihoods, examples)
             ]
-        # Vectorize!
+        # There are a constant number of completions, vectorize!
         if all([example.prior is None for example in examples]):
             prior = None
         else:
             # For coding simplicity, just supply a prior which is non-None *everywhere*
-            num_completions_per_prompt = list(num_completions_per_prompt_set)[0]
+            num_completions_per_prompt = len(examples[0].completions)
             uniform_prior = [
                 1 / num_completions_per_prompt
             ] * num_completions_per_prompt
@@ -507,6 +511,7 @@ def _predict_proba_examples(log_probs_conditional_examples):
                     for example in examples
                 ]
             )  # same shape as likelihoods: (len(examples), num_completions_per_prompt)
+        normalize = [example.normalize for example in examples]
         return posterior_prob(
             likelihoods,
             axis=1,
