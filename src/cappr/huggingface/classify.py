@@ -145,46 +145,47 @@ Index items:
 """
 
 
-# past_key_values must be a tuple for model calls. So we have to do slightly costly
-# transfers from Python to CUDA. I don't think there's anything we can do about that
+def _expand(past_key_values: _PastKeyValues, num_repeats: int) -> _PastKeyValues:
+    blocks = []
+    for block_idx in range(len(past_key_values)):
+        kvs = []
+        for kv_idx in range(len(past_key_values[block_idx])):
+            batch_size, *rest_shape = past_key_values[block_idx][kv_idx].shape
+            kvs.append(
+                past_key_values[block_idx][kv_idx].expand(num_repeats, *rest_shape)
+            )
+        blocks.append(tuple(kvs))
+    return tuple(blocks)
 
 
-def _past_key_values_tuple_to_tensor(past_key_values: _PastKeyValues) -> torch.Tensor:
-    if past_key_values is None:
-        raise TypeError(
-            "past_key_values is None. Can your model be configured to output it? If "
-            "not, please use cappr.huggingface.classify_no_cache"
-        )  # pragma: no cover
-    return torch.stack([torch.stack(block) for block in past_key_values], dim=0)
-
-
-def _past_key_values_tensor_to_tuple(past_key_values: torch.Tensor) -> _PastKeyValues:
-    return tuple(
-        tuple(block[i] for i in range(len(block))) for block in past_key_values
-    )
+def _select(
+    past_key_values: _PastKeyValues, batch_idxs: torch.IntTensor
+) -> _PastKeyValues:
+    blocks = []
+    for block_idx in range(len(past_key_values)):
+        kvs = []
+        for kv_idx in range(len(past_key_values[block_idx])):
+            batch_size = past_key_values[block_idx][kv_idx].shape[0]
+            if batch_size == 1:
+                raise ValueError("Should use _expand_batch_indices")  # pragma: no cover
+            kvs.append(past_key_values[block_idx][kv_idx][batch_idxs, ...])
+        blocks.append(tuple(kvs))
+    return tuple(blocks)
 
 
 def _past_key_values_get(
-    past_key_values: _PastKeyValues, batch_idxs: Sequence[int]
+    past_key_values: _PastKeyValues, batch_idxs: torch.IntTensor
 ) -> _PastKeyValues:
-    tensor = _past_key_values_tuple_to_tensor(past_key_values)
-    og_data_ptr = tensor.data_ptr()
-    num_blocks, num_kv, batch_size, num_heads, seq_len, hidden_dim = tensor.shape
-    if batch_size == 1:
-        if not all(batch_idx == 0 for batch_idx in batch_idxs):
+    batch_sizes = [kv.shape[0] for block in past_key_values for kv in block]
+    if all(batch_size == 1 for batch_size in batch_sizes):
+        if not (batch_idxs == 0).all():
             raise ValueError(
-                "Expected batch_idxs to be 0s, as there's only one sequence"
+                "Supplied a non-zero batch index when there's only one sequence"
             )  # pragma: no cover
-        # Repeat via expanding instead of copying
-        new_batch_size = len(batch_idxs)
-        tensor = tensor.expand(
-            num_blocks, num_kv, new_batch_size, num_heads, seq_len, hidden_dim
-        )
-        assert tensor.data_ptr() == og_data_ptr
+        num_repeats = batch_idxs.shape[0]
+        return _expand(past_key_values, num_repeats)
     else:
-        # Must repeat via slicing, which copies data
-        tensor = tensor[:, :, batch_idxs, ...]
-    return _past_key_values_tensor_to_tuple(tensor)
+        return _select(past_key_values, batch_idxs)
 
 
 ########################################################################################
