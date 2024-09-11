@@ -165,12 +165,26 @@ def _past_key_values_tensor_to_tuple(past_key_values: torch.Tensor) -> _PastKeyV
 
 
 def _past_key_values_get(
-    past_key_values: _PastKeyValues,
-    batch_idxs: Sequence[int],
+    past_key_values: _PastKeyValues, batch_idxs: Sequence[int]
 ) -> _PastKeyValues:
-    return _past_key_values_tensor_to_tuple(
-        _past_key_values_tuple_to_tensor(past_key_values)[:, :, batch_idxs, ...]
-    )
+    tensor = _past_key_values_tuple_to_tensor(past_key_values)
+    og_data_ptr = tensor.data_ptr()
+    num_blocks, num_kv, batch_size, num_heads, seq_len, hidden_dim = tensor.shape
+    if batch_size == 1:
+        if not all(batch_idx == 0 for batch_idx in batch_idxs):
+            raise ValueError(
+                "Expected batch_idxs to be 0s, as there's only one sequence"
+            )  # pragma: no cover
+        # Repeat via expanding instead of copying
+        new_batch_size = len(batch_idxs)
+        tensor = tensor.expand(
+            num_blocks, num_kv, new_batch_size, num_heads, seq_len, hidden_dim
+        )
+        assert tensor.data_ptr() == og_data_ptr
+    else:
+        # Must repeat via slicing, which copies data
+        tensor = tensor[:, :, batch_idxs, ...]
+    return _past_key_values_tensor_to_tuple(tensor)
 
 
 ########################################################################################
