@@ -15,6 +15,7 @@ from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from typing import cast, Literal, Mapping, Sequence, Tuple
 
+from accelerate.utils import release_memory
 import numpy as np
 import numpy.typing as npt
 import torch
@@ -214,6 +215,7 @@ class _CAPPr:
     @past.setter
     def past(self, new_past: tuple[BatchEncodingPT, CausalLMOutputWithPast] | None):
         if new_past is None:
+            _ = release_memory(*self._past)
             self._is_cache_cleared = True
         self._past = new_past
 
