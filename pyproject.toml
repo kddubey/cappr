@@ -72,7 +72,6 @@ indent-width = 4
 [tool.ruff.lint]
 # E731:
 #     Do not assign a `lambda` expression, use a `def`
-#     Reason: https://stackoverflow.com/questions/25010167/e731-do-not-assign-a-lambda-expression-use-a-def
 ignore = ["E731"]
 
 [project.urls]

@@ -146,6 +146,11 @@ Index items:
 
 
 def _expand(past_key_values: _PastKeyValues, num_repeats: int) -> _PastKeyValues:
+    """
+    Returns `past_key_values` which repeats sequences `num_repeats` times by expanding
+    instead of copying to save memory. As a result, the returned object internally
+    shares data w/ the input.
+    """
     blocks = []
     for block_idx in range(len(past_key_values)):
         kvs = []
@@ -226,9 +231,7 @@ class _ModelWithCache:
         logits_all: bool = True,
     ):
         self._cappr = _CAPPr(model, logits_all, past)
-        """
-        Contains data which controls the cache
-        """
+        "Contains data which controls the cache"
         # This data is in one place to minimize pollution of the inputted model's
         # namespace. This object should be treated like a ModelForCausalLM by the user
         self._cappr.update_cache = True
@@ -284,7 +287,7 @@ class _ModelWithCache:
                 encodings_past["input_ids"].shape[0], device=self._cappr.model.device
             ),
         ):
-            # Must extract past by converting the tuple to a tensor and back
+            # Must extract past by creating a new object
             past_key_values = _past_key_values_get(out_past.past_key_values, batch_idxs)
         else:
             past_key_values = out_past.past_key_values
