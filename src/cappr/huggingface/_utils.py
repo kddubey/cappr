@@ -60,9 +60,8 @@ def _no_grad(model: ModelForCausalLM):  # model given to keep interface the same
         yield
 
 
-# Some models don't perfectly implement the HF model call interface. In particular,
-# they're missing the return_dict and use_cache kwargs. They're instead in the model
-# config. I see that as a more extensible design anyway.
+# Instead of remembering to always supply `return_dict=True, use_cache=True` in the
+# model call, we can avoid remembering to set them by setting the config arguments.
 
 
 @contextmanager

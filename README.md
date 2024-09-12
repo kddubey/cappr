@@ -103,8 +103,8 @@ A, B, C => D
 
 Complete this sequence:'''
 
-prompts = ["a, b, c =>", "X, Y =>"]
-completions = ["d", "Z", "Hi"]
+prompts = ["X, Y =>", "10, 9, 8 =>"]
+completions = ["7", "Z", "Hi"]
 
 # Cache prompt_prefix because it's used for all prompts
 cached_model_and_tokenizer = cache_model(
@@ -116,38 +116,51 @@ preds = predict(
     prompts, completions, cached_model_and_tokenizer
 )
 print(preds)
-# ['d', 'Z']
+# ['Z', '7']
 ```
 </details>
 
 
 <details>
-<summary>Use a model from the OpenAI API</summary>
+<summary>Compute token-level log-probabilities</summary>
 
-This model must be compatible with the
-[/v1/completions](https://platform.openai.com/docs/models/model-endpoint-compatibility)
-endpoint
-([excluding](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#openai)
-``gpt-3.5-turbo-instruct``).
+Here's an example using
+[`cappr.huggingface.classify.log_probs_conditional`](https://cappr.readthedocs.io/en/latest/cappr.huggingface.classify.html#cappr.huggingface.classify.log_probs_conditional).
 
 ```python
-from cappr.openai.classify import predict
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from cappr.huggingface.classify import log_probs_conditional
 
-prompt = """
-Tweet about a movie: "Oppenheimer was pretty good. But 3 hrs...cmon Nolan."
-This tweet contains the following criticism:
-""".strip("\n")
+# Load model and tokenizer
+model = AutoModelForCausalLM.from_pretrained("gpt2")
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
-completions = ("bad message", "too long", "unfunny")
+# Create data
+prompts = ["x y", "a b c"]
+completions = ["z", "d e"]
 
-pred = predict(prompt, completions, model="text-ada-001")
-print(pred)
-# too long
+# Compute
+log_probs_completions = log_probs_conditional(
+    prompts, completions, model_and_tokenizer=(model, tokenizer)
+)
+
+# Outputs (rounded) next to their symbolic representation
+
+print(log_probs_completions[0])
+# [[-4.5],        [[log Pr(z | x, y)],
+#  [-5.6, -3.2]]   [log Pr(d | x, y),    log Pr(e | x, y, d)]]
+
+print(log_probs_completions[1])
+# [[-9.7],        [[log Pr(z | a, b, c)],
+#  [-0.2, -0.03]]  [log Pr(d | a, b, c), log Pr(e | a, b, c, d)]]
 ```
 
-See [this page of the
-documentation](https://cappr.readthedocs.io/en/latest/select_a_language_model.html#openai)
-for more info on using OpenAI models.
+Efficiently aggregate these log-probabilities using
+[`cappr.utils.classify.agg_log_probs`](https://cappr.readthedocs.io/en/latest/cappr.utils.classify.html#cappr.utils.classify.agg_log_probs).
+
+For a slightly more advanced demo, see
+[`./demos/huggingface/dpo.ipynb`](./demos/huggingface/dpo.ipynb).
+
 </details>
 
 
