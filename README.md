@@ -206,7 +206,7 @@ pred_probs = predict_proba(
     prompts=prompts,
     completions=class_names,
     model_and_tokenizer=(model, tokenizer),
-    batch_size=32,  # whatever fits on your CPU/GPU
+    batch_size=2,  # whatever fits on your CPU/GPU
     prior=prior,
 )
 
