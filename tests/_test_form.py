@@ -21,21 +21,21 @@ from _protocol import classify_module
 def _test_log_probs_conditional(
     log_probs_completions: list[list[float]] | list[list[list[float]]],
     expected_len: int,
-    num_completions_per_prompt: int | None,
+    num_completions_per_prompt: None | list[int],
 ):
     # TODO: test that lengths of inner-most lists match # tokens in corresponding
     # completion
+    assert len(log_probs_completions) == expected_len
     if num_completions_per_prompt is None:
-        # There's only one prompt and it was fed by itself, not in a sequence.
-        assert len(log_probs_completions) == expected_len
-    else:
-        assert len(log_probs_completions) == expected_len
-        # Test lengths before zipping
-        assert len(log_probs_completions) == len(num_completions_per_prompt)
-        for log_probs, num_completions in zip(
-            log_probs_completions, num_completions_per_prompt
-        ):
-            assert len(log_probs) == num_completions
+        # There's only one prompt and it was fed by itself as a string. In this case,
+        # the second dimension of log_probs_completions corresponds to tokens, not
+        # completions.
+        return
+    assert len(log_probs_completions) == len(num_completions_per_prompt)
+    for log_probs, num_completions in zip(
+        log_probs_completions, num_completions_per_prompt
+    ):
+        assert len(log_probs) == num_completions
 
 
 def log_probs_conditional(

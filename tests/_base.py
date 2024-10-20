@@ -145,10 +145,10 @@ class TestPromptsCompletions(_BaseTest):
             Example("a great", ["thing.", "shout"]),
             Example("out to", ["open", "source, yo."]),
         ],
-        ############################ Test singleton example ############################
-        Example("lonesome", ["singleton", "example"]),
-        ################### Test singleton example single completion ###################
-        Example("lonely", ["loner"], normalize=False),
+        ############################# Test single example ##############################
+        Example("lone", ["singleton", "example"]),
+        #################### Test single example single completion #####################
+        Example("one", ["single"], normalize=False),
     ),
 )
 class TestExamples(_BaseTest):
@@ -173,7 +173,7 @@ class TestExamples(_BaseTest):
 
 
 @pytest.mark.parametrize("prompt_prefix", ("a b c",))
-@pytest.mark.parametrize("prompts", (["d", "d e"],))  # TODO: add single prompt
+@pytest.mark.parametrize("prompts", (["d", "d e"], "single prompt"))
 @pytest.mark.parametrize(
     "completions",
     (
@@ -182,49 +182,82 @@ class TestExamples(_BaseTest):
     ),
 )
 class TestCache(_BaseTest):
+    """
+    Test `cache` and `cache_model` for `classify` modules whose KV cache is
+    controllable.
+    """
+
     def _test_log_probs_conditional(
         self,
-        log_probs_completions_from_cached: list[list[list[float]]],
+        log_probs_completions_from_cached: list[list[float]] | list[list[list[float]]],
         prompt_prefix: str,
-        prompts: list[str],
+        prompts: str | list[str],
         completions: list[str],
         *model_args,
         **kwargs,
     ):
+        if isinstance(prompts, str):
+            expected_len = len(completions)
+            num_completions_per_prompt = None
+            prompts_full = prompt_prefix + " " + prompts
+            is_single_input = True
+        else:
+            expected_len = len(prompts)
+            num_completions_per_prompt = [len(completions)] * len(prompts)
+            prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
+            is_single_input = False
+
         _test_form._test_log_probs_conditional(
-            log_probs_completions_from_cached,
-            expected_len=len(prompts),
-            num_completions_per_prompt=[len(completions)] * len(prompts),
+            log_probs_completions_from_cached, expected_len, num_completions_per_prompt
         )
-        prompts_full = [prompt_prefix + " " + prompt for prompt in prompts]
+
         log_probs_completions_wo_cache = self.module_correct.log_probs_conditional(
             prompts_full, completions, *model_args, **kwargs
         )
         _test_content._test_log_probs_conditional(
             log_probs_completions_from_cached,
             log_probs_completions_wo_cache,
-            is_single_input=False,
+            is_single_input,
         )
 
     def _test_log_probs_conditional_examples(
         self,
-        log_probs_completions_from_cached: list[list[list[float]]],
+        log_probs_completions_from_cached: list[list[float]] | list[list[list[float]]],
         prompt_prefix: str,
-        examples: list[Example],
+        examples: Example | list[Example],
         *model_args,
         **kwargs,
     ):
+        if isinstance(examples, Example):
+            expected_len = len(examples.completions)
+            num_completions_per_prompt = None
+            examples_full = Example(
+                prompt_prefix + " " + examples.prompt,
+                examples.completions,
+                end_of_prompt=examples.end_of_prompt,
+            )
+            is_single_input = True
+        else:
+            expected_len = len(examples)
+            num_completions_per_prompt = [
+                len(example.completions) for example in examples
+            ]
+            examples_full = [
+                Example(
+                    prompt_prefix + " " + example.prompt,
+                    example.completions,
+                    end_of_prompt=example.end_of_prompt,
+                )
+                for example in examples
+            ]
+            is_single_input = False
+
         _test_form._test_log_probs_conditional(
             log_probs_completions_from_cached,
-            expected_len=len(examples),
-            num_completions_per_prompt=[
-                len(example.completions) for example in examples
-            ],
+            expected_len,
+            num_completions_per_prompt,
         )
-        examples_full = [
-            Example(prompt_prefix + " " + example.prompt, example.completions)
-            for example in examples
-        ]
+
         log_probs_completions_wo_cache = (
             self.module_correct.log_probs_conditional_examples(
                 examples_full, *model_args, **kwargs
@@ -233,18 +266,22 @@ class TestCache(_BaseTest):
         _test_content._test_log_probs_conditional(
             log_probs_completions_from_cached,
             log_probs_completions_wo_cache,
-            is_single_input=False,
+            is_single_input,
         )
 
     def test_cache(
         self,
         prompt_prefix: str,
-        prompts: list[str],
+        prompts: str | list[str],
         completions: list[str],
         *model_args,
         **kwargs,
     ):
-        examples = [Example(prompt, completions) for prompt in prompts]
+        if isinstance(prompts, str):
+            examples = Example(prompts, completions)
+        else:
+            examples = [Example(prompt, completions) for prompt in prompts]
+
         with self.module.cache(*model_args, prompt_prefix) as cached:
             log_probs_completions = self.module.log_probs_conditional(
                 prompts, completions, cached, **kwargs
@@ -267,12 +304,16 @@ class TestCache(_BaseTest):
     def test_cache_model(
         self,
         prompt_prefix: str,
-        prompts: list[str],
+        prompts: str | list[str],
         completions: list[str],
         *model_args,
         **kwargs,
     ):
-        examples = [Example(prompt, completions) for prompt in prompts]
+        if isinstance(prompts, str):
+            examples = Example(prompts, completions)
+        else:
+            examples = [Example(prompt, completions) for prompt in prompts]
+
         cached = self.module.cache_model(*model_args, prompt_prefix)
         log_probs_completions = self.module.log_probs_conditional(
             prompts, completions, cached, **kwargs
