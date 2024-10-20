@@ -22,7 +22,7 @@ from transformers import PreTrainedTokenizerBase
 from cappr.utils import _batch, _check, classify
 from cappr import Example
 from cappr import huggingface as hf
-from cappr.huggingface._utils import ModelForCausalLM
+from cappr.huggingface._utils import BatchEncodingPT, ModelForCausalLM
 
 
 def token_logprobs(
@@ -106,8 +106,10 @@ def _prompts_offsets(
     prompts = list(prompts)
     padding = len(prompts) > 1
     with hf._utils.set_up_tokenizer(tokenizer):
+        encoding = tokenizer(prompts, return_tensors="pt", padding=padding)
+        encoding = cast(BatchEncodingPT, encoding)
         offsets: torch.Tensor = (
-            tokenizer(prompts, return_tensors="pt", padding=padding)["attention_mask"]
+            encoding["attention_mask"]
             .sum(dim=1)
             .repeat_interleave(num_completions_per_prompt, dim=0)
         )

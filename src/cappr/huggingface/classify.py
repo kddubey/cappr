@@ -119,7 +119,7 @@ def token_logprobs(
 
 
 ########################################################################################
-########################## Attention past_key_values utilities #########################
+################################ Slice past_key_values #################################
 ########################################################################################
 
 
@@ -173,7 +173,7 @@ def _select(
         for kv_idx in range(len(past_key_values[block_idx])):
             batch_size = past_key_values[block_idx][kv_idx].shape[0]
             if batch_size == 1:
-                raise ValueError("Should use _expand_batch_indices")  # pragma: no cover
+                raise ValueError("Should use _expand")  # pragma: no cover
             kvs.append(past_key_values[block_idx][kv_idx][batch_idxs, ...])
         blocks.append(tuple(kvs))
     return tuple(blocks)
@@ -237,9 +237,11 @@ class _ModelWithCache:
         # This data is in one place to minimize pollution of the inputted model's
         # namespace. This object should be treated like a ModelForCausalLM by the user
         self._cappr.update_cache = True
-        _ = self.forward(**encodings_to_cache)
-        del _
-        self._cappr.update_cache = False
+        try:
+            _ = self.forward(**encodings_to_cache)
+            del _
+        finally:
+            self._cappr.update_cache = False
 
     def forward(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor
@@ -359,7 +361,8 @@ def cache_model(
     prefixes : str | Sequence[str]
         prefix(es) for all future strings that will be processed, e.g., a string
         containing shared prompt instructions, or a string containing instructions and
-        exemplars for few-shot prompting
+        exemplars for few-shot prompting. `prefixes` and future strings are assumed to
+        be separated by a whitespace.
     logits_all : bool, optional
         whether or not to have the cached model include logits for all tokens (including
         the past). By default, past token logits are included
@@ -368,14 +371,6 @@ def cache_model(
     -------
     tuple[ModelForCausalLM, PreTrainedTokenizerBase]
         cached model and the (unmodified) tokenizer
-
-    Note
-    ----
-    If you're inputting the cached model and tokenizer to a function in this module,
-    e.g., :func:`predict`, `prefixes` and future strings are assumed to be separated by
-    a whitespace. Otherwise, ensure that any strings that are processed by the tokenizer
-    start correctly. Furthermore, if applicable, set ``tokenizer.add_bos_token = False``
-    for future computations.
 
     Example
     -------
@@ -466,7 +461,8 @@ def cache(
     prefixes : str | Sequence[str]
         prefix(es) for all strings that will be processed in this context, e.g., a
         string containing shared prompt instructions, or a string containing
-        instructions and exemplars for few-shot prompting
+        instructions and exemplars for few-shot prompting. `prefixes` and future strings
+        are assumed to be separated by a whitespace.
     clear_cache_on_exit : bool, optional
         whether or not to clear the cache and render the returned model and tokenizer
         unusable when we exit the context. This is important because it saves memory,
@@ -474,13 +470,6 @@ def cache(
     logits_all : bool, optional
         whether or not to have the cached model include logits for all tokens (including
         the past). By default, past token logits are included
-
-    Note
-    ----
-    If you're inputting the cached model and tokenizer to a function in this module,
-    e.g., :func:`predict`, `prefixes` and future strings are assumed to be separated by
-    a whitespace. Otherwise, ensure that any strings that are processed by the tokenizer
-    start correctly.
 
     Example
     -------

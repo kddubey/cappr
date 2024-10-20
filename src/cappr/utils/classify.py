@@ -153,8 +153,8 @@ def _ndim(sequence) -> int:
 
 def agg_log_probs(
     log_probs: Sequence[Sequence[float]] | Sequence[Sequence[Sequence[float]]],
-    func: Callable[[Sequence[float]], float] = _avg_then_exp,
-) -> npt.NDArray[np.floating] | list[float] | list[list[float]]:
+    func: Callable = _avg_then_exp,
+) -> npt.NDArray[np.floating] | list[list[float]]:
     """
     Aggregate token log-probabilities along the last dimension.
 
@@ -166,7 +166,7 @@ def agg_log_probs(
         :class:`cappr.Example` object with completions. A 3-D sequence corresponds to
         inputting multiple prompt strings or :class:`cappr.Example` objects with
         completions
-    func : Callable[[Sequence[float]], float], optional
+    func : Callable, optional
         a function which aggregates a sequence of token log-probabilities into a single
         number, by default a probability. If the function is vectorized, it must take an
         ``axis`` argument, e.g., ``np.mean`` will efficiently average the token
@@ -175,7 +175,7 @@ def agg_log_probs(
 
     Returns
     -------
-    agg: npt.NDArray[np.floating] | list[float] | list[list[float]]
+    agg: npt.NDArray[np.floating] | list[list[float]]
         If `log_probs` is 2-D, then `agg` is a numpy array or a list where::
 
             agg[j] = func(log_probs[j])
@@ -575,16 +575,14 @@ def _predict_examples(predict_proba_examples_func):
             assert pred_probs.ndim == 1  # double check
             pred_class_idx = pred_probs.argmax()
             return examples.completions[pred_class_idx]
-        try:
-            # If it's an array, we can call .argmax on the whole thing, which is faster
+
+        if isinstance(pred_probs, np.ndarray):
             pred_class_idxs = pred_probs.argmax(axis=1)
-        except (
-            AttributeError,  # no argmax attr
-            TypeError,  # no axis kwarg
-        ):
+        else:
             pred_class_idxs = [
                 example_pred_probs.argmax() for example_pred_probs in pred_probs
             ]
+
         return [
             example.completions[pred_class_idx]
             for example, pred_class_idx in zip(examples, pred_class_idxs)
