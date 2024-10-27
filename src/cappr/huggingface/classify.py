@@ -123,26 +123,24 @@ def token_logprobs(
 ########################################################################################
 
 
-_PastKeyValues = Tuple[Tuple[torch.Tensor, torch.Tensor]]
+_PastKeyValues = Tuple[Tuple[torch.FloatTensor]]
 """
 The `past_key_values` input to a HuggingFace `transformers` model's forward pass. It's a
 2-D tuple of 4-D tensors.
 
 Index items:
 
-(
-    # attention blocks = 12 for gpt2,
+- num attention blocks = 12 for gpt2
 
-    2 = (attention keys, attention values), (or 6 for LongLlama)
+- 2 = (attention keys, attention values), or 6 for LongLlama
 
-    batch size = # input texts,
+- batch size = num input texts
 
-    # heads = 12 for gpt2,
+- num heads = 12 for gpt2
 
-    max # tokens in batch,
+- max num tokens in batch
 
-    key/value hidden dimension = 64 for gpt2
-)
+- key/value hidden dimension = 64 for gpt2
 """
 
 
@@ -153,13 +151,11 @@ def _expand(past_key_values: _PastKeyValues, num_repeats: int) -> _PastKeyValues
     shares data w/ the input.
     """
     blocks = []
-    for block_idx in range(len(past_key_values)):
+    for block in past_key_values:
         kvs = []
-        for kv_idx in range(len(past_key_values[block_idx])):
-            batch_size, *rest_shape = past_key_values[block_idx][kv_idx].shape
-            kvs.append(
-                past_key_values[block_idx][kv_idx].expand(num_repeats, *rest_shape)
-            )
+        for k_or_v in block:
+            batch_size, *rest_shape = k_or_v.shape
+            kvs.append(k_or_v.expand(num_repeats, *rest_shape))
         blocks.append(tuple(kvs))
     return tuple(blocks)
 
@@ -168,13 +164,13 @@ def _select(
     past_key_values: _PastKeyValues, batch_idxs: torch.IntTensor
 ) -> _PastKeyValues:
     blocks = []
-    for block_idx in range(len(past_key_values)):
+    for block in past_key_values:
         kvs = []
-        for kv_idx in range(len(past_key_values[block_idx])):
-            batch_size = past_key_values[block_idx][kv_idx].shape[0]
+        for k_or_v in block:
+            batch_size = k_or_v.shape[0]
             if batch_size == 1:
                 raise ValueError("Should use _expand")  # pragma: no cover
-            kvs.append(past_key_values[block_idx][kv_idx][batch_idxs, ...])
+            kvs.append(k_or_v[batch_idxs, ...])
         blocks.append(tuple(kvs))
     return tuple(blocks)
 
@@ -295,6 +291,7 @@ class _ModelWithCache:
             past_key_values = _past_key_values_get(out_past.past_key_values, batch_idxs)
         else:
             past_key_values = out_past.past_key_values
+            assert past_key_values is not None
 
         attention_mask_past = encodings_past["attention_mask"][batch_idxs]
         attention_mask_past_cat_present = torch.cat(
