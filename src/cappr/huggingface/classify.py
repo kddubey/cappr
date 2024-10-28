@@ -274,6 +274,9 @@ class _ModelWithCache:
             # I don't know why the gpt2 implementation still assumes that
             # past_key_values is a tuple. TODO: are there more models to exclude? I
             # didn't see anything in the model.config which indicates this.
+            # model.generation_config has return_legacy_cache and cache_implementation
+            # attributes, but they're None for gpt2 and non-gpt2 models, so they're not
+            # informative.
             if _IS_DYNAMIC_CACHE_AVAILABLE and does_model_support_cache_object:
                 past_key_values = DynamicCache()
             else:

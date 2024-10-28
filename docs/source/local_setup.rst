@@ -64,6 +64,11 @@ Sometimes I get worried about bigger code changes. So consider additionally test
 statistical performance by running an appropriate demo in the repo's `demos
 <https://github.com/kddubey/cappr/tree/main/demos>`_.
 
+If you're changing anything about the algorithm, then report the changes in throughput
+or latency, and allocated and reserved CUDA memory. The `Banking 77
+<https://github.com/kddubey/cappr/blob/main/demos/huggingface/banking_77_classes.ipynb>`_
+demo is useful because it's challenging for CAPPr.
+
 
 Docs
 ----
