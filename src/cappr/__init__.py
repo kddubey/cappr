@@ -4,7 +4,7 @@ Completion After Prompt Probability. Make your LLM make a choice
 https://cappr.readthedocs.io/
 """
 
-__version__ = "0.9.4"
+__version__ = "0.9.5"
 
 from . import utils  # noqa: F401
 from ._example import Example  # noqa: F401
