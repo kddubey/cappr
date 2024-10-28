@@ -376,11 +376,11 @@ class TestPromptsCompletions(Modules, _base.TestPromptsCompletions):
         # Test logits for better debuggability
         # For this helper function, prompts can't be a single string
         if isinstance(prompts, str):
-            return
-        slow_out = classify_no_cache._logits_completions_given_prompts(
+            prompts = [prompts]
+        slow_out = self.module_correct._logits_completions_given_prompts(
             model, tokenizer, prompts, completions
         )
-        fast_out = classify._logits_completions_given_prompts(
+        fast_out = self.module._logits_completions_given_prompts(
             model, tokenizer, prompts, completions
         )
         _test_encodings(*slow_out, *fast_out)
@@ -433,11 +433,11 @@ class TestExamples(Modules, _base.TestExamples):
         # Test logits for better debuggability
         # For this helper function, examples can't be an Example
         if isinstance(examples, Example):
-            return
-        slow_out = classify_no_cache._logits_completions_given_prompts_examples(
+            examples = [examples]
+        slow_out = self.module_correct._logits_completions_given_prompts_examples(
             model, tokenizer, examples
         )
-        fast_out = classify._logits_completions_given_prompts_examples(
+        fast_out = self.module._logits_completions_given_prompts_examples(
             model, tokenizer, examples
         )
         _test_encodings(*slow_out, *fast_out)
