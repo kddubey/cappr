@@ -14,8 +14,8 @@ from cappr import __version__
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "CAPPr"
-copyright = "2023, kddubey"
-author = "kddubey"
+copyright = "2023-2024, Kush Dubey"
+author = "Kush Dubey"
 
 version = __version__
 release = version
