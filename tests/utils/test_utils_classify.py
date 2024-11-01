@@ -105,7 +105,6 @@ def test_posterior_prob_2d(likelihoods, prior, normalize, expected):
     posteriors = classify.posterior_prob(
         likelihoods, axis=1, prior=prior, normalize=normalize
     )
-    # Using np.allclose for floating-point precision comparison
     assert np.allclose(posteriors, expected)
 
 

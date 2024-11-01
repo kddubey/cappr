@@ -17,6 +17,6 @@ abstract: >-
   Completion After Prompt Probability. Make your LLM make a
   choice
 license: Apache-2.0
-commit: ' 3abd478'
+commit: 3abd478
 version: 0.9.5
 date-released: '2024-10-28'
