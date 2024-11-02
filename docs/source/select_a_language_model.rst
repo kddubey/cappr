@@ -49,7 +49,7 @@ Here's a quick example (which will download a small GPT-2 model to your computer
 
 So far, CAPPr has been tested for code correctness on the following architectures:
 
-- Llama, Llama 2 
+- Llama, Llama 2, and (since CAPPr v0.9.6) Llama 3
 - Mistral
 - Gemma 2
 - Phi
