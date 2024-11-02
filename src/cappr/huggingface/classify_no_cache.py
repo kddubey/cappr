@@ -106,14 +106,14 @@ def _prompts_offsets(
     prompts = list(prompts)
     padding = len(prompts) > 1
     with hf._utils.set_up_tokenizer(tokenizer):
-        encoding = tokenizer(prompts, return_tensors="pt", padding=padding)
-        encoding = cast(BatchEncodingPT, encoding)
+        encodings = tokenizer(prompts, return_tensors="pt", padding=padding)
+        encodings = cast(BatchEncodingPT, encodings)
         offsets: torch.Tensor = (
-            encoding["attention_mask"]
+            encodings["attention_mask"]
             .sum(dim=1)
             .repeat_interleave(num_completions_per_prompt, dim=0)
         )
-    if getattr(tokenizer, "add_bos_token", False):
+    if hf._utils.is_bos_token_added(tokenizer, encodings):
         # Drop the first <s> token after we're done encoding so that the shape is
         # consistent w/ other tokenizers
         offsets -= 1

@@ -36,21 +36,25 @@ _MODELS_DIR = os.path.join(
 
 
 @dataclass(frozen=True)
-class _HFHubModel:
+class _HFHubGGUF:
     repo_id: str
+    "Repo ID for a causal LM in https://huggingface.co/models"
+
     filename: str
+    "Path to the GGUF, relative to the repo root"
+
     does_tokenizer_need_prepended_space: bool
 
 
 @pytest.fixture(
     scope="module",
     params=[
-        _HFHubModel(
+        _HFHubGGUF(
             repo_id="aladar/tiny-random-BloomForCausalLM-GGUF",
             filename="tiny-random-BloomForCausalLM.gguf",
             does_tokenizer_need_prepended_space=True,  # BPE
         ),
-        _HFHubModel(
+        _HFHubGGUF(
             repo_id="aladar/tiny-random-LlamaForCausalLM-GGUF",
             filename="tiny-random-LlamaForCausalLM.gguf",
             does_tokenizer_need_prepended_space=False,  # SentencePiece
@@ -60,7 +64,7 @@ class _HFHubModel:
 def model_and_does_tokenizer_need_prepended_space(
     request: pytest.FixtureRequest,
 ) -> tuple[Llama, bool]:
-    hf_hub_model: _HFHubModel = request.param
+    hf_hub_model: _HFHubGGUF = request.param
     model_path = hf_hub_download(
         hf_hub_model.repo_id, hf_hub_model.filename, local_dir=_MODELS_DIR
     )

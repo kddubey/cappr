@@ -14,6 +14,8 @@ from transformers.modeling_outputs import CausalLMOutput
 from cappr.utils import _check
 from cappr.utils.classify import _setattr
 
+from cappr.huggingface import _patch_tokenizer
+
 
 BatchEncodingPT = Mapping[str, torch.Tensor]
 """
@@ -117,6 +119,11 @@ def dont_add_eos_token(tokenizer: PreTrainedTokenizerBase):
     """
     In this context, don't add an end-of-sentence token.
     """
+    if not _patch_tokenizer.does_disabling_add_token_disable_adding_token(
+        tokenizer, "eos_token"
+    ):
+        _patch_tokenizer.force_support(tokenizer)
+
     with _setattr(tokenizer, "add_eos_token", False):
         yield
 
@@ -154,6 +161,11 @@ def dont_add_bos_token(tokenizer: PreTrainedTokenizerBase):
     """
     In this context, don't add a beginning-of-sentence token.
     """
+    if not _patch_tokenizer.does_disabling_add_token_disable_adding_token(
+        tokenizer, "bos_token"
+    ):
+        _patch_tokenizer.force_support(tokenizer)
+
     with _setattr(tokenizer, "add_bos_token", False):
         yield
 
@@ -163,10 +175,15 @@ def dont_add_bos_token(tokenizer: PreTrainedTokenizerBase):
 ########################################################################################
 
 
-@lru_cache()
+@lru_cache(maxsize=5)
 def does_tokenizer_need_prepended_space(
     tokenizer: PreTrainedTokenizerBase,
 ) -> bool:
+    # There's an (inaccessible?) add_prefix_space attr in
+    # tokenizer._tokenizer.post_processor's ByteLevel (first processor) that's probably
+    # the same as this function. But even if we can access it, not every tokenizer is
+    # BPE. And I doubt every tokenizer will make this info easily accessible. Instead,
+    # let's check it by running the tokenizer.
     with dont_add_eos_token(tokenizer):
         tokenize = lambda text: tokenizer(text)["input_ids"]
         bos_token_id = getattr(tokenizer, "bos_token_id", None)
@@ -199,6 +216,12 @@ def _batched_model_call(
     return CausalLMOutput(logits=logits)
 
 
+def is_bos_token_added(
+    tokenizer: PreTrainedTokenizerBase, encodings: BatchEncodingPT
+) -> bool:
+    return encodings["input_ids"][0][0] == getattr(tokenizer, "bos_token_id", None)
+
+
 def logits_texts(
     texts: Sequence[str],
     model_and_tokenizer: tuple[ModelForCausalLM, PreTrainedTokenizerBase],
@@ -222,7 +245,7 @@ def logits_texts(
     else:
         with set_up_model(model):
             out: CausalLMOutput = model(**encodings)
-    if drop_bos_token and getattr(tokenizer, "add_bos_token", False):
+    if drop_bos_token and is_bos_token_added(tokenizer, encodings):
         # Drop the first/bos token after we're done encoding so that the shape is
         # consistent w/ other tokenizers. For CAPPr, we'll never be interested in
         # Pr(token | <bos>). We're only interested in completion tokens

@@ -6,12 +6,14 @@ functions' outputs are numerically close to those from
 
 from __future__ import annotations
 from contextlib import nullcontext
+from dataclasses import dataclass
 import os
 import sys
-from typing import Sequence
+from typing import Sequence, cast
 
 import pytest
 
+from peft import PeftModel
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedTokenizerBase
 from transformers.modeling_outputs import CausalLMOutput
@@ -21,6 +23,7 @@ from cappr import Example
 from cappr.huggingface import classify, classify_no_cache
 from cappr import huggingface as hf
 from cappr.huggingface._utils import BatchEncodingPT, ModelForCausalLM
+from cappr.huggingface import _patch_tokenizer
 
 # sys hack to import from parent
 sys.path.insert(1, os.path.join(sys.path[0], ".."))
@@ -34,25 +37,55 @@ from _protocol import classify_module
 ########################################################################################
 
 
+@dataclass(frozen=True)
+class _HFHubModel:
+    repo_id: str
+    "Repo ID for a causal LM in https://huggingface.co/models"
+
+    lora_name: str | None = None
+    "(Optional) repo ID for adapter weights in https://huggingface.co/models"
+
+
 @pytest.fixture(
     scope="module",
     params=[
-        "hf-internal-testing/tiny-random-GPT2LMHeadModel",
-        "HuggingFaceH4/tiny-random-LlamaForCausalLM",
-        # These models are reduntant. They're all transformers w/ BPE or SentencePiece
-        # tokenization and a non-None eos_token
-        # "hf-internal-testing/tiny-random-GPTJForCausalLM",
-        # "hf-internal-testing/tiny-random-GPTNeoXForCausalLM",
-        # "hf-internal-testing/tiny-random-MistralForCausalLM",
+        _HFHubModel("hf-internal-testing/tiny-random-GPT2LMHeadModel"),
+        _HFHubModel("yujiepan/llama-3.1-tiny-random"),
+        _HFHubModel("hf-internal-testing/tiny-random-MistralForCausalLM"),
+        _HFHubModel("yujiepan/llama-2-tiny-random"),
+        _HFHubModel("hf-internal-testing/tiny-random-Gemma2ForCausalLM"),
+        _HFHubModel("hf-internal-testing/tiny-random-PhiForCausalLM"),
+        _HFHubModel(
+            "llamafactory/tiny-random-Llama-3",
+            lora_name="llamafactory/tiny-random-Llama-3-lora",
+        ),
+        #
+        # The models below are reduntant. They're all transformers w/ BPE or
+        # SentencePiece tokenization and a non-None eos_token
+        #
+        # _HFHubModel("HuggingFaceH4/tiny-random-LlamaForCausalLM"),
+        # _HFHubModel("hf-internal-testing/tiny-random-GPTJForCausalLM"),
+        # _HFHubModel("hf-internal-testing/tiny-random-GPTNeoXForCausalLM"),
+        #
+        # Qwen has a bunch of remote code. Need to understand its tokenizer. pad_token
+        # is None for some reason.
+        #
+        # _HFHubModel("yujiepan/qwen-vl-tiny-random"),
     ],
 )
-def model_name(request: pytest.FixtureRequest) -> str:
+def hf_hub_model(request: pytest.FixtureRequest) -> _HFHubModel:
     return request.param
 
 
 @pytest.fixture(scope="module")
-def model(model_name: str) -> ModelForCausalLM:
-    model: ModelForCausalLM = AutoModelForCausalLM.from_pretrained(model_name)
+def model(hf_hub_model: _HFHubModel) -> ModelForCausalLM:
+    if hf_hub_model.lora_name is not None:
+        base_model = AutoModelForCausalLM.from_pretrained(hf_hub_model.repo_id)
+        model = PeftModel.from_pretrained(base_model, hf_hub_model.lora_name)
+    else:
+        model = AutoModelForCausalLM.from_pretrained(hf_hub_model.repo_id)
+    model = cast(ModelForCausalLM, model)
+
     # Set attributes to values that would break CAPPr, if not for the context managers
     model.train()  # LMs w/ dropout (GPT-2) will cause mismatched logits b/c random
     model.config.return_dict = False  # out.logits fails (not for transformers>=4.31)
@@ -61,15 +94,20 @@ def model(model_name: str) -> ModelForCausalLM:
 
 
 @pytest.fixture(scope="module")
-def tokenizer(model_name: str) -> PreTrainedTokenizerBase:
+def tokenizer(hf_hub_model: _HFHubModel) -> PreTrainedTokenizerBase:
     try:
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        tokenizer = AutoTokenizer.from_pretrained(hf_hub_model.repo_id)
     except Exception:
         # hf-internal-testing/tiny-random-MistralForCausalLM's tokenizer_config.json has
-        # a field, tokenizer_file, which is hard-coded to some specific machine
+        # a field, tokenizer_file, which is hard-coded to some specific machine.
         # Find it locally
-        local_path = hf_hub.try_to_load_from_cache(model_name, "tokenizer.json")
-        tokenizer = AutoTokenizer.from_pretrained(model_name, tokenizer_file=local_path)
+        local_path = hf_hub.try_to_load_from_cache(
+            hf_hub_model.repo_id, "tokenizer.json"
+        )
+        tokenizer = AutoTokenizer.from_pretrained(
+            hf_hub_model.repo_id, tokenizer_file=local_path
+        )
+
     # Set attributes to values that would break CAPPr, if not for the context managers
     tokenizer.padding_side = "left"  # mismatched logits content b/c of position IDs
     if hasattr(tokenizer, "add_eos_token"):
@@ -81,6 +119,7 @@ def tokenizer(model_name: str) -> PreTrainedTokenizerBase:
 def model_and_tokenizer(
     model, tokenizer
 ) -> tuple[ModelForCausalLM, PreTrainedTokenizerBase]:
+    # All user-facing functions assume this tuple input
     return model, tokenizer
 
 
@@ -95,6 +134,22 @@ def atol() -> float:
 ########################################################################################
 #################################### One-off tests #####################################
 ########################################################################################
+
+
+@pytest.mark.parametrize("token_name", ("bos_token", "eos_token"))
+def test__does_disabling_add_token_disable_adding_token(
+    model_and_tokenizer, token_name: str
+):
+    model, tokenizer = model_and_tokenizer
+    does_disabling_work = (
+        _patch_tokenizer.does_disabling_add_token_disable_adding_token(
+            tokenizer, token_name
+        )
+    )
+    if (token_name == "bos_token") and ("llama-3" in model.name_or_path.lower()):
+        assert not does_disabling_work
+    else:
+        assert does_disabling_work
 
 
 def test_set_up_model(model: ModelForCausalLM):

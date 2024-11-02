@@ -49,11 +49,14 @@ Here's a quick example (which will download a small GPT-2 model to your computer
 
 So far, CAPPr has been tested for code correctness on the following architectures:
 
+- Llama, Llama 2 
+- Mistral
+- Gemma 2
+- Phi
 - GPT-2
 - GPT-J
 - GPT-NeoX (including StableLM)
-- Llama, Llama 2
-- Mistral.
+- (Q)LoRA models whose base model is one of the above.
 
 You'll need access to beefier hardware to run models from the Hugging Face hub, as
 :mod:`cappr.huggingface` currently assumes you've locally loaded the model. Hugging Face
