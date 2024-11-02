@@ -90,9 +90,9 @@ Release
 
 `Bump the version
 <https://github.com/kddubey/cappr/commit/d1f7dd51fa702c123bdfb0bcb97535995641c224>`_,
-and then `create a new release on GitHub
-<https://github.com/kddubey/cappr/releases/new>`_. A new version of the package will
-then be automatically published on PyPI.
+update the `citation <https://github.com/kddubey/cappr/blob/main/CITATION.cff>`_, and
+then `create a new release on GitHub <https://github.com/kddubey/cappr/releases/new>`_.
+A new version of the package will then be automatically published on PyPI.
 
 Try to follow `semantic versioning <https://semver.org/>`_ guidelines, even though I
 haven't been great at that so far.
