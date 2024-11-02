@@ -34,9 +34,10 @@ hf = ["transformers[torch]>=4.31.0"]
 llama-cpp = ["llama-cpp-python>=0.2.11"]
 all = ["cappr[openai,hf,llama-cpp]"]
 hf-dev = [
-    "huggingface-hub>=0.16.4",
-    "peft>=0.13.2",
-    "sentencepiece>=0.1.99",
+    "huggingface-hub>=0.16.4",  # to download models from the hub
+    "peft>=0.13.2",  # to test LoRA
+    "protobuf>=5.27.2",  # to test Mistral tokenization
+    "sentencepiece>=0.1.99",  # to run Llama tokenization
     "transformers[torch]>=4.35.0",  # to test AutoGPTQ on CPU and AutoAWQ with caching
 ]
 llama-cpp-dev = ["llama-cpp-python>=0.2.13"]
